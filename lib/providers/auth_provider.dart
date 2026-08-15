@@ -1,0 +1,436 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/family_member.dart';
+import '../services/supabase_service.dart';
+import '../services/local_storage_service.dart';
+
+enum AuthStatus {
+  initial,
+  authenticated,
+  unauthenticated,
+  loading,
+}
+
+class AuthProvider extends ChangeNotifier {
+  AuthStatus _status = AuthStatus.initial;
+  User? _user;
+  FamilyMember? _currentMember;
+  String? _error;
+  String? _pendingInviteMemberId;
+
+  AuthStatus get status => _status;
+  User? get user => _user;
+  FamilyMember? get currentMember => _currentMember;
+  String? get error => _error;
+  bool get isAuthenticated => _status == AuthStatus.authenticated;
+  bool get hasProfile => _currentMember != null;
+  String? get pendingInviteMemberId => _pendingInviteMemberId;
+
+  /// True once a password has been established for this session (a fresh
+  /// signUpWithEmail/signInWithEmail just proved one exists). Used only to
+  /// tag a brand-new profile with `has_password: true` at creation time in
+  /// ProfileFormScreen — for an existing profile, [hasPasswordSet] (backed
+  /// by deep_details) is the source of truth instead.
+  bool _authenticatedWithPassword = false;
+  bool get authenticatedWithPassword => _authenticatedWithPassword;
+
+  /// Whether the current member's account has ever had a password set.
+  /// Magic-link-only accounts have none. Supabase's client SDK doesn't
+  /// expose "does this identity have a password" directly, so this is
+  /// tracked in `deep_details['has_password']` on the profile itself —
+  /// see [setPassword] and the self-healing check in [signInWithEmail].
+  /// Drives the mandatory set-password prompt in AppNavigator.
+  bool get hasPasswordSet => _currentMember?.deepDetails['has_password'] == true;
+
+  AuthProvider() {
+    _init();
+  }
+
+  /// Test-only seam: skips `_init()`, which touches
+  /// `SupabaseService.currentUser`/`authStateChanges` — both require a live
+  /// `Supabase.initialize()` call that hasn't happened in a plain widget
+  /// test. Optionally seeds [currentMember]/[status] directly. Not used by
+  /// any production code path.
+  @visibleForTesting
+  AuthProvider.forTesting({FamilyMember? currentMember, AuthStatus? status}) {
+    _currentMember = currentMember;
+    _status = status ?? AuthStatus.unauthenticated;
+  }
+
+  Future<void> _init() async {
+    _status = AuthStatus.loading;
+    notifyListeners();
+
+    // Check current session
+    _user = SupabaseService.currentUser;
+    
+    if (_user != null) {
+      await _loadCurrentMemberProfile();
+      _status = AuthStatus.authenticated;
+    } else {
+      _status = AuthStatus.unauthenticated;
+    }
+
+    // Listen to auth state changes
+    SupabaseService.authStateChanges.listen((event) async {
+      if (event.event == AuthChangeEvent.signedIn) {
+        _user = event.session?.user;
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+      } else if (event.event == AuthChangeEvent.signedOut) {
+        _user = null;
+        _currentMember = null;
+        _status = AuthStatus.unauthenticated;
+      }
+      notifyListeners();
+    });
+
+    notifyListeners();
+  }
+
+  Future<void> _loadCurrentMemberProfile() async {
+    try {
+      // Try online first
+      if (await SyncService.isOnline()) {
+        try {
+          _currentMember = await SupabaseService.getCurrentUserProfile();
+          if (_currentMember != null) {
+            await LocalStorageService.saveFamilyMember(_currentMember!);
+            await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+          }
+          return;
+        } catch (e) {
+          // connectivity_plus reported "online" (radio/Wi-Fi up) but the
+          // actual request failed — routine on this app's target rural
+          // network conditions. Without this fallback, _currentMember stays
+          // null, an existing user gets routed into "Complete Your Profile,"
+          // and saving that form creates a duplicate family_members row
+          // (the exact bug this session already fixed once for signup —
+          // see docs/claude_handoff/04_current_risks.md). Fall through to
+          // the same local-cache path used when genuinely offline instead.
+          debugPrint('Online profile fetch failed, falling back to local cache: $e');
+          _error = e.toString();
+        }
+      }
+
+      // Offline, or the online fetch above failed.
+      final memberId = LocalStorageService.getCurrentMemberId();
+      if (memberId != null) {
+        _currentMember = LocalStorageService.getFamilyMember(memberId);
+      }
+    } catch (e) {
+      debugPrint('Error in _loadCurrentMemberProfile: $e');
+      _error = e.toString();
+    }
+  }
+
+  /// Refresh the current member from the database to pick up
+  /// relationship changes (father_id, mother_id, spouse_id).
+  Future<void> refreshCurrentMember() async {
+    if (_currentMember == null) return;
+    try {
+      if (await SyncService.isOnline()) {
+        final fresh = await SupabaseService.getFamilyMemberById(_currentMember!.id);
+        if (fresh != null) {
+          _currentMember = fresh;
+          await LocalStorageService.saveFamilyMember(fresh);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error refreshing current member: $e');
+      _error = e.toString();
+    }
+  }
+
+  void setPendingInvite(String? memberId) {
+    _pendingInviteMemberId = memberId;
+    notifyListeners();
+  }
+
+  Future<bool> signInWithMagicLink(String email) async {
+    try {
+      // Do NOT set _status to loading — sending a magic link is just an email
+      // dispatch. The user should remain on the login screen with a toast.
+      _error = null;
+
+      await SupabaseService.signInWithMagicLink(email);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in signInWithMagicLink: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> signUpWithEmail(String email, String password) async {
+    try {
+      _status = AuthStatus.loading;
+      _error = null;
+      notifyListeners();
+
+      final response = await SupabaseService.signUpWithEmail(email, password);
+      _user = response.user;
+
+      if (_user != null) {
+        // Defense in depth on top of SupabaseService's identities check:
+        // always load whatever profile actually exists for this user before
+        // deciding this was a fresh signup. Unlike signInWithEmail, this
+        // method previously skipped this call entirely, so a signup that
+        // silently resolved to an existing account left _currentMember null
+        // and the app routed to profile creation — producing a duplicate
+        // family_members row. Never skip this again.
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+        // A password was just provided — ProfileFormScreen reads this to
+        // tag a brand-new profile's deep_details accordingly.
+        _authenticatedWithPassword = true;
+
+        // If there's a pending invite, try to claim it (only relevant for a
+        // genuinely new account with no profile yet).
+        if (_pendingInviteMemberId != null && _currentMember == null) {
+          await claimProfile(_pendingInviteMemberId!);
+        }
+
+        // Self-heal, same as signInWithEmail: claimProfile/claimProfileByCode
+        // only set auth_user_id, they never tag has_password. Without this, a
+        // user who claims an invite during signup (a password they just
+        // chose) would never get deep_details['has_password'] set — since
+        // AppNavigator skips ProfileFormScreen (the only other place that
+        // tags it) whenever hasProfile is already true — and would be
+        // wrongly dropped onto the mandatory SetPasswordScreen right after
+        // already setting one.
+        if (_currentMember != null && !hasPasswordSet) {
+          await updateProfile(_currentMember!.copyWith(
+            deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
+          ));
+        }
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
+
+      notifyListeners();
+      return _user != null;
+    } catch (e) {
+      debugPrint('Error in signUpWithEmail: $e');
+      _error = e.toString();
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> signInWithEmail(String email, String password) async {
+    try {
+      _status = AuthStatus.loading;
+      _error = null;
+      notifyListeners();
+
+      final response = await SupabaseService.signInWithEmail(email, password);
+      _user = response.user;
+      
+      if (_user != null) {
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+        _authenticatedWithPassword = true;
+
+        // Self-heal: a successful password sign-in conclusively proves a
+        // password exists, even if deep_details was never tagged (e.g. an
+        // account created before has_password tracking existed). Do this
+        // quietly rather than routing them through the set-password prompt
+        // for a password they already have.
+        if (_currentMember != null && !hasPasswordSet) {
+          await updateProfile(_currentMember!.copyWith(
+            deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
+          ));
+        }
+
+        // If there's a pending invite, try to claim it
+        if (_pendingInviteMemberId != null && _currentMember == null) {
+          await claimProfile(_pendingInviteMemberId!);
+        }
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
+
+      notifyListeners();
+      return _user != null;
+    } catch (e) {
+      debugPrint('Error in signInWithEmail: $e');
+      _error = e.toString();
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Sets a password on the current (already-authenticated) account —
+  /// for a magic-link-only account that has never had one. Updates
+  /// `deep_details['has_password']` on the profile so [hasPasswordSet]
+  /// reflects it immediately, which clears the mandatory set-password
+  /// prompt in AppNavigator.
+  Future<bool> setPassword(String password) async {
+    try {
+      _error = null;
+      await SupabaseService.updatePassword(password);
+      _authenticatedWithPassword = true;
+
+      if (_currentMember != null) {
+        final success = await updateProfile(_currentMember!.copyWith(
+          deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
+        ));
+        return success;
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in setPassword: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await SupabaseService.signOut();
+      await LocalStorageService.clearAll();
+      _user = null;
+      _currentMember = null;
+      _status = AuthStatus.unauthenticated;
+      _authenticatedWithPassword = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error in signOut: $e');
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword(String email) async {
+    try {
+      _error = null;
+      await SupabaseService.resetPassword(email);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in resetPassword: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> createProfile(FamilyMember member) async {
+    try {
+      _error = null;
+      
+      final newMember = member.copyWith(authUserId: _user?.id);
+      
+      if (await SyncService.isOnline()) {
+        _currentMember = await SupabaseService.createFamilyMember(newMember);
+      } else {
+        _currentMember = newMember;
+        await LocalStorageService.addPendingSync(
+          newMember.id,
+          'create',
+          newMember.toJson(),
+        );
+      }
+      
+      await LocalStorageService.saveFamilyMember(_currentMember!);
+      await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in createProfile: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateProfile(FamilyMember member) async {
+    try {
+      _error = null;
+      
+      if (await SyncService.isOnline()) {
+        _currentMember = await SupabaseService.updateFamilyMember(member);
+      } else {
+        _currentMember = member.copyWith(isPendingSync: true);
+        await LocalStorageService.addPendingSync(
+          member.id,
+          'update',
+          member.toJson(),
+        );
+      }
+      
+      await LocalStorageService.saveFamilyMember(_currentMember!);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in updateProfile: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> claimProfile(String memberId) async {
+    try {
+      _error = null;
+      
+      if (await SyncService.isOnline()) {
+        _currentMember = await SupabaseService.claimProfile(memberId);
+        if (_currentMember != null) {
+          await LocalStorageService.saveFamilyMember(_currentMember!);
+          await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+          _pendingInviteMemberId = null;
+          notifyListeners();
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('Error in claimProfile: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> claimProfileByCode(String code) async {
+    try {
+      _error = null;
+
+      if (await SyncService.isOnline()) {
+        _currentMember = await SupabaseService.claimProfileByCode(code);
+        if (_currentMember != null) {
+          await LocalStorageService.saveFamilyMember(_currentMember!);
+          await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+          _pendingInviteMemberId = null;
+          notifyListeners();
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('Error in claimProfileByCode: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+}

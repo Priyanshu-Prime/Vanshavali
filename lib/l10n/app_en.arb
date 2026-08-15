@@ -1,0 +1,322 @@
+{
+  "@@locale": "en",
+  "appTitle": "Vanshavali",
+  "@appTitle": {
+    "description": "The app title"
+  },
+  "welcomeMessage": "Welcome to Vanshavali",
+  "welcomeSubtitle": "Connect with your roots, discover your lineage",
+  "login": "Login",
+  "signUp": "Sign Up",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "forgotPassword": "Forgot Password?",
+  "sendMagicLink": "Send Magic Link",
+  "magicLinkSent": "Magic link sent! Check your email.",
+  "orContinueWith": "Or continue with",
+  "emailPassword": "Email & Password",
+  "createAccount": "Create Account",
+  "alreadyHaveAccount": "Already have an account?",
+  "dontHaveAccount": "Don't have an account?",
+  "logout": "Logout",
+  "profile": "Profile",
+  "editProfile": "Edit Profile",
+  "saveChanges": "Save Changes",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "firstName": "First Name",
+  "firstNameGujarati": "First Name (Gujarati)",
+  "lastName": "Last Name",
+  "lastNameGujarati": "Last Name (Gujarati)",
+  "gender": "Gender",
+  "male": "Male",
+  "female": "Female",
+  "other": "Other",
+  "dateOfBirth": "Date of Birth",
+  "isAlive": "Living",
+  "deceased": "Deceased",
+  "villageOrigin": "Village of Origin",
+  "currentCity": "Current City",
+  "education": "Education",
+  "occupation": "Occupation",
+  "medicalInfo": "Medical Information",
+  "familyTree": "Family Tree",
+  "myFamily": "My Family",
+  "father": "Father",
+  "mother": "Mother",
+  "spouse": "Spouse",
+  "spouses": "Spouses",
+  "children": "Children",
+  "siblings": "Siblings",
+  "addFather": "Add Father",
+  "addMother": "Add Mother",
+  "addSpouse": "Add Spouse",
+  "addChild": "Add Child",
+  "addSibling": "Add Sibling",
+  "addFamilyMember": "Add Family Member",
+  "linkExisting": "Link Existing Member",
+  "createNew": "Create New",
+  "searchMembers": "Search Members",
+  "inviteMember": "Invite Member",
+  "inviteSent": "Invitation sent!",
+  "claimProfile": "Claim Profile",
+  "viewProfile": "View Profile",
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "gujarati": "ગુજરાતી",
+  "theme": "Theme",
+  "darkMode": "Dark Mode",
+  "lightMode": "Light Mode",
+  "offlineMode": "Offline Mode",
+  "syncData": "Sync Data",
+  "lastSynced": "Last synced: {time}",
+  "@lastSynced": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noInternet": "No internet connection",
+  "dataWillSync": "Your changes will sync when online",
+  "error": "Error",
+  "success": "Success",
+  "loading": "Loading...",
+  "retry": "Retry",
+  "required": "Required",
+  "invalidEmail": "Invalid email address",
+  "passwordTooShort": "Password must be at least 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "completeProfile": "Complete Your Profile",
+  "profileCompleted": "Profile completed successfully!",
+  "translateToGujarati": "Translate to Gujarati",
+  "noFamilyMembers": "No family members added yet",
+  "tapToAdd": "Tap + to add family members",
+  "relationshipWith": "Relationship with {name}",
+  "@relationshipWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDelete": "Are you sure you want to delete?",
+  "deleteWarning": "This action cannot be undone",
+  "share": "Share",
+  "copyInviteLink": "Copy Invite Link",
+  "linkCopied": "Link copied to clipboard",
+  "aboutApp": "About Vanshavali",
+  "version": "Version",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+  "home": "Home",
+  "search": "Search",
+  "notifications": "Notifications",
+  "pendingInvites": "Pending Invites",
+  "acceptInvite": "Accept",
+  "declineInvite": "Decline",
+  "selectDate": "Select Date",
+  "selectGender": "Select Gender",
+  "continueText": "Continue",
+  "skip": "Skip",
+  "getStarted": "Get Started",
+  "onboardingTitle1": "Discover Your Roots",
+  "onboardingDesc1": "Explore your family history and connect generations",
+  "onboardingTitle2": "Build Your Tree",
+  "onboardingDesc2": "Add family members and create visual connections",
+  "onboardingTitle3": "Stay Connected",
+  "onboardingDesc3": "Invite relatives and grow your family network",
+  "unknown": "Unknown",
+  "name": "Name",
+  "basicInformation": "Basic Information",
+  "location": "Location",
+  "additionalDetails": "Additional Details",
+  "relationship": "Relationship",
+  "addMethod": "Add Method",
+  "pleaseSelectRelationship": "Please select a relationship",
+  "pleaseSelectGender": "Please select a gender",
+  "completeProfileFirst": "Please complete your profile first",
+  "alreadyExists": "{relation} already exists. Edit the existing one instead.",
+  "@alreadyExists": {
+    "placeholders": {
+      "relation": {
+        "type": "String"
+      }
+    }
+  },
+  "ancestryCycleBlocked": "{name} can't be set as this relation — they're already a descendant, and this would create a loop in the family tree.",
+  "@ancestryCycleBlocked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmAddMemberTarget": "Add \"{name}\" as {ownerName}'s {relation}?",
+  "@confirmAddMemberTarget": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "ownerName": { "type": "String" },
+      "relation": { "type": "String" }
+    }
+  },
+  "confirmAddMemberSelf": "Add \"{name}\" as your {relation}?",
+  "@confirmAddMemberSelf": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "relation": { "type": "String" }
+    }
+  },
+  "confirm": "Confirm",
+  "add": "Add",
+  "familyMemberAdded": "Family member added successfully",
+  "familyMemberAddedPartial": "Family member added, but linking some existing children to them failed — please check and try again",
+  "noResultsFound": "No matching members found",
+  "whoIsThe": "Who is the {relation}?",
+  "@whoIsThe": {
+    "placeholders": {
+      "relation": { "type": "String" }
+    }
+  },
+  "selectOtherParent": "Select the other parent of this child.",
+  "verified": "Verified",
+  "unclaimed": "Unclaimed",
+  "addRelation": "Add {relation}",
+  "@addRelation": {
+    "placeholders": {
+      "relation": { "type": "String" }
+    }
+  },
+  "someoneElse": "Someone else",
+  "createNewProfile": "Create a new profile",
+  "newRelation": "New {relation}",
+  "@newRelation": {
+    "placeholders": {
+      "relation": { "type": "String" }
+    }
+  },
+  "firstNameRequired": "First Name *",
+  "lastNameRequired": "Last Name *",
+  "enterBothNames": "Please enter both first and last name",
+  "skipOtherParent": "Skip — Don't set other parent",
+  "verifiedMember": "Verified Member",
+  "unclaimedProfile": "Unclaimed Profile",
+  "status": "Status",
+  "inviteDescription": "This profile hasn't been claimed yet. Share an invite link so they can join and manage their own profile.",
+  "deleteProfile": "Delete Profile",
+  "confirmDeleteMember": "Are you sure you want to delete {name}'s profile? This action cannot be undone.",
+  "@confirmDeleteMember": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "memberDeleted": "{name} has been deleted.",
+  "@memberDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "failedToDelete": "Failed to delete profile: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "familyRelations": "Family Relations",
+  "centerOnMe": "Center on me",
+  "centerOnMember": "Center on this member",
+  "addRelativeForYourself": "Add a relative for yourself",
+  "addRelativeFor": "Add a relative for {name}",
+  "@addRelativeFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "online": "Online",
+  "fullSyncComplete": "Full sync complete",
+  "fullSync": "Full Sync",
+  "confirmLogout": "Are you sure you want to logout?",
+  "justNow": "Just now",
+  "minutesAgo": "{count} min ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "hoursAgo": "{count} hours ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "daysAgo": "{count} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "defaultView": "Family",
+  "pedigreeView": "Pedigree",
+  "editGujaratiSpelling": "Edit Gujarati Spelling",
+  "autoTranslation": "Auto Translation",
+  "transliteration": "Transliteration",
+  "typeManually": "Type manually in Gujarati",
+  "apply": "Apply",
+  "noEnglishText": "Enter the English name first",
+  "resetPasswordTitle": "Reset Password",
+  "resetPasswordDesc": "Enter your email and we will send you a password reset link.",
+  "resetLinkSent": "Password reset link sent! Check your email.",
+  "send": "Send",
+  "comingSoon": "Coming Soon",
+  "featureComingSoon": "This feature is coming soon.",
+  "inviteCode": "Invite Code",
+  "inviteCodeDesc": "Share this code with the person. They can enter it during sign up to claim this profile.",
+  "enterInviteCode": "Have an invite code?",
+  "enterInviteCodeHint": "Enter 6-character code",
+  "claimWithCode": "Claim Profile",
+  "invalidInviteCode": "Invalid or expired invite code",
+  "profileClaimed": "Profile claimed successfully!",
+  "codeCopied": "Invite code copied",
+  "generatingCode": "Generating code...",
+  "orUseInviteCode": "Or enter an invite code",
+  "linkChildrenToSpouse": "Link children to spouse?",
+  "linkChildrenToSpouseDesc": "These children don't have the other parent set. Would you like to link them to the new spouse?",
+  "zoomIn": "Zoom In",
+  "zoomOut": "Zoom Out",
+  "resetView": "Center View",
+  "showSiblings": "Tap to show",
+  "addingAdditionalSpouse": "Adding another spouse. Existing spouse(s) stay linked — this does not replace them.",
+  "currentSpousesLabel": "Currently linked as spouse:",
+  "spouseAlreadyLinked": "{name} is already linked as a spouse.",
+  "@spouseAlreadyLinked": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "removeSpouse": "Remove Spouse",
+  "confirmRemoveSpouse": "Remove {name} as a spouse? Their profile will not be deleted.",
+  "@confirmRemoveSpouse": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "remove": "Remove",
+  "spouseRemoved": "Spouse link removed",
+  "errorNoInternet": "No internet connection. Please check your network and try again.",
+  "errorTimeout": "That took too long. Please try again.",
+  "errorServiceFailure": "Something went wrong on our end. Please try again in a moment.",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorEmailAlreadyRegistered": "An account with this email already exists. Please log in instead — if you signed up with a magic link, you'll be asked to set a password the next time you log in.",
+  "setPasswordTitle": "Set a Password",
+  "setPasswordDescription": "You signed in using a magic link. Please set a password now so you can log in on any device without needing to check your email every time.",
+  "setPasswordButton": "Set Password",
+  "passwordSetSuccess": "Password set successfully"
+}

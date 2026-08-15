@@ -1,0 +1,15 @@
+{
+  "name": "vanshavali-backend-audit",
+  "private": true,
+  "type": "module",
+  "description": "Backend audit/test tooling for Vanshavali's Supabase project. See README.md.",
+  "scripts": {
+    "audit": "node schema_and_rls_audit.mjs",
+    "rls-test": "node rls_behavior_test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.12.0"
+  }
+}
