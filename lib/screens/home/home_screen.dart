@@ -73,7 +73,27 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          // The Dashboard tab and the Tree tab share the same
+          // FamilyProvider.centerMember/egoNetwork (they're both kept alive
+          // in one IndexedStack, not separate routes). Tapping a node in
+          // the tree, or picking a search result, re-centers that shared
+          // state on whoever was tapped — with nothing to undo it, the
+          // Dashboard kept showing that person's father/mother/spouse/
+          // children under your own name (only the profile card reads
+          // AuthProvider directly, unaffected) until the app happened to
+          // reload. Re-sync back to the logged-in user whenever the
+          // Dashboard tab is actually opened, not on every tab switch.
+          if (index == 0) {
+            final authProvider = context.read<AuthProvider>();
+            final familyProvider = context.read<FamilyProvider>();
+            final myId = authProvider.currentMember?.id;
+            if (myId != null && familyProvider.centerMember?.id != myId) {
+              familyProvider.loadEgoNetwork(myId);
+            }
+          }
+        },
         items: [
           BottomNavigationBarItem(
             icon: const Icon(Icons.home_outlined),
