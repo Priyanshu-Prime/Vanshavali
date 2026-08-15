@@ -35,6 +35,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       descriptionKey: 'onboardingDesc3',
       color: Color(0xFFFF6F00),
     ),
+    _OnboardingPage(
+      icon: Icons.privacy_tip_outlined,
+      titleKey: 'onboardingTitle4',
+      descriptionKey: 'onboardingDesc4',
+      color: Color(0xFF6A1B9A),
+    ),
   ];
 
   @override
@@ -151,6 +157,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 'onboardingTitle3':
         title = l10n.onboardingTitle3;
         description = l10n.onboardingDesc3;
+        break;
+      case 'onboardingTitle4':
+        title = l10n.onboardingTitle4;
+        description = l10n.onboardingDesc4;
         break;
       default:
         title = '';

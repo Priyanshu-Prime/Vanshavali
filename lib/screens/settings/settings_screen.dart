@@ -178,7 +178,19 @@ class SettingsScreen extends StatelessWidget {
                 title: Text(l10n.privacyPolicy),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  showAppSnackBar(context, l10n.featureComingSoon);
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text(l10n.privacyNotice),
+                      content: Text(l10n.privacyNoticeBody),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(l10n.close),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
               ListTile(

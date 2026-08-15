@@ -764,6 +764,36 @@ abstract class AppLocalizations {
   /// **'Invite relatives and grow your family network'**
   String get onboardingDesc3;
 
+  /// No description provided for @onboardingTitle4.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Privacy'**
+  String get onboardingTitle4;
+
+  /// No description provided for @onboardingDesc4.
+  ///
+  /// In en, this message translates to:
+  /// **'Your family details are visible to other logged-in members of this app and stored securely with Supabase. You can review this anytime in Settings.'**
+  String get onboardingDesc4;
+
+  /// No description provided for @privacyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Notice'**
+  String get privacyNotice;
+
+  /// No description provided for @privacyNoticeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Vanshavali stores your family tree data (names, relationships, and any details you add) with Supabase, our hosting provider. Once you\'re logged in, other members of this app\'s community can view the shared family tree. Only you can edit your own profile, or an unclaimed relative\'s profile until they claim it themselves.'**
+  String get privacyNoticeBody;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
   /// No description provided for @unknown.
   ///
   /// In en, this message translates to:

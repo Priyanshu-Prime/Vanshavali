@@ -349,6 +349,23 @@ class AppLocalizationsGu extends AppLocalizations {
       'સંબંધીઓને આમંત્રિત કરો અને તમારું કુટુંબ નેટવર્ક વધારો';
 
   @override
+  String get onboardingTitle4 => 'તમારી ગોપનીયતા';
+
+  @override
+  String get onboardingDesc4 =>
+      'તમારી કુટુંબની વિગતો આ એપના અન્ય લોગ-ઇન થયેલા સભ્યોને દેખાય છે અને Supabase સાથે સુરક્ષિત રીતે સંગ્રહિત થાય છે. તમે આ ગમે ત્યારે સેટિંગ્સમાં જોઈ શકો છો.';
+
+  @override
+  String get privacyNotice => 'ગોપનીયતા સૂચના';
+
+  @override
+  String get privacyNoticeBody =>
+      'વંશાવલી તમારા કુટુંબ વૃક્ષનો ડેટા (નામ, સંબંધો અને તમે ઉમેરેલી કોઈપણ વિગતો) અમારા હોસ્ટિંગ પ્રદાતા Supabase સાથે સંગ્રહિત કરે છે. એકવાર તમે લોગ-ઇન થાઓ, પછી આ એપના સમુદાયના અન્ય સભ્યો શેર કરેલ કુટુંબ વૃક્ષ જોઈ શકે છે. ફક્ત તમે જ તમારી પોતાની પ્રોફાઇલ સંપાદિત કરી શકો છો, અથવા કોઈ સંબંધીની અદાવો ન કરેલી પ્રોફાઇલ જ્યાં સુધી તેઓ પોતે તેનો દાવો ન કરે.';
+
+  @override
+  String get close => 'બંધ કરો';
+
+  @override
   String get unknown => 'અજ્ઞાત';
 
   @override

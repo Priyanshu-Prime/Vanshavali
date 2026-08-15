@@ -349,6 +349,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingDesc3 => 'Invite relatives and grow your family network';
 
   @override
+  String get onboardingTitle4 => 'Your Privacy';
+
+  @override
+  String get onboardingDesc4 =>
+      'Your family details are visible to other logged-in members of this app and stored securely with Supabase. You can review this anytime in Settings.';
+
+  @override
+  String get privacyNotice => 'Privacy Notice';
+
+  @override
+  String get privacyNoticeBody =>
+      'Vanshavali stores your family tree data (names, relationships, and any details you add) with Supabase, our hosting provider. Once you\'re logged in, other members of this app\'s community can view the shared family tree. Only you can edit your own profile, or an unclaimed relative\'s profile until they claim it themselves.';
+
+  @override
+  String get close => 'Close';
+
+  @override
   String get unknown => 'Unknown';
 
   @override

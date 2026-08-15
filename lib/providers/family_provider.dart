@@ -261,9 +261,18 @@ class FamilyProvider extends ChangeNotifier {
     final fromNetwork = spousesInNetwork(memberId);
     if (fromNetwork.isNotEmpty) return fromNetwork;
 
-    // Fallback: query server, or local cache if offline
-    if (await SyncService.isOnline()) {
-      return await SupabaseService.getSpousesOf(memberId);
+    // Fallback: query server, or local cache if offline — or if the device
+    // reports "online" but the request itself fails (a timeout on this
+    // app's target rural network conditions, not a clean "no connection").
+    // Every other read in this file falls back to cache on a thrown
+    // exception; this one previously didn't, so a flaky connection threw
+    // all the way up to the UI instead of degrading gracefully.
+    try {
+      if (await SyncService.isOnline()) {
+        return await SupabaseService.getSpousesOf(memberId);
+      }
+    } catch (e) {
+      debugPrint('Error in getSpousesOf: $e');
     }
     return LocalStorageService.getSpouseIdsOf(memberId)
         .map((id) => LocalStorageService.getFamilyMember(id))
@@ -517,9 +526,19 @@ class FamilyProvider extends ChangeNotifier {
     final local = LocalStorageService.getFamilyMember(id);
     if (local != null) return local;
 
-    // Fetch from server
-    if (await SyncService.isOnline()) {
-      return await SupabaseService.getFamilyMemberById(id);
+    // Fetch from server — a thrown exception here (device reports "online"
+    // but the request itself fails) previously propagated uncaught; this is
+    // called from the ancestry-cycle guard in add_family_member_screen.dart,
+    // where an uncaught exception would surface as a raw crash instead of
+    // the guard just treating an unresolvable ancestor as "not a cycle" (the
+    // same behavior as a genuinely-missing id, which the guard already
+    // handles by design).
+    try {
+      if (await SyncService.isOnline()) {
+        return await SupabaseService.getFamilyMemberById(id);
+      }
+    } catch (e) {
+      debugPrint('Error in getMemberById: $e');
     }
 
     return null;

@@ -10,6 +10,7 @@ import 'providers/settings_provider.dart';
 import 'services/supabase_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/error_reporting_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/set_password_screen.dart';
@@ -19,7 +20,13 @@ import 'screens/onboarding/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // First, so any failure during the initialization below is also caught
+  // (best-effort — reporting itself needs Supabase ready, see
+  // ErrorReportingService's doc comment on why an early failure to persist
+  // is an acceptable, silently-swallowed degradation).
+  ErrorReportingService.initialize();
+
   // Initialize local storage
   try {
     await LocalStorageService.initialize();
