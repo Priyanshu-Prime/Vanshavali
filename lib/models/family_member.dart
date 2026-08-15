@@ -64,6 +64,14 @@ class FamilyMember extends HiveObject {
   @HiveField(18)
   String? inviteCode;
 
+  // Server-side last-modified timestamp (from family_members.updated_at,
+  // migration 006) — distinct from lastModified above, which tracks when
+  // THIS DEVICE cached the row locally, not when it actually changed on the
+  // server. Incremental sync filters on this field; see
+  // SupabaseService.getAllFamilyMembers.
+  @HiveField(19)
+  DateTime? updatedAt;
+
   FamilyMember({
     required this.id,
     required this.createdAt,
@@ -83,6 +91,7 @@ class FamilyMember extends HiveObject {
     this.isPendingSync = false,
     this.lastModified,
     this.inviteCode,
+    this.updatedAt,
   });
 
   String get fullNameEn => '$firstNameEn $lastNameEn';
@@ -127,6 +136,11 @@ class FamilyMember extends HiveObject {
     };
   }
 
+  // updated_at is intentionally NOT included in toJson() — it's a
+  // server-managed column (set by a DB trigger, see migration 006), never
+  // written by the client. Writing it here would be silently overridden by
+  // the trigger anyway, but omitting it keeps that contract explicit.
+
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
     return FamilyMember(
       id: json['id'] as String,
@@ -147,6 +161,9 @@ class FamilyMember extends HiveObject {
       isPendingSync: false,
       lastModified: DateTime.now(),
       inviteCode: json['invite_code'] as String?,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -169,6 +186,7 @@ class FamilyMember extends HiveObject {
     bool? isPendingSync,
     DateTime? lastModified,
     String? inviteCode,
+    DateTime? updatedAt,
   }) {
     return FamilyMember(
       id: id ?? this.id,
@@ -189,6 +207,7 @@ class FamilyMember extends HiveObject {
       isPendingSync: isPendingSync ?? this.isPendingSync,
       lastModified: lastModified ?? this.lastModified,
       inviteCode: inviteCode ?? this.inviteCode,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

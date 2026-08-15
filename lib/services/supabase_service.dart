@@ -315,20 +315,26 @@ class SupabaseService {
         .toList();
   }
 
-  /// Claim a profile (link auth user to existing family member)
+  /// Claim a profile (link auth user to existing family member).
+  ///
+  /// Goes through the `claim_profile` RPC (migration 001) rather than a
+  /// direct table UPDATE — the direct-write version used to skip the "user
+  /// already has a profile" guard the RPC enforces, letting a user who
+  /// already has one claim a second, producing exactly the kind of
+  /// duplicate-profile row a past incident already hit once. The RPC raises
+  /// a PostgrestException (not a null return) on either failure case
+  /// ("already has a profile" / "not found or already claimed") — callers
+  /// already wrap this in try/catch (see AuthProvider.claimProfile).
   static Future<FamilyMember?> claimProfile(String memberId) async {
     if (currentUser == null) return null;
 
-    final response = await client
-        .from('family_members')
-        .update({'auth_user_id': currentUser!.id})
-        .eq('id', memberId)
-        .isFilter('auth_user_id', null)
-        .select()
-        .maybeSingle();
+    final response = await client.rpc(
+      'claim_profile',
+      params: {'profile_id': memberId},
+    );
 
     if (response == null) return null;
-    return FamilyMember.fromJson(response);
+    return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 
   /// Link family members
@@ -411,14 +417,22 @@ class SupabaseService {
     await client.from('family_members').delete().eq('id', id);
   }
 
-  /// Get all family members (for offline sync)
+  /// Get all family members (for offline sync).
+  ///
+  /// [modifiedAfter] filters on `updated_at` (migration 006), not
+  /// `created_at` — `created_at` never changes after a row is inserted, so
+  /// filtering on it meant incremental sync silently missed every edit made
+  /// on another device (renames, relationship changes, deceased toggles):
+  /// it would only ever pick up brand-new rows. `updated_at` is bumped by a
+  /// DB trigger on every UPDATE, so this now actually reflects "changed
+  /// since I last synced."
   static Future<List<FamilyMember>> getAllFamilyMembers({
     DateTime? modifiedAfter,
   }) async {
     var query = client.from('family_members').select();
-    
+
     if (modifiedAfter != null) {
-      query = query.gte('created_at', modifiedAfter.toIso8601String());
+      query = query.gte('updated_at', modifiedAfter.toIso8601String());
     }
 
     final response = await query;
@@ -461,35 +475,38 @@ class SupabaseService {
     throw Exception('Failed to generate unique invite code');
   }
 
-  /// Look up an unclaimed member by invite code
+  /// Look up an unclaimed member by invite code, via the
+  /// `get_member_by_invite_code` RPC (migration 002).
+  ///
+  /// Must go through a SECURITY DEFINER RPC, not a direct table read: this
+  /// is called from the invite-preview screen BEFORE the viewer has signed
+  /// in (they're deciding whether to sign up), and reads now require
+  /// authentication (see migration 006) — a direct table query would return
+  /// nothing for a logged-out viewer. The RPC bypasses RLS/grants like the
+  /// claim RPCs do, and is explicitly granted to `anon` for this reason.
   static Future<FamilyMember?> getMemberByInviteCode(String code) async {
-    final response = await client
-        .from('family_members')
-        .select()
-        .eq('invite_code', code.toUpperCase())
-        .isFilter('auth_user_id', null)
-        .maybeSingle();
+    final response = await client.rpc(
+      'get_member_by_invite_code',
+      params: {'code': code.toUpperCase()},
+    );
 
     if (response == null) return null;
-    return FamilyMember.fromJson(response);
+    return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 
-  /// Claim a profile using an invite code
+  /// Claim a profile using an invite code, via the `claim_profile_by_code`
+  /// RPC (migration 002) — see [claimProfile]'s doc comment for why this
+  /// must not be a direct table write (skips the "already has a profile"
+  /// guard, enabling the same duplicate-profile bug class).
   static Future<FamilyMember?> claimProfileByCode(String code) async {
     if (currentUser == null) return null;
 
-    final response = await client
-        .from('family_members')
-        .update({
-          'auth_user_id': currentUser!.id,
-          'invite_code': null, // Clear the code after claiming
-        })
-        .eq('invite_code', code.toUpperCase())
-        .isFilter('auth_user_id', null)
-        .select()
-        .maybeSingle();
+    final response = await client.rpc(
+      'claim_profile_by_code',
+      params: {'code': code.toUpperCase()},
+    );
 
     if (response == null) return null;
-    return FamilyMember.fromJson(response);
+    return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 }

@@ -35,13 +35,14 @@ class FamilyMemberAdapter extends TypeAdapter<FamilyMember> {
       isPendingSync: fields[16] as bool,
       lastModified: fields[17] as DateTime?,
       inviteCode: fields[18] as String?,
+      updatedAt: fields[19] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, FamilyMember obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -77,7 +78,9 @@ class FamilyMemberAdapter extends TypeAdapter<FamilyMember> {
       ..writeByte(17)
       ..write(obj.lastModified)
       ..writeByte(18)
-      ..write(obj.inviteCode);
+      ..write(obj.inviteCode)
+      ..writeByte(19)
+      ..write(obj.updatedAt);
   }
 
   @override
