@@ -47,11 +47,13 @@ app.*.map.json
 # Gradle build cache — large, regenerable
 /android/.gradle/
 
-# Claude Code local/personal overrides (not shared with the team)
-.claude/settings.local.json
-
-# Claude Code session-runtime lock file — churns every session, no project value
-.claude/scheduled_tasks.lock
+# Claude Code tooling — agents/skills/settings/session state, and the
+# session handoff notes it maintains between sessions. Useful for AI-
+# assisted development but not part of the shipped project; kept on disk
+# for Claude Code's own use, not tracked in the repo.
+.claude/
+docs/claude_handoff/
+CLAUDE.md
 
 # Supabase backend credentials for autonomous testing (DB password,
 # service_role key) — never commit, see supabase/.env.local.example
