@@ -1,11 +1,24 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../models/family_member.dart';
 
 class SupabaseService {
-  static SupabaseClient get client => Supabase.instance.client;
-  
+  /// Test-only seam: every method in this class goes through [client]
+  /// rather than `Supabase.instance.client` directly, so a test can swap in
+  /// a mocktail `MockSupabaseClient` here instead of needing a live
+  /// Supabase.initialize() call. SupabaseService is intentionally kept
+  /// fully static (touched from dozens of call sites across the app) rather
+  /// than converted to an injectable instance — this single field is the
+  /// minimal seam needed to make it mockable without that larger refactor.
+  /// Always null in production. Reset to null after each test.
+  @visibleForTesting
+  static SupabaseClient? debugClientOverride;
+
+  static SupabaseClient get client =>
+      debugClientOverride ?? Supabase.instance.client;
+
   static User? get currentUser => client.auth.currentUser;
   
   static bool get isAuthenticated => currentUser != null;
