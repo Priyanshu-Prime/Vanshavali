@@ -66,6 +66,15 @@ class _SignupScreenState extends State<SignupScreen> {
         if (mounted) {
           if (claimed) {
             showAppSnackBar(context, context.l10n.profileClaimed);
+          } else if (authProvider.hasPendingMergeConflict) {
+            // Not a real failure — the invitee already has their own
+            // profile, and this specific placeholder was flagged for
+            // manual review instead. Reassure, don't alarm.
+            showAppSnackBar(
+              context,
+              context.l10n.duplicateProfileFlaggedForReview,
+            );
+            authProvider.acknowledgeMergeConflict();
           } else {
             showAppSnackBar(
               context,

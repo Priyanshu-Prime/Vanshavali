@@ -278,10 +278,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get share => 'Share';
 
   @override
-  String get copyInviteLink => 'Copy Invite Link';
+  String get copyInviteLink => 'Copy Invite Message';
 
   @override
-  String get linkCopied => 'Link copied to clipboard';
+  String get linkCopied => 'Message copied to clipboard';
 
   @override
   String get aboutApp => 'About Vanshavali';
@@ -488,7 +488,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteDescription =>
-      'This profile hasn\'t been claimed yet. Share an invite link so they can join and manage their own profile.';
+      'This profile hasn\'t been claimed yet. Share the invite code below so they can join and manage their own profile.';
 
   @override
   String get deleteProfile => 'Delete Profile';
@@ -709,4 +709,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordSetSuccess => 'Password set successfully';
+
+  @override
+  String get duplicateProfileTitle => 'Profile Already Linked';
+
+  @override
+  String get duplicateProfileFlaggedForReview =>
+      'This profile appears to already be linked to another account of yours. We\'ve flagged it for review so it can be sorted out — no need to do anything else for now.';
 }

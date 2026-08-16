@@ -1,0 +1,48 @@
+# Copy this file to android/key.properties and fill in the real values.
+# android/key.properties is gitignored — it will never be committed.
+# Never paste these values into chat; put them only in this file.
+#
+# IMPORTANT: this file (key.properties.example) is the TEMPLATE — it IS
+# tracked in git. Only android/key.properties (no ".example") is gitignored.
+# Always double-check which file is open before pasting a real secret in —
+# check the tab/title bar says "key.properties", NOT "key.properties.example",
+# before pasting anything.
+
+# The password protecting the keystore file itself (upload-keystore.jks).
+storePassword=YOUR_STORE_PASSWORD
+
+# The password protecting the specific key entry (keyAlias) inside the
+# keystore. Can be the same as storePassword or different — keytool lets you
+# set them independently.
+keyPassword=YOUR_KEY_PASSWORD
+
+# The alias of the signing key inside the keystore. "upload" is the
+# conventional name used below and by the current keystore.
+keyAlias=upload
+
+# Path to the keystore file. build.gradle.kts resolves this relative to the
+# android/app module directory, so a keystore sitting in android/ (one level
+# up) is referenced as "../upload-keystore.jks". The current keystore lives
+# at android/upload-keystore.jks — gitignored, generated locally, never
+# commit it.
+storeFile=../upload-keystore.jks
+
+# --- Regenerating a lost keystore -----------------------------------------
+# If upload-keystore.jks and/or this file are lost, you cannot recover the
+# original signing key — you must generate a NEW keystore. Note that once an
+# app has been distributed with a given signing key, later releases normally
+# need to be signed with the SAME key (Play Store enforces this; Firebase App
+# Distribution testers would need to reinstall if the signature changes).
+# Since this project has not yet been distributed anywhere, losing the
+# keystore before first distribution is low-stakes — just regenerate.
+#
+# To generate a new keystore (run from the android/ directory), using the
+# JDK's keytool (bundled with Android Studio, or a standalone JDK install):
+#
+#   keytool -genkeypair -v -keystore upload-keystore.jks -storetype JKS \
+#     -alias upload -keyalg RSA -keysize 2048 -validity 10000
+#
+# It will prompt interactively for storePassword/keyPassword and the
+# certificate's distinguished-name fields (name, org, city, etc — these are
+# not secret and can be anything reasonable). Then fill in this file (as
+# android/key.properties) with the passwords and alias you chose.

@@ -898,12 +898,6 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     final settingsProvider = context.read<SettingsProvider>();
     final locale = settingsProvider.locale.languageCode;
     final l10n = context.l10n;
-    final link = DeepLinkService.generateInviteLink(member.id);
-    final shareText = DeepLinkService.generateInviteText(
-      member.getFullName(locale),
-      member.id,
-      locale,
-    );
 
     showModalBottomSheet(
       context: context,
@@ -911,9 +905,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) => _InviteSheet(
-        link: link,
-        shareText: shareText,
         memberId: member.id,
+        memberName: member.getFullName(locale),
+        locale: locale,
         l10n: l10n,
         onSnackBar: (msg) => showAppSnackBar(context, msg),
       ),
@@ -1526,16 +1520,16 @@ class _ZoomButton extends StatelessWidget {
 
 /// Stateful invite bottom sheet that generates an invite code async
 class _InviteSheet extends StatefulWidget {
-  final String link;
-  final String shareText;
   final String memberId;
+  final String memberName;
+  final String locale;
   final dynamic l10n;
   final void Function(String) onSnackBar;
 
   const _InviteSheet({
-    required this.link,
-    required this.shareText,
     required this.memberId,
+    required this.memberName,
+    required this.locale,
     required this.l10n,
     required this.onSnackBar,
   });
@@ -1562,6 +1556,16 @@ class _InviteSheetState extends State<_InviteSheet> {
       if (mounted) setState(() => _loadingCode = false);
     }
   }
+
+  // Built once the code is available — the share/copy message embeds the
+  // code, not a link (no working deep link exists; see DeepLinkService).
+  String? get _shareText => _inviteCode == null
+      ? null
+      : DeepLinkService.generateInviteText(
+          widget.memberName,
+          _inviteCode!,
+          widget.locale,
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -1640,30 +1644,17 @@ class _InviteSheetState extends State<_InviteSheet> {
           ),
 
           const SizedBox(height: 16),
-          // ── Invite Link ──
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              widget.link,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: widget.link));
-                    Navigator.pop(context);
-                    widget.onSnackBar(l10n.linkCopied);
-                  },
+                  onPressed: _shareText == null
+                      ? null
+                      : () {
+                          Clipboard.setData(ClipboardData(text: _shareText!));
+                          Navigator.pop(context);
+                          widget.onSnackBar(l10n.linkCopied);
+                        },
                   icon: const Icon(Icons.copy, size: 18),
                   label: Text(l10n.copyInviteLink),
                 ),
@@ -1671,13 +1662,12 @@ class _InviteSheetState extends State<_InviteSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    final codeText = _inviteCode != null
-                        ? '\n\nInvite Code: $_inviteCode'
-                        : '';
-                    SharePlus.instance.share(ShareParams(text: widget.shareText + codeText));
-                  },
+                  onPressed: _shareText == null
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          SharePlus.instance.share(ShareParams(text: _shareText!));
+                        },
                   icon: const Icon(Icons.share, size: 18),
                   label: Text(l10n.share),
                 ),

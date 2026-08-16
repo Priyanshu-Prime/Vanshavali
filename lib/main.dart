@@ -17,6 +17,7 @@ import 'screens/auth/set_password_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/profile/profile_form_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'widgets/common_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,6 +104,11 @@ class AppNavigator extends StatefulWidget {
 class _AppNavigatorState extends State<AppNavigator> {
   bool _showOnboarding = false;
 
+  // Guards against showing the duplicate-profile dialog more than once for
+  // the same flagged conflict (build() re-runs on every notifyListeners()).
+  // Reset once the dialog has actually been shown and dismissed.
+  bool _mergeConflictDialogPending = false;
+
   @override
   void initState() {
     super.initState();
@@ -146,9 +152,43 @@ class _AppNavigatorState extends State<AppNavigator> {
     super.dispose();
   }
 
+  /// Shows a reassuring, non-alarming dialog when a claim attempt triggered
+  /// via a deep-link invite (claimProfile-by-id, see
+  /// AuthProvider.signInWithEmail/signUpWithEmail's pendingInviteMemberId
+  /// handling) fails because the user already has their own claimed
+  /// profile. The conflict has already been recorded for manual review
+  /// (see AuthProvider.claimProfile) by the time this fires — this dialog
+  /// is purely informational, never a raw exception string.
+  void _maybeShowMergeConflictDialog(AuthProvider authProvider) {
+    if (!authProvider.hasPendingMergeConflict || _mergeConflictDialogPending) {
+      return;
+    }
+    _mergeConflictDialogPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final l10n = context.l10n;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.duplicateProfileTitle),
+          content: Text(l10n.duplicateProfileFlaggedForReview),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
+      authProvider.acknowledgeMergeConflict();
+      _mergeConflictDialogPending = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    _maybeShowMergeConflictDialog(authProvider);
 
     // Show loading while checking auth state
     if (authProvider.status == AuthStatus.initial ||

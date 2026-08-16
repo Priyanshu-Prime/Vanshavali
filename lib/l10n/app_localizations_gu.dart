@@ -278,10 +278,10 @@ class AppLocalizationsGu extends AppLocalizations {
   String get share => 'શેર કરો';
 
   @override
-  String get copyInviteLink => 'આમંત્રણ લિંક કૉપિ કરો';
+  String get copyInviteLink => 'આમંત્રણ સંદેશ કૉપિ કરો';
 
   @override
-  String get linkCopied => 'લિંક ક્લિપબોર્ડ પર કૉપિ થઈ';
+  String get linkCopied => 'સંદેશ ક્લિપબોર્ડ પર કૉપિ થયો';
 
   @override
   String get aboutApp => 'વંશાવલી વિશે';
@@ -489,7 +489,7 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get inviteDescription =>
-      'આ પ્રોફાઇલ પર હજુ સુધી દાવો કરવામાં આવ્યો નથી. આમંત્રણ લિંક શેર કરો જેથી તેઓ જોડાઈ શકે અને પોતાની પ્રોફાઇલ સંભાળી શકે.';
+      'આ પ્રોફાઇલ પર હજુ સુધી દાવો કરવામાં આવ્યો નથી. નીચે આપેલો આમંત્રણ કોડ શેર કરો જેથી તેઓ જોડાઈ શકે અને પોતાની પ્રોફાઇલ સંભાળી શકે.';
 
   @override
   String get deleteProfile => 'પ્રોફાઇલ કાઢી નાખો';
@@ -710,4 +710,11 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get passwordSetSuccess => 'પાસવર્ડ સફળતાપૂર્વક સેટ થયો';
+
+  @override
+  String get duplicateProfileTitle => 'પ્રોફાઇલ પહેલેથી જ જોડાયેલ છે';
+
+  @override
+  String get duplicateProfileFlaggedForReview =>
+      'આ પ્રોફાઇલ તમારા બીજા ખાતા સાથે પહેલેથી જ જોડાયેલ હોય તેવું લાગે છે. તેની સમીક્ષા માટે નોંધ કરવામાં આવી છે જેથી તેને ઉકેલી શકાય — હમણાં માટે તમારે બીજું કંઈ કરવાની જરૂર નથી.';
 }

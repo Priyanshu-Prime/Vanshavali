@@ -629,13 +629,13 @@ abstract class AppLocalizations {
   /// No description provided for @copyInviteLink.
   ///
   /// In en, this message translates to:
-  /// **'Copy Invite Link'**
+  /// **'Copy Invite Message'**
   String get copyInviteLink;
 
   /// No description provided for @linkCopied.
   ///
   /// In en, this message translates to:
-  /// **'Link copied to clipboard'**
+  /// **'Message copied to clipboard'**
   String get linkCopied;
 
   /// No description provided for @aboutApp.
@@ -1001,7 +1001,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteDescription.
   ///
   /// In en, this message translates to:
-  /// **'This profile hasn\'t been claimed yet. Share an invite link so they can join and manage their own profile.'**
+  /// **'This profile hasn\'t been claimed yet. Share the invite code below so they can join and manage their own profile.'**
   String get inviteDescription;
 
   /// No description provided for @deleteProfile.
@@ -1387,6 +1387,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password set successfully'**
   String get passwordSetSuccess;
+
+  /// No description provided for @duplicateProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Already Linked'**
+  String get duplicateProfileTitle;
+
+  /// No description provided for @duplicateProfileFlaggedForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile appears to already be linked to another account of yours. We\'ve flagged it for review so it can be sorted out — no need to do anything else for now.'**
+  String get duplicateProfileFlaggedForReview;
 }
 
 class _AppLocalizationsDelegate

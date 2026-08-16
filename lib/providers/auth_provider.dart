@@ -19,6 +19,16 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   String? _pendingInviteMemberId;
 
+  /// True after a [claimProfile]/[claimProfileByCode] attempt failed
+  /// specifically because the caller already has their own claimed profile
+  /// (a relative separately created an unclaimed placeholder for the same
+  /// real person). The conflict has already been recorded in
+  /// `merge_requests` (see [SupabaseService.flagDuplicateForMerge]) by the
+  /// time this is true — this flag exists purely so the UI can show a
+  /// distinct, reassuring "flagged for review" message instead of the
+  /// generic [error] string. Cleared by [acknowledgeMergeConflict].
+  bool _hasPendingMergeConflict = false;
+
   AuthStatus get status => _status;
   User? get user => _user;
   FamilyMember? get currentMember => _currentMember;
@@ -26,6 +36,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get hasProfile => _currentMember != null;
   String? get pendingInviteMemberId => _pendingInviteMemberId;
+  bool get hasPendingMergeConflict => _hasPendingMergeConflict;
 
   /// True once a password has been established for this session (a fresh
   /// signUpWithEmail/signInWithEmail just proved one exists). Used only to
@@ -384,7 +395,8 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> claimProfile(String memberId) async {
     try {
       _error = null;
-      
+      _hasPendingMergeConflict = false;
+
       if (await SyncService.isOnline()) {
         _currentMember = await SupabaseService.claimProfile(memberId);
         if (_currentMember != null) {
@@ -395,7 +407,19 @@ class AuthProvider extends ChangeNotifier {
           return true;
         }
       }
-      
+
+      return false;
+    } on PostgrestException catch (e) {
+      if (_isAlreadyHasProfileError(e)) {
+        // The invitee already has their own claimed profile — this is not
+        // a generic failure, it's a duplicate-person collision. Flag it for
+        // manual review instead of just erroring.
+        await _flagDuplicateForMerge(memberId);
+        return false;
+      }
+      debugPrint('Error in claimProfile: $e');
+      _error = e.message;
+      notifyListeners();
       return false;
     } catch (e) {
       debugPrint('Error in claimProfile: $e');
@@ -408,6 +432,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> claimProfileByCode(String code) async {
     try {
       _error = null;
+      _hasPendingMergeConflict = false;
 
       if (await SyncService.isOnline()) {
         _currentMember = await SupabaseService.claimProfileByCode(code);
@@ -421,12 +446,71 @@ class AuthProvider extends ChangeNotifier {
       }
 
       return false;
+    } on PostgrestException catch (e) {
+      if (_isAlreadyHasProfileError(e)) {
+        // Unlike claimProfile, we only have the invite CODE here, not the
+        // duplicate placeholder's id — the RPC's "already has a profile"
+        // guard fires before it ever looks up the code. Resolve the id via
+        // the same read-only preview RPC the signup screen already uses.
+        try {
+          final duplicate = await SupabaseService.getMemberByInviteCode(code);
+          if (duplicate != null) {
+            await _flagDuplicateForMerge(duplicate.id);
+            return false;
+          }
+        } catch (lookupError) {
+          debugPrint(
+            'Error resolving duplicate id for merge flag: $lookupError',
+          );
+        }
+        // Couldn't resolve which placeholder it was — fall back to
+        // surfacing the (still user-unfriendly, but non-silent) error.
+        _error = e.message;
+        notifyListeners();
+        return false;
+      }
+      debugPrint('Error in claimProfileByCode: $e');
+      _error = e.message;
+      notifyListeners();
+      return false;
     } catch (e) {
       debugPrint('Error in claimProfileByCode: $e');
       _error = e.toString();
       notifyListeners();
       return false;
     }
+  }
+
+  /// Matches the exact `RAISE EXCEPTION` text used by both `claim_profile`
+  /// and `claim_profile_by_code` (see supabase/migrations/001_initial_schema.sql
+  /// and 002_invite_code.sql) when the calling user already has a claimed
+  /// profile of their own.
+  bool _isAlreadyHasProfileError(PostgrestException e) =>
+      e.message.toLowerCase().contains('already has a profile');
+
+  /// Records the duplicate-profile conflict via [SupabaseService.flagDuplicateForMerge]
+  /// and sets [hasPendingMergeConflict] so the UI can show a distinct,
+  /// reassuring message. Does NOT merge or reassign any data — see the RPC's
+  /// doc comment in migration 009 for why that's deliberately out of scope.
+  Future<void> _flagDuplicateForMerge(String duplicatePlaceholderId) async {
+    try {
+      await SupabaseService.flagDuplicateForMerge(duplicatePlaceholderId);
+      _hasPendingMergeConflict = true;
+      _error = null;
+    } catch (flagError) {
+      // Flagging itself failed (e.g. offline) — don't leave the user with
+      // silence; fall back to the raw error so friendlyErrorMessage still
+      // has something to work with.
+      debugPrint('Error flagging duplicate for merge: $flagError');
+      _error = flagError.toString();
+    }
+    notifyListeners();
+  }
+
+  /// Clears [hasPendingMergeConflict] once the UI has shown its message.
+  void acknowledgeMergeConflict() {
+    _hasPendingMergeConflict = false;
+    notifyListeners();
   }
 
   void clearError() {

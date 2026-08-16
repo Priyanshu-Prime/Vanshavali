@@ -59,6 +59,13 @@ CLAUDE.md
 # service_role key) — never commit, see supabase/.env.local.example
 supabase/.env.local
 
+# Android release signing — the upload keystore and the properties file
+# pointing at it/holding its passwords. Never commit, see
+# android/key.properties.example for the template and regeneration steps.
+android/key.properties
+android/*.jks
+android/*.keystore
+
 # Node dependencies for scripts/backend_audit — regenerable via `npm install`,
 # package.json/package-lock.json are tracked so it can be reproduced
 node_modules/

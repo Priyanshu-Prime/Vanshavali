@@ -345,7 +345,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () => _copyInviteLink(context),
+                              onPressed: () => _copyInviteMessage(context),
                               icon: const Icon(Icons.copy, size: 18),
                               label: Text(l10n.copyInviteLink),
                             ),
@@ -371,18 +371,36 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     );
   }
 
-  void _copyInviteLink(BuildContext context) {
-    final link = DeepLinkService.generateInviteLink(member.id);
-    Clipboard.setData(ClipboardData(text: link));
+  /// Returns the invite code, loading it first if a load isn't already in
+  /// flight (initState kicks one off, but these actions — the share icon in
+  /// particular — are reachable before that finishes).
+  Future<String?> _ensureInviteCode() async {
+    if (_inviteCode != null) return _inviteCode;
+    if (_loadingCode) return null;
+    await _loadInviteCode();
+    return _inviteCode;
+  }
+
+  void _copyInviteMessage(BuildContext context) async {
+    final code = await _ensureInviteCode();
+    if (code == null || !context.mounted) return;
+    final locale = context.read<SettingsProvider>().locale.languageCode;
+    final text = DeepLinkService.generateInviteText(
+      member.getFullName(locale),
+      code,
+      locale,
+    );
+    Clipboard.setData(ClipboardData(text: text));
     showAppSnackBar(context, context.l10n.linkCopied);
   }
 
-  void _shareInvite(BuildContext context) {
-    final settingsProvider = context.read<SettingsProvider>();
-    final locale = settingsProvider.locale.languageCode;
+  void _shareInvite(BuildContext context) async {
+    final code = await _ensureInviteCode();
+    if (code == null || !context.mounted) return;
+    final locale = context.read<SettingsProvider>().locale.languageCode;
     final text = DeepLinkService.generateInviteText(
       member.getFullName(locale),
-      member.id,
+      code,
       locale,
     );
     SharePlus.instance.share(ShareParams(text: text));

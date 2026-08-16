@@ -105,8 +105,8 @@
   "confirmDelete": "Are you sure you want to delete?",
   "deleteWarning": "This action cannot be undone",
   "share": "Share",
-  "copyInviteLink": "Copy Invite Link",
-  "linkCopied": "Link copied to clipboard",
+  "copyInviteLink": "Copy Invite Message",
+  "linkCopied": "Message copied to clipboard",
   "aboutApp": "About Vanshavali",
   "version": "Version",
   "privacyPolicy": "Privacy Policy",
@@ -209,7 +209,7 @@
   "verifiedMember": "Verified Member",
   "unclaimedProfile": "Unclaimed Profile",
   "status": "Status",
-  "inviteDescription": "This profile hasn't been claimed yet. Share an invite link so they can join and manage their own profile.",
+  "inviteDescription": "This profile hasn't been claimed yet. Share the invite code below so they can join and manage their own profile.",
   "deleteProfile": "Delete Profile",
   "confirmDeleteMember": "Are you sure you want to delete {name}'s profile? This action cannot be undone.",
   "@confirmDeleteMember": {
@@ -323,5 +323,7 @@
   "setPasswordTitle": "Set a Password",
   "setPasswordDescription": "You signed in using a magic link. Please set a password now so you can log in on any device without needing to check your email every time.",
   "setPasswordButton": "Set Password",
-  "passwordSetSuccess": "Password set successfully"
+  "passwordSetSuccess": "Password set successfully",
+  "duplicateProfileTitle": "Profile Already Linked",
+  "duplicateProfileFlaggedForReview": "This profile appears to already be linked to another account of yours. We've flagged it for review so it can be sorted out — no need to do anything else for now."
 }

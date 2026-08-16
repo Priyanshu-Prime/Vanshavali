@@ -522,4 +522,24 @@ class SupabaseService {
     if (response == null) return null;
     return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
+
+  /// Flag a duplicate profile for manual merge review, via the
+  /// `flag_duplicate_for_merge` RPC (migration 009).
+  ///
+  /// Called when [claimProfile]/[claimProfileByCode] fails specifically
+  /// because the calling user already has a claimed profile of their own —
+  /// i.e. a relative separately created an unclaimed placeholder for the
+  /// same real person. This does NOT merge or reassign any data; it only
+  /// records the conflict (existing profile id + duplicate placeholder id)
+  /// in `merge_requests` for the project owner to resolve manually via SQL.
+  /// [duplicatePlaceholderId] is the id of the unclaimed row the caller was
+  /// trying to claim.
+  static Future<void> flagDuplicateForMerge(
+    String duplicatePlaceholderId,
+  ) async {
+    await client.rpc(
+      'flag_duplicate_for_merge',
+      params: {'duplicate_placeholder_id': duplicatePlaceholderId},
+    );
+  }
 }
