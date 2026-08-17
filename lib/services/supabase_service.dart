@@ -542,4 +542,20 @@ class SupabaseService {
       params: {'duplicate_placeholder_id': duplicatePlaceholderId},
     );
   }
+
+  /// Whether the current user is allowed to edit [memberId], via the
+  /// `can_edit_family_member` RPC (migration 010) — the single source of
+  /// truth also enforced by the family_members UPDATE RLS policy. True for
+  /// one's own profile, or for an unclaimed direct relative (father, mother,
+  /// child, spouse, sibling); false for anyone else's claimed profile and for
+  /// unrelated nodes. Used to gate the edit UI so users never see an edit
+  /// affordance the backend would reject.
+  static Future<bool> canEditMember(String memberId) async {
+    if (currentUser == null) return false;
+    final response = await client.rpc(
+      'can_edit_family_member',
+      params: {'target_id': memberId},
+    );
+    return response == true;
+  }
 }

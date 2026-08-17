@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,6 +20,15 @@ class AuthProvider extends ChangeNotifier {
   FamilyMember? _currentMember;
   String? _error;
   String? _pendingInviteMemberId;
+
+  /// The auth-state-change subscription opened in [_init]. Held so it can be
+  /// cancelled in [dispose] — without this, the stream keeps delivering events
+  /// (e.g. a sign-out) to a disposed provider and calling notifyListeners on
+  /// it, which throws "used after being disposed". Harmless in production
+  /// where this provider lives for the whole app, but a real leak surfaced by
+  /// the E2E rig repeatedly mounting/unmounting the app.
+  StreamSubscription<AuthState>? _authSubscription;
+  bool _disposed = false;
 
   /// True after a [claimProfile]/[claimProfileByCode] attempt failed
   /// specifically because the caller already has their own claimed profile
@@ -83,8 +94,10 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.unauthenticated;
     }
 
-    // Listen to auth state changes
-    SupabaseService.authStateChanges.listen((event) async {
+    // Listen to auth state changes. Store the subscription so dispose() can
+    // cancel it, and bail if we've been disposed mid-event.
+    _authSubscription = SupabaseService.authStateChanges.listen((event) async {
+      if (_disposed) return;
       if (event.event == AuthChangeEvent.signedIn) {
         _user = event.session?.user;
         await _loadCurrentMemberProfile();
@@ -94,10 +107,18 @@ class AuthProvider extends ChangeNotifier {
         _currentMember = null;
         _status = AuthStatus.unauthenticated;
       }
+      if (_disposed) return;
       notifyListeners();
     });
 
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadCurrentMemberProfile() async {
@@ -186,6 +207,23 @@ class AuthProvider extends ChangeNotifier {
       final response = await SupabaseService.signUpWithEmail(email, password);
       _user = response.user;
 
+      // `response.user` is populated as soon as the auth row is created,
+      // even when the Supabase project requires email confirmation — but
+      // `response.session` (and therefore SupabaseService.currentUser,
+      // which every RLS-gated call keys off) stays null until the user
+      // clicks that confirmation link. Treating a non-null `_user` alone as
+      // "signed in" here is what produced the alpha-test incident: the app
+      // called itself authenticated, then claimProfileByCode/getCurrentUserProfile
+      // silently no-opped on the missing session and returned null instead
+      // of throwing, which read to the tester as an "invalid/expired code"
+      // followed by being dropped back into full profile entry.
+      if (_user != null && response.session == null) {
+        _status = AuthStatus.unauthenticated;
+        _error = 'vanshavali_email_confirmation_required';
+        notifyListeners();
+        return false;
+      }
+
       if (_user != null) {
         // Defense in depth on top of SupabaseService's identities check:
         // always load whatever profile actually exists for this user before
@@ -206,19 +244,12 @@ class AuthProvider extends ChangeNotifier {
           await claimProfile(_pendingInviteMemberId!);
         }
 
-        // Self-heal, same as signInWithEmail: claimProfile/claimProfileByCode
-        // only set auth_user_id, they never tag has_password. Without this, a
-        // user who claims an invite during signup (a password they just
-        // chose) would never get deep_details['has_password'] set — since
-        // AppNavigator skips ProfileFormScreen (the only other place that
-        // tags it) whenever hasProfile is already true — and would be
-        // wrongly dropped onto the mandatory SetPasswordScreen right after
-        // already setting one.
-        if (_currentMember != null && !hasPasswordSet) {
-          await updateProfile(_currentMember!.copyWith(
-            deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
-          ));
-        }
+        // Self-heal: see _tagHasPasswordIfNeeded's doc comment. Covers the
+        // case where _currentMember was just loaded above (an existing
+        // profile). The signup-form invite-code claim (claimProfileByCode,
+        // called separately by SignupScreen after this method returns) tags
+        // itself via the same helper.
+        await _tagHasPasswordIfNeeded();
       } else {
         _status = AuthStatus.unauthenticated;
       }
@@ -253,11 +284,7 @@ class AuthProvider extends ChangeNotifier {
         // account created before has_password tracking existed). Do this
         // quietly rather than routing them through the set-password prompt
         // for a password they already have.
-        if (_currentMember != null && !hasPasswordSet) {
-          await updateProfile(_currentMember!.copyWith(
-            deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
-          ));
-        }
+        await _tagHasPasswordIfNeeded();
 
         // If there's a pending invite, try to claim it
         if (_pendingInviteMemberId != null && _currentMember == null) {
@@ -319,6 +346,25 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Error in signOut: $e');
       _error = e.toString();
       notifyListeners();
+    }
+  }
+
+  /// Tags the current profile's `deep_details['has_password']` when the
+  /// live session has just proven a password exists (signUpWithEmail /
+  /// signInWithEmail set [_authenticatedWithPassword]) but the profile
+  /// itself doesn't reflect that yet. Needed after EVERY path that can
+  /// populate [_currentMember] with a password-authenticated session —
+  /// including claimProfile/claimProfileByCode, which only set
+  /// `auth_user_id` and otherwise inherit whatever (usually empty)
+  /// `deep_details` the placeholder already had. Without this, a user who
+  /// claims an invite during signup gets wrongly dropped onto the mandatory
+  /// SetPasswordScreen right after already choosing a password — the exact
+  /// incident reported live during alpha testing.
+  Future<void> _tagHasPasswordIfNeeded() async {
+    if (_currentMember != null && _authenticatedWithPassword && !hasPasswordSet) {
+      await updateProfile(_currentMember!.copyWith(
+        deepDetails: {..._currentMember!.deepDetails, 'has_password': true},
+      ));
     }
   }
 
@@ -403,6 +449,7 @@ class AuthProvider extends ChangeNotifier {
           await LocalStorageService.saveFamilyMember(_currentMember!);
           await LocalStorageService.setCurrentMemberId(_currentMember!.id);
           _pendingInviteMemberId = null;
+          await _tagHasPasswordIfNeeded();
           notifyListeners();
           return true;
         }
@@ -440,6 +487,7 @@ class AuthProvider extends ChangeNotifier {
           await LocalStorageService.saveFamilyMember(_currentMember!);
           await LocalStorageService.setCurrentMemberId(_currentMember!.id);
           _pendingInviteMemberId = null;
+          await _tagHasPasswordIfNeeded();
           notifyListeners();
           return true;
         }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../services/local_storage_service.dart';
@@ -68,17 +70,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final settingsProvider = context.watch<SettingsProvider>();
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _completeOnboarding,
-                child: Text(l10n.skip),
+            // Language toggle (top-left) + Skip (top-right) — the language
+            // switch needs to be visible on the very first screen a
+            // low-literacy user sees, before they've read enough English or
+            // Gujarati to find it buried in Settings.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _LanguageToggle(
+                    currentCode: settingsProvider.locale.languageCode,
+                    englishLabel: l10n.english,
+                    gujaratiLabel: l10n.gujarati,
+                    onChanged: (code) =>
+                        context.read<SettingsProvider>().setLocale(code),
+                  ),
+                  TextButton(
+                    onPressed: _completeOnboarding,
+                    child: Text(l10n.skip),
+                  ),
+                ],
               ),
             ),
 
@@ -213,4 +233,66 @@ class _OnboardingPage {
     required this.descriptionKey,
     required this.color,
   });
+}
+
+/// Two-segment English/Gujarati switch. Labels are shown in their own
+/// native script regardless of the currently active locale (see
+/// l10n.english/l10n.gujarati, which are deliberately identical in both
+/// .arb files) — a user who can't read the active language yet still needs
+/// to recognize their own language's name to switch to it.
+class _LanguageToggle extends StatelessWidget {
+  final String currentCode;
+  final String englishLabel;
+  final String gujaratiLabel;
+  final ValueChanged<String> onChanged;
+
+  const _LanguageToggle({
+    required this.currentCode,
+    required this.englishLabel,
+    required this.gujaratiLabel,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _segment(context, 'en', englishLabel),
+          _segment(context, 'gu', gujaratiLabel),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(BuildContext context, String code, String label) {
+    final theme = Theme.of(context);
+    final selected = currentCode == code;
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => onChanged(code),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: selected
+                ? theme.colorScheme.onPrimary
+                : theme.textTheme.bodyMedium?.color,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
 }

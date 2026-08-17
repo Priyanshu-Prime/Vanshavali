@@ -27,11 +27,19 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   String? _inviteCode;
   bool _loadingCode = false;
 
+  // Whether the current user may edit THIS node. Only your own profile, or an
+  // unclaimed direct relative (father/mother/child/spouse/sibling), is
+  // editable — enforced by RLS (migration 010) and mirrored here so the edit
+  // affordance never appears for a node the backend would reject. Defaults to
+  // false; resolved in initState.
+  bool _canEdit = false;
+
   FamilyMember get member => widget.member;
 
   @override
   void initState() {
     super.initState();
+    _resolveCanEdit();
     if (!member.isClaimed) _loadInviteCode();
     // Ensure the loaded ego network is actually centered on the member this
     // screen is showing, not whatever was last centered (e.g. "Self" from
@@ -42,6 +50,25 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<FamilyProvider>().loadEgoNetwork(member.id);
     });
+  }
+
+  Future<void> _resolveCanEdit() async {
+    final me = context.read<AuthProvider>().currentMember;
+    // Own profile is always editable, and works offline (no round-trip).
+    if (me != null && me.id == member.id) {
+      setState(() => _canEdit = true);
+      return;
+    }
+    // A claimed node that isn't mine is never editable — skip the call.
+    if (member.isClaimed) return;
+    // Unclaimed: ask the backend (authoritative; also covers spouse kinship).
+    // Defaults to false on error/offline, which is the safe direction.
+    try {
+      final allowed = await SupabaseService.canEditMember(member.id);
+      if (mounted) setState(() => _canEdit = allowed);
+    } catch (_) {
+      // Leave _canEdit false.
+    }
   }
 
   Future<void> _loadInviteCode() async {
@@ -69,21 +96,22 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
       appBar: AppBar(
         title: Text(l10n.viewProfile),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: l10n.editProfile,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfileFormScreen(
-                    existingMember: member,
-                    isCreatingProfile: false,
+          if (_canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: l10n.editProfile,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileFormScreen(
+                      existingMember: member,
+                      isCreatingProfile: false,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
           if (!member.isClaimed)
             IconButton(
               icon: const Icon(Icons.share),

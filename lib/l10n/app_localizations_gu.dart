@@ -717,4 +717,16 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get duplicateProfileFlaggedForReview =>
       'આ પ્રોફાઇલ તમારા બીજા ખાતા સાથે પહેલેથી જ જોડાયેલ હોય તેવું લાગે છે. તેની સમીક્ષા માટે નોંધ કરવામાં આવી છે જેથી તેને ઉકેલી શકાય — હમણાં માટે તમારે બીજું કંઈ કરવાની જરૂર નથી.';
+
+  @override
+  String get errorEmailConfirmationRequired =>
+      'એકાઉન્ટ બની ગયું! કૃપા કરીને તમારો ઇમેઇલ તપાસો અને કન્ફર્મેશન લિંક પર ટેપ કરો, પછી પાછા આવીને લોગિન કરો જેથી તમારા કુટુંબના વૃક્ષ સાથે જોડાણ પૂર્ણ થાય.';
+
+  @override
+  String get errorEmailNotConfirmed =>
+      'કૃપા કરીને પહેલા તમારો ઇમેઇલ કન્ફર્મ કરો — સાઇન અપ કરતી વખતે અમે મોકલેલી કન્ફર્મેશન લિંક માટે તમારું ઇનબોક્સ તપાસો.';
+
+  @override
+  String get errorPasswordSameAsOld =>
+      'કૃપા કરીને તમારી પાસે પહેલેથી છે તેનાથી અલગ પાસવર્ડ પસંદ કરો.';
 }

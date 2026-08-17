@@ -716,4 +716,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get duplicateProfileFlaggedForReview =>
       'This profile appears to already be linked to another account of yours. We\'ve flagged it for review so it can be sorted out — no need to do anything else for now.';
+
+  @override
+  String get errorEmailConfirmationRequired =>
+      'Account created! Please check your email and tap the confirmation link, then come back and log in to finish joining your family tree.';
+
+  @override
+  String get errorEmailNotConfirmed =>
+      'Please confirm your email first — check your inbox for the confirmation link we sent when you signed up.';
+
+  @override
+  String get errorPasswordSameAsOld =>
+      'Please choose a different password than the one you already have.';
 }

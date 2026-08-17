@@ -37,6 +37,24 @@ String friendlyErrorMessage(BuildContext context, Object error) {
     return l10n.errorEmailAlreadyRegistered;
   }
 
+  if (text.contains('vanshavali_email_confirmation_required')) {
+    return l10n.errorEmailConfirmationRequired;
+  }
+
+  // Supabase's own message when confirmations are required and the user
+  // tries to sign in before clicking the link — thrown from signInWithPassword.
+  if (text.contains('email not confirmed') || text.contains('email_not_confirmed')) {
+    return l10n.errorEmailNotConfirmed;
+  }
+
+  // Supabase's own guard in updateUser() when the "new" password matches the
+  // account's current one — surfaced most often on SetPasswordScreen when a
+  // user re-enters a password they'd already set moments earlier.
+  if (text.contains('different from the old password') ||
+      text.contains('should be different')) {
+    return l10n.errorPasswordSameAsOld;
+  }
+
   final isTimeout =
       text.contains('timeoutexception') ||
       text.contains('timed out') ||
