@@ -46,12 +46,12 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 ## 4. Family & Tree
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
-| 4.1 | Add a father/mother/child/spouse/sibling and see them linked | in | TODO |
+| 4.1 | Add a father/mother/child/spouse/sibling and see them linked | in | PARTIAL — child add+link+ego covered (flows/relations_and_ego_test.dart); father/mother/spouse/sibling via UI still TODO |
 | 4.2 | Relationship chips are readable in both selected and unselected states | in | TODO |
 | 4.3 | Tapping a node re-centers the ego network on that person | in | TODO |
 | 4.4 | Pedigree view shows grandparents once the ancestor chain loads | in | TODO |
 | 4.5 | Home dashboard shows my own family after exploring the tree (no drift) | in | TODO |
-| 4.6 | One-to-one relation guards (no duplicate father, ancestry-cycle block) | in | TODO |
+| 4.6 | One-to-one relation guards (no duplicate father, ancestry-cycle block) | in | PARTIAL — 30 unit tests (relation_guards_test.dart) + ancestry-cycle via real DB resolver (flows/relations_and_ego_test.dart); UI-level guard firing still TODO |
 | 4.7 | Edit authorization: only own profile + direct unclaimed relatives editable; grandparent/unrelated/claimed-others blocked (migration 010) | in | AUTOMATED (flows/edit_authorization_test.dart) |
 
 ## 5. Localization
