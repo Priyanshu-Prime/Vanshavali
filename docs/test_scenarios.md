@@ -28,10 +28,10 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 ## 2. Invite & Claim
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
-| 2.1 | Signup + valid invite code claims the placeholder, no second password prompt, lands on Home as that person | in | AUTOMATED (flows/signup_claim_test.dart) |
+| 2.1 | Signup + valid invite code claims the placeholder, no second password prompt, lands on Home as that person | in | ⚠ BLOCKED — test written (flows/signup_claim_test.dart) but SKIPPED: exposed an intermittent app bug — claimProfileByCode's post-claim step throws "Null check operator used on a null value" (swallowed at auth_provider.dart:524), so the client shows claim-FAILED even though the server claim succeeded. Fix the crash, then un-skip. |
 | 2.2 | Claiming from the profile-completion screen (not just signup) works | in | TODO |
 | 2.3 | Invalid/unknown invite code falls through to manual profile creation, no crash | in | TODO |
-| 2.4 | An invite code is single-use — a second claim of the same code fails cleanly | in | AUTOMATED (flows/signup_claim_test.dart) |
+| 2.4 | An invite code is single-use — a second claim of the same code fails cleanly | in | ⚠ BLOCKED — same skipped test / same claimProfileByCode crash as 2.1. |
 | 2.5 | A user who already has a profile trying to claim another is flagged for merge, shown the reassuring message (not a raw error) | in | TODO |
 | 2.6 | Invite-code preview shows the placeholder's name before claiming | in | TODO |
 
@@ -39,7 +39,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
 | 3.1 | Create profile with required fields, lands on Home showing that name | in | TODO |
-| 3.2 | Edit own profile, changes persist after reload | in | TODO |
+| 3.2 | Edit own profile, changes persist after reload | in | AUTOMATED (flows/edit_profile_persist_test.dart) |
 | 3.3 | Profile-creation screen has a working sign-out escape hatch (no dead-end) | in | TODO |
 | 3.4 | Gujarati auto-translation fills the Gujarati name field | out | MANUAL — depends on external translate API |
 

@@ -30,20 +30,11 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   // Sign up a fresh auth user and claim the seeded Child (b3), so we act with a
-  // real session and a real place in the tree. Field order mirrors the proven
-  // signup_claim_test (enter "confirm password" before "password", since the
-  // "password" substring also matches the confirm field).
+  // real session and a real place in the tree.
   Future<void> claimSelf(WidgetTester tester) async {
     await resetAppState(skipOnboarding: true);
     await bootApp(tester);
-    await tapText(tester, 'Sign Up');
-    await tester.pumpAndSettle();
-    await enterInField(tester, 'email', uniqueEmail());
-    await enterInField(tester, 'confirm password', 'test1234');
-    await enterInField(tester, 'password', 'test1234');
-    await enterInField(tester, '6-character code', 'TEST04');
-    await tapText(tester, 'Sign Up');
-    await tester.pumpAndSettle(const Duration(seconds: 10));
+    await signUp(tester, code: 'TEST04');
   }
 
   // One test, one claim: TEST04 is single-use, so a second claimSelf in a

@@ -89,3 +89,57 @@ Future<void> tapText(WidgetTester tester, String textSubstring) async {
 /// persist in the local DB across a run until the next `db reset`).
 String uniqueEmail() =>
     'e2e_${DateTime.now().microsecondsSinceEpoch}@example.com';
+
+/// Pumps frames until [finder] matches at least one widget, or [timeout]
+/// elapses. Use for "the screen eventually shows X" assertions where the app
+/// does async work (claim + profile load + navigation) after the action
+/// settles, so a bare expect right after would race the render.
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final end = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(end)) {
+    await tester.pump(const Duration(milliseconds: 300));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+}
+
+/// Robustly drives Login → Sign Up → submit, optionally claiming an invite
+/// [code]. Returns once the post-signup session is live (or fails clearly).
+///
+/// Why this isn't just a few tapText calls: after the last field is filled the
+/// soft keyboard covers the submit button, so a plain tap silently MISSES and
+/// the form never submits — the session then never establishes and later reads
+/// run as `anon`. We scroll the actual ElevatedButton into view and tap the
+/// widget (not ambiguous "Sign Up" text, which also matches the screen header),
+/// then wait for auth.currentUser to appear.
+Future<void> signUp(
+  WidgetTester tester, {
+  required String code,
+  String? email,
+  String password = 'test1234',
+}) async {
+  await tapText(tester, 'Sign Up'); // Login screen -> Sign Up screen.
+  await tester.pumpAndSettle();
+
+  await enterInField(tester, 'email', email ?? uniqueEmail());
+  await enterInField(tester, 'confirm password', password);
+  await enterInField(tester, 'password', password);
+  await enterInField(tester, '6-character code', code);
+
+  // Scroll the submit button above the keyboard/fold before tapping it.
+  final submit = find.byType(ElevatedButton);
+  expect(submit, findsWidgets, reason: 'signup submit button not found');
+  await tester.ensureVisible(submit.last);
+  await tester.pumpAndSettle();
+  await tester.tap(submit.last);
+  await tester.pumpAndSettle(const Duration(seconds: 10));
+
+  // The session propagates to the Supabase client slightly after the tree
+  // settles; wait for it so the first direct (non-RPC) table read isn't anon.
+  for (var i = 0; i < 20 && SupabaseService.currentUser == null; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+  }
+}

@@ -31,14 +31,7 @@ void main() {
 
     // Sign up and claim TEST04 (the Child node) so we're authenticated with a
     // real place in the seeded tree.
-    await tapText(tester, 'Sign Up');
-    await tester.pumpAndSettle();
-    await enterInField(tester, 'email', uniqueEmail());
-    await enterInField(tester, 'confirm password', 'test1234');
-    await enterInField(tester, 'password', 'test1234');
-    await enterInField(tester, '6-character code', 'TEST04');
-    await tapText(tester, 'Sign Up');
-    await tester.pumpAndSettle(const Duration(seconds: 10));
+    await signUp(tester, code: 'TEST04');
 
     // Own profile: editable.
     expect(await SupabaseService.canEditMember(_self), isTrue,
