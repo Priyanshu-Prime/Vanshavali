@@ -29,7 +29,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
 | 2.1 | Signup + valid invite code claims the placeholder, no second password prompt, lands on Home as that person | in | AUTOMATED (flows/signup_claim_test.dart) — previously blocked by an intermittent claim-race crash (claimProfileByCode's `_currentMember!` nulled by the concurrent signedIn profile-load mid-await); fixed by capturing the claimed member into a local. |
-| 2.2 | Claiming from the profile-completion screen (not just signup) works | in | TODO |
+| 2.2 | Claiming from the profile-completion screen (not just signup) works | in | AUTOMATED (flows/claim_from_form_test.dart) |
 | 2.3 | Invalid/unknown invite code falls through to manual profile creation, no crash | in | AUTOMATED (flows/invalid_code_test.dart) |
 | 2.4 | An invite code is single-use — a second claim of the same code fails cleanly | in | AUTOMATED (flows/signup_claim_test.dart) — unblocked by the same claim-race fix as 2.1. |
 | 2.5 | A user who already has a profile trying to claim another is flagged for merge, shown the reassuring message (not a raw error) | in | TODO |
@@ -40,7 +40,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 |---|----------|-------|--------|
 | 3.1 | Create profile with required fields, lands on Home showing that name | in | AUTOMATED (flows/create_profile_test.dart) |
 | 3.2 | Edit own profile, changes persist after reload | in | AUTOMATED (flows/edit_profile_persist_test.dart) |
-| 3.3 | Profile-creation screen has a working sign-out escape hatch (no dead-end) | in | TODO |
+| 3.3 | Profile-creation screen has a working sign-out escape hatch (no dead-end) | in | AUTOMATED (flows/signout_escape_test.dart) |
 | 3.4 | Gujarati auto-translation fills the Gujarati name field | out | MANUAL — depends on external translate API |
 
 ## 4. Family & Tree
@@ -57,7 +57,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 ## 5. Localization
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
-| 5.1 | Language toggle on first onboarding screen switches EN↔GU immediately | in | AUTOMATED (smoke_test.dart — toggle renders; switch interaction TODO) |
+| 5.1 | Language toggle on first onboarding screen switches EN↔GU immediately | in | AUTOMATED (flows/language_toggle_test.dart — taps ગુજરાતી, asserts the title re-renders in Gujarati) |
 | 5.2 | Every user-facing string has both EN and GU (key parity) | in | TODO |
 
 ## 6. Offline / Reliability
