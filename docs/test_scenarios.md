@@ -53,6 +53,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 | 4.5 | Home dashboard shows my own family after exploring the tree (no drift) | in | TODO |
 | 4.6 | One-to-one relation guards (no duplicate father, ancestry-cycle block) | in | PARTIAL — 30 unit tests (relation_guards_test.dart) + ancestry-cycle via real DB resolver (flows/relations_and_ego_test.dart); UI-level guard firing still TODO |
 | 4.7 | Edit authorization: only own profile + direct unclaimed relatives editable; grandparent/unrelated/claimed-others blocked (migration 010) | in | AUTOMATED (flows/edit_authorization_test.dart) |
+| 4.8 | The original creator of a placeholder can NO LONGER edit it once someone else claims it (real-user-reported hole; proves migration 010 closes it — RPC returns false AND the RLS UPDATE does not persist) | in | AUTOMATED (flows/claimed_node_edit_guard_test.dart) |
 
 ## 5. Localization
 | # | Scenario | Scope | Status |
