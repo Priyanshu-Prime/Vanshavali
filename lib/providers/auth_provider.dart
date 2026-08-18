@@ -444,11 +444,16 @@ class AuthProvider extends ChangeNotifier {
       _hasPendingMergeConflict = false;
 
       if (await SyncService.isOnline()) {
-        _currentMember = await SupabaseService.claimProfile(memberId);
-        if (_currentMember != null) {
-          await LocalStorageService.saveFamilyMember(_currentMember!);
-          await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+        final claimed = await SupabaseService.claimProfile(memberId);
+        _currentMember = claimed;
+        if (claimed != null) {
+          // See claimProfileByCode: work off the local `claimed` so the
+          // concurrent signedIn profile-load can't null _currentMember between
+          // these awaits and crash a claim that already succeeded server-side.
+          await LocalStorageService.saveFamilyMember(claimed);
+          await LocalStorageService.setCurrentMemberId(claimed.id);
           _pendingInviteMemberId = null;
+          _currentMember = claimed;
           await _tagHasPasswordIfNeeded();
           notifyListeners();
           return true;
@@ -482,11 +487,22 @@ class AuthProvider extends ChangeNotifier {
       _hasPendingMergeConflict = false;
 
       if (await SyncService.isOnline()) {
-        _currentMember = await SupabaseService.claimProfileByCode(code);
-        if (_currentMember != null) {
-          await LocalStorageService.saveFamilyMember(_currentMember!);
-          await LocalStorageService.setCurrentMemberId(_currentMember!.id);
+        final claimed = await SupabaseService.claimProfileByCode(code);
+        _currentMember = claimed;
+        if (claimed != null) {
+          // Work off the local `claimed`, not the `_currentMember!` field:
+          // the awaits below yield, and the signedIn authStateChanges listener
+          // fires _loadCurrentMemberProfile() concurrently, which can null
+          // _currentMember mid-flow — intermittently crashing the just-
+          // succeeded claim with "Null check operator used on a null value"
+          // (the server claim had already committed, so the user was silently
+          // dropped into a claim-failed state).
+          await LocalStorageService.saveFamilyMember(claimed);
+          await LocalStorageService.setCurrentMemberId(claimed.id);
           _pendingInviteMemberId = null;
+          // Re-assert our claimed member in case the concurrent profile load
+          // above resolved to null (it races the freshly-committed claim).
+          _currentMember = claimed;
           await _tagHasPasswordIfNeeded();
           notifyListeners();
           return true;
@@ -521,8 +537,9 @@ class AuthProvider extends ChangeNotifier {
       _error = e.message;
       notifyListeners();
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error in claimProfileByCode: $e');
+      debugPrintStack(stackTrace: stackTrace, label: 'claimProfileByCode');
       _error = e.toString();
       notifyListeners();
       return false;

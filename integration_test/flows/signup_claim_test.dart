@@ -12,16 +12,13 @@ import '../harness.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // SKIPPED pending an app fix. These reliably drove the flow earlier, but a
-  // run surfaced an INTERMITTENT real bug: claimProfileByCode's post-claim step
-  // throws "Null check operator used on a null value" (caught silently at
-  // auth_provider.dart:524), so the client falls into claim-FAILED and never
-  // shows the claimed profile — even though the server-side claim succeeded.
-  // Timing/state dependent (passes some runs, fails others). Un-skip once the
-  // null-check crash is fixed. See docs/test_scenarios.md 2.1/2.4 and the
-  // e2e-rig memory for the full write-up.
+  // These caught a real intermittent claim-race bug: claimProfileByCode's
+  // post-claim `_currentMember!` was nulled by the concurrent signedIn
+  // profile-load between awaits, crashing a claim that had already succeeded
+  // server-side. Fixed in auth_provider.dart by capturing the claimed member
+  // into a local; these are the regression guard.
   testWidgets('signup with a valid invite code claims the placeholder',
-      skip: true, (tester) async {
+      (tester) async {
     await resetAppState(skipOnboarding: true);
     await bootApp(tester);
 
@@ -36,7 +33,7 @@ void main() {
         reason: 'A just-claimed account must not be asked to set a password.');
   });
 
-  testWidgets('an invite code is single-use', skip: true, (tester) async {
+  testWidgets('an invite code is single-use', (tester) async {
     // First user claims TEST03 successfully.
     await resetAppState(skipOnboarding: true);
     await bootApp(tester);
