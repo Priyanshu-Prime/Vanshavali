@@ -636,6 +636,26 @@ class AppLocalizationsGu extends AppLocalizations {
   String get orUseInviteCode => 'અથવા આમંત્રણ કોડ દાખલ કરો';
 
   @override
+  String get scanInviteCode => 'આમંત્રણ કોડ સ્કૅન કરો';
+
+  @override
+  String get scanQrInstruction => 'તમારા કૅમેરાને આમંત્રણ QR કોડ સામે રાખો';
+
+  @override
+  String get cameraPermissionNeeded =>
+      'સ્કૅન કરવા માટે કૅમેરાની પરવાનગી જરૂરી છે. તમે કોડ જાતે પણ દાખલ કરી શકો છો.';
+
+  @override
+  String get scanInvalidCode =>
+      'તે QR કોડમાં માન્ય 6 અક્ષરનો આમંત્રણ કોડ મળ્યો નથી.';
+
+  @override
+  String get inviteQrCode => 'આમંત્રણ QR કોડ';
+
+  @override
+  String get enterManually => 'કોડ જાતે દાખલ કરો';
+
+  @override
   String get linkChildrenToSpouse => 'બાળકોને જીવનસાથી સાથે જોડવા?';
 
   @override

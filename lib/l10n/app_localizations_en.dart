@@ -635,6 +635,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orUseInviteCode => 'Or enter an invite code';
 
   @override
+  String get scanInviteCode => 'Scan invite code';
+
+  @override
+  String get scanQrInstruction => 'Point your camera at the invite QR code';
+
+  @override
+  String get cameraPermissionNeeded =>
+      'Camera access is needed to scan. You can still enter the code by hand.';
+
+  @override
+  String get scanInvalidCode =>
+      'No valid 6-character invite code found in that QR code.';
+
+  @override
+  String get inviteQrCode => 'Invite QR code';
+
+  @override
+  String get enterManually => 'Enter code manually';
+
+  @override
   String get linkChildrenToSpouse => 'Link children to spouse?';
 
   @override

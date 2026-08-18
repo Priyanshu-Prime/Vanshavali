@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
+import '../scan/scan_invite_code_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -30,6 +31,19 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.dispose();
     _inviteCodeController.dispose();
     super.dispose();
+  }
+
+  /// Opens the QR scanner; on a successful scan fills the invite-code field
+  /// and runs the same preview lookup as manual typing. Manual entry is never
+  /// disabled — this is an optional shortcut.
+  Future<void> _scanInviteCode() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanInviteCodeScreen()),
+    );
+    if (code == null || !mounted) return;
+    _inviteCodeController.text = code;
+    _lookupInviteCode(code);
   }
 
   Future<void> _lookupInviteCode(String code) async {
@@ -248,6 +262,15 @@ class _SignupScreenState extends State<SignupScreen> {
                           textInputAction: TextInputAction.done,
                           maxLength: 6,
                           onChanged: _lookupInviteCode,
+                        ),
+                        // Optional QR shortcut — manual typing above always works.
+                        OutlinedButton.icon(
+                          onPressed: _scanInviteCode,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: Text(l10n.scanInviteCode),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                          ),
                         ),
                         if (_invitePreviewName != null) ...[
                           const SizedBox(height: 4),

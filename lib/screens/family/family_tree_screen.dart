@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/family_member.dart';
@@ -1631,6 +1632,25 @@ class _InviteSheetState extends State<_InviteSheet> {
                       ),
                     ],
                   ),
+                // Scannable QR of the bare code; the text code above is the
+                // fallback for anyone who can't scan.
+                if (_inviteCode != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: QrImageView(
+                      data: _inviteCode!,
+                      version: QrVersions.auto,
+                      size: 160,
+                      backgroundColor: Colors.white,
+                      semanticsLabel: l10n.inviteQrCode,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   l10n.inviteCodeDesc,

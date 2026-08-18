@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/family_member.dart';
@@ -365,6 +366,26 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                                   ),
                                 ],
                               ),
+                            // Scannable QR of the bare code — the invitee can
+                            // scan it from inside their app instead of typing.
+                            // The text code above stays as the fallback.
+                            if (_inviteCode != null) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: QrImageView(
+                                  data: _inviteCode!,
+                                  version: QrVersions.auto,
+                                  size: 160,
+                                  backgroundColor: Colors.white,
+                                  semanticsLabel: l10n.inviteQrCode,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

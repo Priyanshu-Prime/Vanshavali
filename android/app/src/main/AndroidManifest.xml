@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Camera is used only to scan invite-code QR codes (mobile_scanner);
+         not required, so devices without a camera can still install and use
+         manual invite-code entry. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="Vanshavali"
         android:name="${applicationName}"

@@ -11,6 +11,7 @@ import '../../services/translation_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
+import '../scan/scan_invite_code_screen.dart';
 
 class ProfileFormScreen extends StatefulWidget {
   final FamilyMember? existingMember;
@@ -90,6 +91,19 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     _occupationController.dispose();
     _inviteCodeController.dispose();
     super.dispose();
+  }
+
+  /// Opens the QR scanner; on a successful scan fills the invite-code field
+  /// and runs the same preview lookup as manual typing. Manual entry is never
+  /// disabled — this is an optional shortcut.
+  Future<void> _scanInviteCode() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanInviteCodeScreen()),
+    );
+    if (code == null || !mounted) return;
+    _inviteCodeController.text = code;
+    _lookupInviteCode(code);
   }
 
   Future<void> _lookupInviteCode(String code) async {
@@ -343,6 +357,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                         textInputAction: TextInputAction.done,
                         maxLength: 6,
                         onChanged: _lookupInviteCode,
+                      ),
+                      // Optional QR shortcut — manual typing above always works.
+                      OutlinedButton.icon(
+                        onPressed: _scanInviteCode,
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: Text(l10n.scanInviteCode),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                        ),
                       ),
                       if (_invitePreviewName != null) ...[
                         const SizedBox(height: 4),

@@ -1256,6 +1256,42 @@ abstract class AppLocalizations {
   /// **'Or enter an invite code'**
   String get orUseInviteCode;
 
+  /// No description provided for @scanInviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invite code'**
+  String get scanInviteCode;
+
+  /// No description provided for @scanQrInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at the invite QR code'**
+  String get scanQrInstruction;
+
+  /// No description provided for @cameraPermissionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access is needed to scan. You can still enter the code by hand.'**
+  String get cameraPermissionNeeded;
+
+  /// No description provided for @scanInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'No valid 6-character invite code found in that QR code.'**
+  String get scanInvalidCode;
+
+  /// No description provided for @inviteQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite QR code'**
+  String get inviteQrCode;
+
+  /// No description provided for @enterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code manually'**
+  String get enterManually;
+
   /// No description provided for @linkChildrenToSpouse.
   ///
   /// In en, this message translates to:
