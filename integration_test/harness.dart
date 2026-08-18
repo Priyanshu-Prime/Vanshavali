@@ -117,7 +117,7 @@ Future<void> pumpUntilFound(
 /// then wait for auth.currentUser to appear.
 Future<void> signUp(
   WidgetTester tester, {
-  required String code,
+  String? code,
   String? email,
   String password = 'test1234',
 }) async {
@@ -127,7 +127,11 @@ Future<void> signUp(
   await enterInField(tester, 'email', email ?? uniqueEmail());
   await enterInField(tester, 'confirm password', password);
   await enterInField(tester, 'password', password);
-  await enterInField(tester, '6-character code', code);
+  // Code is optional: with none, the app creates the account and routes to
+  // manual profile creation instead of claiming a placeholder.
+  if (code != null && code.isNotEmpty) {
+    await enterInField(tester, '6-character code', code);
+  }
 
   // Scroll the submit button above the keyboard/fold before tapping it.
   final submit = find.byType(ElevatedButton);
