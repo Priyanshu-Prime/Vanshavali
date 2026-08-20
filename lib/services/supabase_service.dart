@@ -383,37 +383,36 @@ class SupabaseService {
         await addSpouseLink(memberId, relatedMemberId);
         break;
       case RelationType.child:
-        // Determine if current user is father or mother
+        // Sets a parent pointer on the CHILD's row — which is the write that
+        // *creates* the parent-child edge. That can't go through a direct table
+        // UPDATE: migration 010's RLS policy authorizes an edit by reading the
+        // row's CURRENT relationships, and at this instant the child has none,
+        // so RLS silently filters the row out (0 rows, no error) and the link
+        // is lost. Route it through set_member_parents (migration 011), a
+        // SECURITY DEFINER RPC that still enforces "own row or unclaimed node".
         final currentMember = await getFamilyMemberById(memberId);
-        if (currentMember?.gender == 'Male') {
-          await client
-              .from('family_members')
-              .update({'father_id': memberId})
-              .eq('id', relatedMemberId);
-        } else {
-          await client
-              .from('family_members')
-              .update({'mother_id': memberId})
-              .eq('id', relatedMemberId);
-        }
+        await client.rpc('set_member_parents', params: {
+          'p_child': relatedMemberId,
+          if (currentMember?.gender == 'Male')
+            'p_father': memberId
+          else
+            'p_mother': memberId,
+        });
         break;
       case RelationType.sibling:
-        // Share parents
+        // Same reason as child above: this UPDATE creates the sibling's link to
+        // the shared parents, so it must go through the RPC, not a direct write
+        // the 010 policy would block. Copies whichever parents the caller has.
         final currentMember = await getFamilyMemberById(memberId);
-        if (currentMember != null) {
-          final updates = <String, dynamic>{};
-          if (currentMember.fatherId != null) {
-            updates['father_id'] = currentMember.fatherId;
-          }
-          if (currentMember.motherId != null) {
-            updates['mother_id'] = currentMember.motherId;
-          }
-          if (updates.isNotEmpty) {
-            await client
-                .from('family_members')
-                .update(updates)
-                .eq('id', relatedMemberId);
-          }
+        if (currentMember != null &&
+            (currentMember.fatherId != null || currentMember.motherId != null)) {
+          await client.rpc('set_member_parents', params: {
+            'p_child': relatedMemberId,
+            if (currentMember.fatherId != null)
+              'p_father': currentMember.fatherId,
+            if (currentMember.motherId != null)
+              'p_mother': currentMember.motherId,
+          });
         }
         break;
     }

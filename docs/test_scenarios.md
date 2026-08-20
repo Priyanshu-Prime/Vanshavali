@@ -46,7 +46,7 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 ## 4. Family & Tree
 | # | Scenario | Scope | Status |
 |---|----------|-------|--------|
-| 4.1 | Add a father/mother/child/spouse/sibling and see them linked | in | PARTIAL — child add+link+ego covered (flows/relations_and_ego_test.dart); father/mother/spouse/sibling via UI still TODO |
+| 4.1 | Add a father/mother/child/spouse/sibling and see them linked | in | AUTOMATED — child add+ego (flows/relations_and_ego_test.dart); the two-step create-then-link path the UI actually uses (flows/add_sibling_and_link_child_test.dart) covering add-sibling + link-existing-child. NOTE: migration 010's edit policy silently blocked those two link-UPDATEs (kinship didn't exist yet at write time → RLS filtered the row, 0 rows, no error); the earlier relations test missed it because it baked the link into the INSERT. Fixed by the set_member_parents RPC (migration 011). |
 | 4.2 | Relationship chips are readable in both selected and unselected states | in | TODO |
 | 4.3 | Tapping a node re-centers the ego network on that person | in | TODO |
 | 4.4 | Pedigree view shows grandparents once the ancestor chain loads | in | TODO |
