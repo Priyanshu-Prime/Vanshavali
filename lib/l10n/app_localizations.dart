@@ -1394,6 +1394,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errorGeneric;
 
+  /// No description provided for @errorEditNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'This change couldn\'t be saved. You may not have permission to edit this person.'**
+  String get errorEditNotPermitted;
+
   /// No description provided for @errorEmailAlreadyRegistered.
   ///
   /// In en, this message translates to:

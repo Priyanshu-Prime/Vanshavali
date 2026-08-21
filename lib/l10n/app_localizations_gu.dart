@@ -715,6 +715,10 @@ class AppLocalizationsGu extends AppLocalizations {
   String get errorGeneric => 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.';
 
   @override
+  String get errorEditNotPermitted =>
+      'આ ફેરફાર સાચવી શકાયો નથી. તમને આ વ્યક્તિમાં ફેરફાર કરવાની પરવાનગી કદાચ ન હોય.';
+
+  @override
   String get errorEmailAlreadyRegistered =>
       'આ ઇમેઇલ સાથે એકાઉન્ટ પહેલેથી જ છે. કૃપા કરીને લોગિન કરો — જો તમે મેજિક લિંકથી સાઇન અપ કર્યું હોય, તો આગલી વખતે લોગિન કરતી વખતે તમને પાસવર્ડ સેટ કરવાનું કહેવામાં આવશે.';
 

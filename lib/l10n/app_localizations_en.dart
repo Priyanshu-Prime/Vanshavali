@@ -714,6 +714,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get errorEditNotPermitted =>
+      'This change couldn\'t be saved. You may not have permission to edit this person.';
+
+  @override
   String get errorEmailAlreadyRegistered =>
       'An account with this email already exists. Please log in instead — if you signed up with a magic link, you\'ll be asked to set a password the next time you log in.';
 

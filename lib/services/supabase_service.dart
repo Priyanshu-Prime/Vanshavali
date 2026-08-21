@@ -358,10 +358,7 @@ class SupabaseService {
   }) async {
     switch (relationType) {
       case RelationType.father:
-        await client
-            .from('family_members')
-            .update({'father_id': relatedMemberId})
-            .eq('id', memberId);
+        await _updateMemberOrThrow(memberId, {'father_id': relatedMemberId});
         // Auto-link spouse between father and existing mother
         final memberAfterFather = await getFamilyMemberById(memberId);
         if (memberAfterFather?.motherId != null) {
@@ -369,10 +366,7 @@ class SupabaseService {
         }
         break;
       case RelationType.mother:
-        await client
-            .from('family_members')
-            .update({'mother_id': relatedMemberId})
-            .eq('id', memberId);
+        await _updateMemberOrThrow(memberId, {'mother_id': relatedMemberId});
         // Auto-link spouse between mother and existing father
         final memberAfterMother = await getFamilyMemberById(memberId);
         if (memberAfterMother?.fatherId != null) {
@@ -422,6 +416,30 @@ class SupabaseService {
   /// addSpouseLink is idempotent via the unique pair constraint).
   static Future<void> _ensureSpouseLink(String idA, String idB) async {
     await addSpouseLink(idA, idB);
+  }
+
+  /// Updates a family_members row and throws if the write reached ZERO rows.
+  ///
+  /// A Supabase UPDATE filtered out by RLS (no permission to edit this node)
+  /// affects zero rows and returns NO error — so a relation link would look
+  /// like it succeeded while nothing actually changed, and the node silently
+  /// never appears in the tree (this is exactly how the "adding completes but
+  /// the node never shows up" bug manifested). Asking for the updated rows back
+  /// via .select() lets us detect the no-op and surface a real error instead of
+  /// a false "added" toast. The sentinel is mapped to a friendly, localized
+  /// message in friendlyErrorMessage (lib/widgets/common_widgets.dart).
+  static Future<void> _updateMemberOrThrow(
+    String memberId,
+    Map<String, dynamic> updates,
+  ) async {
+    final rows = await client
+        .from('family_members')
+        .update(updates)
+        .eq('id', memberId)
+        .select('id');
+    if ((rows as List).isEmpty) {
+      throw Exception('vanshavali_edit_not_permitted');
+    }
   }
 
   /// Delete a family member

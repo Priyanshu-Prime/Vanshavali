@@ -325,6 +325,7 @@
   "errorTimeout": "That took too long. Please try again.",
   "errorServiceFailure": "Something went wrong on our end. Please try again in a moment.",
   "errorGeneric": "Something went wrong. Please try again.",
+  "errorEditNotPermitted": "This change couldn't be saved. You may not have permission to edit this person.",
   "errorEmailAlreadyRegistered": "An account with this email already exists. Please log in instead — if you signed up with a magic link, you'll be asked to set a password the next time you log in.",
   "setPasswordTitle": "Set a Password",
   "setPasswordDescription": "You signed in using a magic link. Please set a password now so you can log in on any device without needing to check your email every time.",

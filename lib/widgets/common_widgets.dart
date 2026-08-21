@@ -61,6 +61,13 @@ String friendlyErrorMessage(BuildContext context, Object error) {
       text.contains('timeout');
   if (isTimeout) return l10n.errorTimeout;
 
+  // A relation-link / edit write that RLS filtered out (no permission to edit
+  // this node) — thrown as a sentinel by SupabaseService._updateMemberOrThrow
+  // so it doesn't get swallowed by the generic service-failure bucket below.
+  if (text.contains('vanshavali_edit_not_permitted')) {
+    return l10n.errorEditNotPermitted;
+  }
+
   final isServiceFailure =
       text.contains('postgrestexception') ||
       text.contains('authexception') ||
