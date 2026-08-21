@@ -442,9 +442,19 @@ class SupabaseService {
     }
   }
 
-  /// Delete a family member
+  /// Delete a family member.
+  ///
+  /// Like the link/edit writes, a DELETE that RLS filters out (e.g. trying to
+  /// delete someone else's claimed node) affects zero rows and returns NO
+  /// error — which would look like a successful delete while the node stays in
+  /// the tree. .select() the deleted rows and throw the same sentinel when none
+  /// were removed, so the UI shows a real message instead of a false success.
   static Future<void> deleteFamilyMember(String id) async {
-    await client.from('family_members').delete().eq('id', id);
+    final rows =
+        await client.from('family_members').delete().eq('id', id).select('id');
+    if ((rows as List).isEmpty) {
+      throw Exception('vanshavali_edit_not_permitted');
+    }
   }
 
   /// Get all family members (for offline sync).

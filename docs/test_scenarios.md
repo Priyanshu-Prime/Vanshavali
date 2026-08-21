@@ -52,8 +52,11 @@ Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
 | 4.4 | Pedigree view shows grandparents once the ancestor chain loads | in | TODO |
 | 4.5 | Home dashboard shows my own family after exploring the tree (no drift) | in | TODO |
 | 4.6 | One-to-one relation guards (no duplicate father, ancestry-cycle block) | in | PARTIAL — 30 unit tests (relation_guards_test.dart) + ancestry-cycle via real DB resolver (flows/relations_and_ego_test.dart); UI-level guard firing still TODO |
-| 4.7 | Edit authorization: only own profile + direct unclaimed relatives editable; grandparent/unrelated/claimed-others blocked (migration 010) | in | AUTOMATED (flows/edit_authorization_test.dart) |
-| 4.8 | The original creator of a placeholder can NO LONGER edit it once someone else claims it (real-user-reported hole; proves migration 010 closes it — RPC returns false AND the RLS UPDATE does not persist) | in | AUTOMATED (flows/claimed_node_edit_guard_test.dart) |
+| 4.7 | Edit authorization (migration 012): own profile + ANY unclaimed node editable (any hop distance); only someone else's CLAIMED node is blocked. Relaxed from the original 010 "direct relatives only" rule, which broke tree-building. | in | AUTOMATED (flows/edit_authorization_test.dart) |
+| 4.8 | The original creator of a placeholder can NO LONGER edit it once someone else claims it (real-user-reported hole; RPC returns false AND the RLS UPDATE does not persist) | in | AUTOMATED (flows/claimed_node_edit_guard_test.dart) |
+| 4.9 | Build out a multi-generation chain past your direct relatives — add a father to your grandfather (2 hops), and edit a distant unclaimed node — must persist (real-user-reported: "grandfather's father won't add"; migrations 011+012). | in | AUTOMATED (flows/distant_ancestor_and_edit_test.dart) |
+| 4.10 | Add sibling + link an existing person as a child via the real two-step create-then-link path (regressed by 010, fixed by the 011 RPC). | in | AUTOMATED (flows/add_sibling_and_link_child_test.dart) |
+| 4.11 | Delete authorization (migration 013): delete any unclaimed node and your OWN claimed profile; someone else's claimed node is undeletable. No silent 0-row delete. | in | AUTOMATED (flows/delete_node_test.dart) |
 
 ## 5. Localization
 | # | Scenario | Scope | Status |

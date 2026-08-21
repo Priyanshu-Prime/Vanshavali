@@ -1,14 +1,21 @@
-// Flow: edit authorization (scenario 4.x / migration 010). After claiming a
-// profile, verify the kinship rule the backend enforces: you may edit your own
-// profile and a direct UNCLAIMED relative (parent/child/spouse/sibling), but
-// NOT a more-distant relative (e.g. grandparent) and NOT an unrelated node.
+// Flow: edit authorization (scenario 4.7). Verifies the kinship rule the backend
+// enforces via can_edit_family_member — the single source of truth the UI gate
+// and the RLS UPDATE/DELETE policies all use.
+//
+// Model as of migration 012 (relaxed from the original 010 "direct relatives
+// only" rule, which broke building out the tree — you can't add your
+// grandfather's father if distant nodes aren't editable):
+//   * Your own profile:            editable.
+//   * ANY unclaimed node:          editable (any hop distance — the tree is
+//                                   communally completable), incl. grandparents
+//                                   and unrelated placeholders.
+//   * Someone else's CLAIMED node: NOT editable — covered separately by
+//                                   flows/claimed_node_edit_guard_test.dart (4.8),
+//                                   since the seed has no claimed-other node here.
 //
 // Uses the seeded tree (supabase/seed.sql):
 //   b1 Grandfather -> b2 Father -> b3 Child (invite code TEST04)
 //   a1 Ramesh (unrelated, unclaimed)
-// The test signs up and claims TEST04 (becoming "Child"), then checks the
-// can_edit_family_member RPC (the single source of truth the UI gate and the
-// RLS UPDATE policy both use).
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -18,13 +25,13 @@ import '../harness.dart';
 
 const _self = '00000000-0000-0000-0000-0000000000b3'; // Child (claimed by test)
 const _father = '00000000-0000-0000-0000-0000000000b2'; // direct unclaimed
-const _grandfather = '00000000-0000-0000-0000-0000000000b1'; // NOT direct
+const _grandfather = '00000000-0000-0000-0000-0000000000b1'; // distant unclaimed
 const _unrelated = '00000000-0000-0000-0000-0000000000a1'; // Ramesh, unrelated
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('edit is allowed only for self + direct unclaimed relatives',
+  testWidgets('own profile and any unclaimed node are editable (post-012)',
       (tester) async {
     await resetAppState(skipOnboarding: true);
     await bootApp(tester);
@@ -41,12 +48,12 @@ void main() {
     expect(await SupabaseService.canEditMember(_father), isTrue,
         reason: 'A direct unclaimed parent must be editable.');
 
-    // Grandparent (two hops): NOT editable.
-    expect(await SupabaseService.canEditMember(_grandfather), isFalse,
-        reason: 'A grandparent is not a direct relative — must not be editable.');
+    // Grandparent (two hops, unclaimed): editable — tree-building requires it.
+    expect(await SupabaseService.canEditMember(_grandfather), isTrue,
+        reason: 'A distant unclaimed ancestor must be editable (migration 012).');
 
-    // Unrelated node: NOT editable.
-    expect(await SupabaseService.canEditMember(_unrelated), isFalse,
-        reason: 'An unrelated node must never be editable.');
+    // Unrelated unclaimed node: editable (communal placeholder data).
+    expect(await SupabaseService.canEditMember(_unrelated), isTrue,
+        reason: 'Any unclaimed node must be editable (migration 012).');
   });
 }

@@ -119,7 +119,12 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               tooltip: l10n.share,
               onPressed: () => _shareInvite(context),
             ),
-          if (!member.isClaimed)
+          // Delete is offered for any unclaimed node (clean up bad data) and
+          // for your OWN claimed profile (a claimed node is deletable only by
+          // its owner — enforced at the DB by can_edit_family_member, migration
+          // 013). Someone else's claimed node shows no delete affordance.
+          if (!member.isClaimed ||
+              context.read<AuthProvider>().currentMember?.id == member.id)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: l10n.deleteProfile,
@@ -492,7 +497,12 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   Future<void> _deleteProfile(BuildContext context) async {
     final l10n = context.l10n;
     try {
+      final authProvider = context.read<AuthProvider>();
       final familyProvider = context.read<FamilyProvider>();
+      // Capture before the delete: deleting your own profile means the app can
+      // no longer treat you as having one, so we sign out afterwards for a
+      // clean re-entry (the auth wrapper then routes to login/profile setup).
+      final wasOwnProfile = authProvider.currentMember?.id == member.id;
       final success = await familyProvider.deleteFamilyMember(member.id);
 
       if (context.mounted) {
@@ -505,7 +515,11 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               ),
             ),
           );
-          Navigator.pop(context, true);
+          if (wasOwnProfile) {
+            await authProvider.signOut();
+          } else if (context.mounted) {
+            Navigator.pop(context, true);
+          }
         } else {
           showAppSnackBar(
             context,
