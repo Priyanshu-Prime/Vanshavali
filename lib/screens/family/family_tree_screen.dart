@@ -29,6 +29,13 @@ const double _pedigreeBoxHeight = 152;
 const double _pedigreeColGap = 64;
 const double _pedigreeRowGap = 24;
 
+// Zoom bounds shared by both views' pan/zoom (the zoom buttons, the pedigree
+// InteractiveViewer, and the fit-to-view). The lower bound is deliberately far
+// out (10x) so a large multi-generation pedigree can be zoomed/fitted to show
+// every node at once instead of bottoming out and forcing the user to scroll.
+const double _kMinZoom = 0.1;
+const double _kMaxZoom = 2.5;
+
 /// Sorts members eldest → youngest (unknown DOB sorts last), matching the
 /// reading order genealogical charts conventionally use for siblings/children.
 List<FamilyMember> _sortedByDob(List<FamilyMember> members) {
@@ -352,7 +359,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     if (controller == null) return;
 
     final currentScale = controller.value.getMaxScaleOnAxis();
-    final targetScale = (currentScale * factor).clamp(0.35, 2.5);
+    final targetScale = (currentScale * factor).clamp(_kMinZoom, _kMaxZoom);
     if ((targetScale - currentScale).abs() < 0.001) return;
     final effectiveFactor = targetScale / currentScale;
 
@@ -411,7 +418,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     final widthScale = viewportSize.width / contentWidth;
     final heightScale = viewportSize.height / contentHeight;
     final scale = (widthScale < heightScale ? widthScale : heightScale)
-        .clamp(0.35, 1.0);
+        .clamp(_kMinZoom, 1.0);
 
     final scaledWidth = contentWidth * scale;
     final scaledHeight = contentHeight * scale;
@@ -493,8 +500,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                                       transformationController:
                                           _pedigreeTransformController,
                                       constrained: false,
-                                      minScale: 0.35,
-                                      maxScale: 2.5,
+                                      minScale: _kMinZoom,
+                                      maxScale: _kMaxZoom,
                                       boundaryMargin:
                                           const EdgeInsets.all(160),
                                       child: Padding(
@@ -743,26 +750,51 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         .map(pedigreeGeneration)
         .reduce((a, b) => a > b ? a : b);
 
-    // Each ahnentafel index is vertically centered exactly between its two
-    // parents (see the class doc comment on _PedigreeConnectorPainter for
-    // why that makes the connector math land cleanly with no gap/offset):
-    // slotHeight halves every generation closer to the leaves, so a node's
-    // center is always the midpoint of its children's slot ranges.
     const leafUnit = _pedigreeBoxHeight + _pedigreeRowGap;
     // Focus (generation 0) on the right, ancestors fanning leftward as
     // generation increases — so (maxGeneration - generation), not
     // generation directly.
     double xOf(int n) => (maxGeneration - pedigreeGeneration(n)) *
         (_pedigreeBoxWidth + _pedigreeColGap);
-    double yOf(int n) {
-      final slotHeight =
-          (1 << (maxGeneration - pedigreeGeneration(n))) * leafUnit;
-      return (pedigreeSlot(n) + 0.5) * slotHeight - _pedigreeBoxHeight / 2;
+
+    // Compact vertical layout. The old ahnentafel "even-spread" positioned
+    // every generation across the FULL canvas height, so father and mother were
+    // pushed ~half a canvas apart whenever deeper generations existed — a huge
+    // empty vertical band that got worse each generation. Instead, pack only the
+    // deepest PRESENT ancestors (the leaves) tightly, then center each
+    // descendant midway between its actual present parent(s). The gap between
+    // any two branches is then only as tall as their own subtrees need, and it
+    // adapts to how much of the tree is actually filled in (sparse lineages stay
+    // compact) rather than to the theoretical 2^generation width.
+    final yCenter = <int, double>{};
+    double nextLeafTop = 0;
+    double computeCenterY(int n) {
+      final hasFather = ahnentafel.containsKey(2 * n);
+      final hasMother = ahnentafel.containsKey(2 * n + 1);
+      double centerY;
+      if (!hasFather && !hasMother) {
+        centerY = nextLeafTop + _pedigreeBoxHeight / 2;
+        nextLeafTop += leafUnit;
+      } else {
+        // Recurse father (2n) before mother (2n+1) so the father side stacks
+        // above the mother side, matching the connector painter's assumptions.
+        final centers = <double>[];
+        if (hasFather) centers.add(computeCenterY(2 * n));
+        if (hasMother) centers.add(computeCenterY(2 * n + 1));
+        centerY = centers.reduce((a, b) => a + b) / centers.length;
+      }
+      yCenter[n] = centerY;
+      return centerY;
     }
+    computeCenterY(1);
+
+    double yOf(int n) => (yCenter[n] ?? 0) - _pedigreeBoxHeight / 2;
 
     final canvasWidth =
         (maxGeneration + 1) * (_pedigreeBoxWidth + _pedigreeColGap);
-    final canvasHeight = (1 << maxGeneration) * leafUnit;
+    // nextLeafTop is one leafUnit past the last leaf; trim the trailing row gap.
+    final canvasHeight =
+        nextLeafTop <= 0 ? _pedigreeBoxHeight : nextLeafTop - _pedigreeRowGap;
 
     // Auto-zoom-out to fit the whole chart on entry — refit whenever the
     // shape actually changes (switching into this view, or the ancestor
@@ -1379,9 +1411,10 @@ class _SiblingsBadge extends StatelessWidget {
 //  from the spine into each parent's box. Standard genealogical
 //  pedigree-chart connector shape. Matches _buildPedigreeView's xOf/yOf
 //  exactly: each parent pair's midpoint always falls precisely on the
-//  child's own vertical center (by construction of the ahnentafel
-//  slot-centering math), so the horizontal stub from the child always lands
-//  exactly on the spine with no gap or offset to account for here.
+//  child's own vertical center (by construction of the compact layout —
+//  every descendant's center is the average of its present parents'
+//  centers), so the horizontal stub from the child always lands exactly on
+//  the spine with no gap or offset to account for here.
 //
 //  Ancestors are laid out to the LEFT of their descendants (focus is the
 //  rightmost box, generation increases leftward — see xOf), so a child
