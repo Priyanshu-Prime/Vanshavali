@@ -7,6 +7,12 @@ import '../services/local_storage_service.dart';
 class FamilyProvider extends ChangeNotifier {
   List<FamilyMember> _egoNetwork = [];
   List<SpouseLink> _spouseLinks = [];
+  // The entire connected family component for the full-tree view (see
+  // get_connected_tree). Separate from the ego network so switching views
+  // never drops the other's cached data.
+  List<FamilyMember> _fullTree = [];
+  List<SpouseLink> _fullTreeSpouseLinks = [];
+  bool _isLoadingFullTree = false;
   List<FamilyMember> _searchResults = [];
   FamilyMember? _selectedMember;
   FamilyMember? _centerMember;
@@ -15,6 +21,9 @@ class FamilyProvider extends ChangeNotifier {
 
   List<FamilyMember> get egoNetwork => _egoNetwork;
   List<SpouseLink> get spouseLinks => _spouseLinks;
+  List<FamilyMember> get fullTree => _fullTree;
+  List<SpouseLink> get fullTreeSpouseLinks => _fullTreeSpouseLinks;
+  bool get isLoadingFullTree => _isLoadingFullTree;
   List<FamilyMember> get searchResults => _searchResults;
   FamilyMember? get selectedMember => _selectedMember;
   FamilyMember? get centerMember => _centerMember;
@@ -119,6 +128,41 @@ class FamilyProvider extends ChangeNotifier {
     }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Loads the ENTIRE connected family component (see get_connected_tree,
+  /// migration 014) for the full-tree view — every relative reachable from
+  /// [rootId] through parents, children, and marriages. Online-only for the
+  /// authoritative component; offline it falls back to whatever whole set is
+  /// cached locally (still correct, just possibly stale/partial). This is a
+  /// deliberate full-component fetch, distinct from the routine ego load.
+  Future<void> loadFullTree(String rootId) async {
+    _isLoadingFullTree = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      if (await SyncService.isOnline()) {
+        _fullTree = await SupabaseService.getConnectedTree(rootId);
+        final ids = _fullTree.map((m) => m.id).toList();
+        _fullTreeSpouseLinks = await SupabaseService.getSpouseLinksFor(ids);
+        await LocalStorageService.saveFamilyMembers(_fullTree);
+        await LocalStorageService.saveSpouseLinks(_fullTreeSpouseLinks);
+      } else {
+        _fullTree = LocalStorageService.getAllFamilyMembers();
+        _fullTreeSpouseLinks =
+            _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+      }
+    } catch (e) {
+      debugPrint('Error in loadFullTree: $e');
+      _error = e.toString();
+      _fullTree = LocalStorageService.getAllFamilyMembers();
+      _fullTreeSpouseLinks =
+          _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+    }
+
+    _isLoadingFullTree = false;
     notifyListeners();
   }
 

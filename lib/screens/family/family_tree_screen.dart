@@ -175,6 +175,36 @@ class SiblingsBadgeContent extends TreeNodeContent {
   return (graph: graph, contents: contents, initialNodeId: focusUnitId);
 }
 
+/// Builds a graph of the ENTIRE connected family for the full-tree view: one
+/// node per person (keyed by member id) and a parent->child edge for every
+/// father/mother link whose parent is also in [members]. Unlike the ego view
+/// this is not a strict tree (a child has two parents; lineages re-converge
+/// through marriage), so it's laid out with Sugiyama (a layered DAG algorithm),
+/// not BuchheimWalker. Any id referenced but not present in [members] is
+/// skipped, so a dangling father_id/mother_id can't spawn a phantom node.
+Graph buildFullTreeGraph(List<FamilyMember> members) {
+  final graph = Graph();
+  final ids = {for (final m in members) m.id};
+  final nodeMap = <String, Node>{};
+  Node ensure(String id) => nodeMap.putIfAbsent(id, () {
+        final n = Node.Id(id);
+        graph.addNode(n);
+        return n;
+      });
+  for (final m in members) {
+    ensure(m.id);
+  }
+  for (final m in members) {
+    if (m.fatherId != null && ids.contains(m.fatherId)) {
+      graph.addEdge(ensure(m.fatherId!), ensure(m.id));
+    }
+    if (m.motherId != null && ids.contains(m.motherId)) {
+      graph.addEdge(ensure(m.motherId!), ensure(m.id));
+    }
+  }
+  return graph;
+}
+
 /// Builds an ahnentafel (Sosa-Stradonitz) map of [focus]'s ancestors:
 /// index 1 is [focus] itself, index `2n` is the father of index `n`, index
 /// `2n+1` is the mother of index `n` — the standard numbering used by real
