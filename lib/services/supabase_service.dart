@@ -350,6 +350,21 @@ class SupabaseService {
     return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Fetches the entire connected family component reachable from [rootId] —
+  /// parents, children, and spouses, transitively — via get_connected_tree
+  /// (migration 014). This is the whole-tree view's data source and the basis
+  /// for cross-tree isolation: a family that isn't connected to [rootId] never
+  /// appears here. Unlike the ego network this is intentionally the full
+  /// component, so callers should use it only for the dedicated whole-tree view,
+  /// not the routine per-node navigation.
+  static Future<List<FamilyMember>> getConnectedTree(String rootId) async {
+    final response =
+        await client.rpc('get_connected_tree', params: {'root': rootId});
+    return (response as List)
+        .map((json) => FamilyMember.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Link family members.
   ///
   /// [autoLinkSpouse] controls the father<->mother convenience link: when you
