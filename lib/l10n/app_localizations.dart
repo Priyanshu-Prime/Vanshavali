@@ -1142,6 +1142,24 @@ abstract class AppLocalizations {
   /// **'Transliteration'**
   String get transliteration;
 
+  /// No description provided for @typeNameInEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the name in English'**
+  String get typeNameInEnglish;
+
+  /// No description provided for @gujaratiSpellingOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a Gujarati spelling'**
+  String get gujaratiSpellingOptions;
+
+  /// No description provided for @noSpellingSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No suggestions — type the spelling below'**
+  String get noSpellingSuggestions;
+
   /// No description provided for @typeManually.
   ///
   /// In en, this message translates to:

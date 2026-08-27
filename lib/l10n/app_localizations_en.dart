@@ -576,6 +576,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transliteration => 'Transliteration';
 
   @override
+  String get typeNameInEnglish => 'Type the name in English';
+
+  @override
+  String get gujaratiSpellingOptions => 'Tap a Gujarati spelling';
+
+  @override
+  String get noSpellingSuggestions =>
+      'No suggestions — type the spelling below';
+
+  @override
   String get typeManually => 'Type manually in Gujarati';
 
   @override

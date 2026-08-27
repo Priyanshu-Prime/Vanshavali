@@ -577,6 +577,15 @@ class AppLocalizationsGu extends AppLocalizations {
   String get transliteration => 'લિપ્યંતર';
 
   @override
+  String get typeNameInEnglish => 'નામ અંગ્રેજીમાં લખો';
+
+  @override
+  String get gujaratiSpellingOptions => 'ગુજરાતી જોડણી પસંદ કરો';
+
+  @override
+  String get noSpellingSuggestions => 'કોઈ સૂચન નથી — નીચે જોડણી લખો';
+
+  @override
   String get typeManually => 'ગુજરાતીમાં મેન્યુઅલી ટાઈપ કરો';
 
   @override

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../services/translation_service.dart';
+import '../services/transliteration_service.dart';
 import 'common_widgets.dart';
 
-/// Shows a bottom sheet letting the user pick or type the correct Gujarati
-/// spelling for an English name.
+/// Shows a bottom sheet for choosing the correct Gujarati spelling of a name.
 ///
-/// [englishText] – the current English value (used to generate alternatives).
+/// The user types the name in English (Latin) and picks from live phonetic
+/// Gujarati candidates — no keyboard switching, and no accidental *translation*
+/// of real-word names (that was the old Google-Translate behaviour). A manual
+/// Gujarati field is still available for fine-tuning or direct entry.
+///
+/// [englishText] – the current English value, used to seed the suggestions.
 /// [currentGujarati] – the currently-set Gujarati value.
 ///
 /// Returns the chosen Gujarati string, or `null` if dismissed.
@@ -41,52 +47,65 @@ class _GujaratiEditSheetBody extends StatefulWidget {
 }
 
 class _GujaratiEditSheetBodyState extends State<_GujaratiEditSheetBody> {
-  late TextEditingController _manualController;
-  String? _autoTranslation;
-  String? _transliteration;
-  bool _loading = true;
+  late final TextEditingController _latinController;
+  late final TextEditingController _manualController;
+  List<String> _candidates = [];
+  bool _loading = false;
   String? _selected;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
+    _latinController = TextEditingController(text: widget.englishText);
     _manualController = TextEditingController(text: widget.currentGujarati);
-    _selected = widget.currentGujarati;
-    _loadAlternatives();
-  }
-
-  Future<void> _loadAlternatives() async {
-    final english = widget.englishText.trim();
-    if (english.isEmpty) {
-      setState(() => _loading = false);
-      return;
-    }
-
-    // Generate alternatives in parallel
-    final futures = await Future.wait([
-      TranslationService.translateToGujarati(english),
-    ]);
-    final auto = futures[0];
-    final translit = TranslationService.transliterateToGujarati(english);
-
-    if (mounted) {
-      setState(() {
-        _autoTranslation = auto;
-        _transliteration = translit;
-        _loading = false;
-      });
-    }
+    _selected = widget.currentGujarati.isEmpty ? null : widget.currentGujarati;
+    _fetchCandidates(widget.englishText);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _latinController.dispose();
     _manualController.dispose();
     super.dispose();
+  }
+
+  void _onLatinChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _fetchCandidates(value);
+    });
+  }
+
+  Future<void> _fetchCandidates(String latin) async {
+    if (latin.trim().isEmpty) {
+      if (mounted) setState(() => _candidates = []);
+      return;
+    }
+    setState(() => _loading = true);
+    final results = await TransliterationService.candidates(latin, num: 6);
+    if (!mounted) return;
+    setState(() {
+      _candidates = results;
+      _loading = false;
+    });
+  }
+
+  void _choose(String value) {
+    setState(() {
+      _selected = value;
+      _manualController.text = value;
+      _manualController.selection = TextSelection.fromPosition(
+        TextPosition(offset: value.length),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -99,15 +118,14 @@ class _GujaratiEditSheetBodyState extends State<_GujaratiEditSheetBody> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
           Row(
             children: [
-              const Icon(Icons.translate, size: 24),
+              const Icon(Icons.keyboard, size: 24),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.editGujaratiSpelling,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium,
                 ),
               ),
               IconButton(
@@ -118,101 +136,77 @@ class _GujaratiEditSheetBodyState extends State<_GujaratiEditSheetBody> {
           ),
           const Divider(),
 
+          // Type the name in English (Latin) — candidates update live.
+          TextField(
+            controller: _latinController,
+            autofocus: widget.currentGujarati.isEmpty,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.typeNameInEnglish,
+              prefixIcon: const Icon(Icons.edit),
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: _onLatinChanged,
+          ),
+          const SizedBox(height: 12),
+
+          Text(l10n.gujaratiSpellingOptions,
+              style: theme.textTheme.bodySmall),
+          const SizedBox(height: 6),
+
           if (_loading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+              padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: CircularProgressIndicator()),
             )
-          else ...[
-            // Option 1: Auto-translation from Google
-            if (_autoTranslation != null && _autoTranslation!.isNotEmpty)
-              _OptionTile(
-                label: l10n.autoTranslation,
-                value: _autoTranslation!,
-                selected: _selected == _autoTranslation,
-                onTap: () => setState(() {
-                  _selected = _autoTranslation;
-                  _manualController.text = _autoTranslation!;
-                }),
+          else if (_candidates.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                l10n.noSpellingSuggestions,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.outline),
               ),
-
-            // Option 2: Basic transliteration
-            if (_transliteration != null &&
-                _transliteration!.isNotEmpty &&
-                _transliteration != _autoTranslation)
-              _OptionTile(
-                label: l10n.transliteration,
-                value: _transliteration!,
-                selected: _selected == _transliteration,
-                onTap: () => setState(() {
-                  _selected = _transliteration;
-                  _manualController.text = _transliteration!;
-                }),
-              ),
-
-            const SizedBox(height: 12),
-
-            // Option 3: Manual text input
-            Text(
-              l10n.typeManually,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _manualController,
-              decoration: InputDecoration(
-                hintText: l10n.typeManually,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _selected = v),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _candidates.map((c) {
+                final selected = _selected == c;
+                return ChoiceChip(
+                  label: Text(c, style: const TextStyle(fontSize: 18)),
+                  selected: selected,
+                  onSelected: (_) => _choose(c),
+                );
+              }).toList(),
             ),
 
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-            // Apply button
-            FilledButton(
-              onPressed: () {
-                final text = _manualController.text.trim();
-                Navigator.pop(context, text.isNotEmpty ? text : null);
-              },
-              child: Text(l10n.apply),
+          // Manual fine-tuning / direct Gujarati entry.
+          Text(l10n.typeManually, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _manualController,
+            decoration: InputDecoration(
+              hintText: l10n.typeManually,
+              border: const OutlineInputBorder(),
+              isDense: true,
             ),
-          ],
+            onChanged: (v) => setState(() => _selected = v),
+          ),
+
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () {
+              final text = _manualController.text.trim();
+              Navigator.pop(context, text.isNotEmpty ? text : null);
+            },
+            child: Text(l10n.apply),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-class _OptionTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _OptionTile({
-    required this.label,
-    required this.value,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: selected
-          ? Theme.of(context).colorScheme.primaryContainer
-          : null,
-      child: ListTile(
-        dense: true,
-        title: Text(value, style: const TextStyle(fontSize: 18)),
-        subtitle: Text(label),
-        trailing: selected
-            ? Icon(Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary)
-            : null,
-        onTap: onTap,
       ),
     );
   }

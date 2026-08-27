@@ -7,7 +7,7 @@ import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
 import '../../services/supabase_service.dart';
-import '../../services/translation_service.dart';
+import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
@@ -283,7 +283,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (text.isEmpty) return;
     _firstNameDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final translated = await TranslationService.translateToGujarati(text);
+        final translated = await TransliterationService.best(text);
         if (translated != null && mounted) {
           _firstNameGuController.text = translated;
         }
@@ -297,7 +297,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (text.isEmpty) return;
     _lastNameDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final translated = await TranslationService.translateToGujarati(text);
+        final translated = await TransliterationService.best(text);
         if (translated != null && mounted) {
           _lastNameGuController.text = translated;
         }
