@@ -71,6 +71,7 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/data/
   #         style: italic
   #   - family: Trajan Pro
   #     fonts:
