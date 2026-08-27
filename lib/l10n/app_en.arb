@@ -176,6 +176,31 @@
   },
   "confirm": "Confirm",
   "add": "Add",
+  "parentsMarriedTitle": "Marriage",
+  "parentsMarriedQuestion": "Is {newParent} married to {existingParent}?",
+  "@parentsMarriedQuestion": {
+    "placeholders": {
+      "newParent": { "type": "String" },
+      "existingParent": { "type": "String" }
+    }
+  },
+  "yesMarried": "Yes, they are married",
+  "noDifferentMarriage": "No, a step-parent",
+  "sharedParentsTitle": "Shared parents",
+  "sharedParentsQuestion": "Which parents does {name} share with {self}?",
+  "@sharedParentsQuestion": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "self": { "type": "String" }
+    }
+  },
+  "bothParents": "Both parents",
+  "onlyParent": "Only {name} (half-sibling)",
+  "@onlyParent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "familyMemberAdded": "Family member added successfully",
   "familyMemberAddedPartial": "Family member added, but linking some existing children to them failed — please check and try again",
   "noResultsFound": "No matching members found",

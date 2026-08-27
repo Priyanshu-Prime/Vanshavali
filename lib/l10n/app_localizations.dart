@@ -890,6 +890,54 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get add;
 
+  /// No description provided for @parentsMarriedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage'**
+  String get parentsMarriedTitle;
+
+  /// No description provided for @parentsMarriedQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Is {newParent} married to {existingParent}?'**
+  String parentsMarriedQuestion(String newParent, String existingParent);
+
+  /// No description provided for @yesMarried.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, they are married'**
+  String get yesMarried;
+
+  /// No description provided for @noDifferentMarriage.
+  ///
+  /// In en, this message translates to:
+  /// **'No, a step-parent'**
+  String get noDifferentMarriage;
+
+  /// No description provided for @sharedParentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared parents'**
+  String get sharedParentsTitle;
+
+  /// No description provided for @sharedParentsQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Which parents does {name} share with {self}?'**
+  String sharedParentsQuestion(String name, String self);
+
+  /// No description provided for @bothParents.
+  ///
+  /// In en, this message translates to:
+  /// **'Both parents'**
+  String get bothParents;
+
+  /// No description provided for @onlyParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {name} (half-sibling)'**
+  String onlyParent(String name);
+
   /// No description provided for @familyMemberAdded.
   ///
   /// In en, this message translates to:

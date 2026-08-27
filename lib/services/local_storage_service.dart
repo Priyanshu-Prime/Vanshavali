@@ -315,6 +315,8 @@ class SyncService {
               memberId: memberId,
               relatedMemberId: relatedMemberId,
               relationType: relationType,
+              // Older queued items predate this flag; default to linking.
+              autoLinkSpouse: data['auto_link_spouse'] as bool? ?? true,
             );
             break;
         }

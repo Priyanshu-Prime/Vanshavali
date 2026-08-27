@@ -426,6 +426,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get add => 'Add';
 
   @override
+  String get parentsMarriedTitle => 'Marriage';
+
+  @override
+  String parentsMarriedQuestion(String newParent, String existingParent) {
+    return 'Is $newParent married to $existingParent?';
+  }
+
+  @override
+  String get yesMarried => 'Yes, they are married';
+
+  @override
+  String get noDifferentMarriage => 'No, a step-parent';
+
+  @override
+  String get sharedParentsTitle => 'Shared parents';
+
+  @override
+  String sharedParentsQuestion(String name, String self) {
+    return 'Which parents does $name share with $self?';
+  }
+
+  @override
+  String get bothParents => 'Both parents';
+
+  @override
+  String onlyParent(String name) {
+    return 'Only $name (half-sibling)';
+  }
+
+  @override
   String get familyMemberAdded => 'Family member added successfully';
 
   @override

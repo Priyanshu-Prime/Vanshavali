@@ -427,6 +427,36 @@ class AppLocalizationsGu extends AppLocalizations {
   String get add => 'ઉમેરો';
 
   @override
+  String get parentsMarriedTitle => 'લગ્ન';
+
+  @override
+  String parentsMarriedQuestion(String newParent, String existingParent) {
+    return 'શું $newParent અને $existingParent લગ્નથી જોડાયેલા છે?';
+  }
+
+  @override
+  String get yesMarried => 'હા, તેઓ પરિણીત છે';
+
+  @override
+  String get noDifferentMarriage => 'ના, સાવકા માતા-પિતા';
+
+  @override
+  String get sharedParentsTitle => 'સહિયારા માતા-પિતા';
+
+  @override
+  String sharedParentsQuestion(String name, String self) {
+    return '$name અને $self કયા માતા-પિતા વહેંચે છે?';
+  }
+
+  @override
+  String get bothParents => 'બંને માતા-પિતા';
+
+  @override
+  String onlyParent(String name) {
+    return 'ફક્ત $name (સાવકા ભાઈ-બહેન)';
+  }
+
+  @override
   String get familyMemberAdded => 'કુટુંબના સભ્ય સફળતાપૂર્વક ઉમેરાયા!';
 
   @override

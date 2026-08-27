@@ -350,26 +350,32 @@ class SupabaseService {
     return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 
-  /// Link family members
+  /// Link family members.
+  ///
+  /// [autoLinkSpouse] controls the father<->mother convenience link: when you
+  /// add a parent to a member who already has the other parent, they're assumed
+  /// married and linked as spouses. Pass false for a STEP-parent (a parent from
+  /// a different marriage), so the two parents are NOT linked as a couple.
   static Future<void> linkFamilyMembers({
     required String memberId,
     required String relatedMemberId,
     required RelationType relationType,
+    bool autoLinkSpouse = true,
   }) async {
     switch (relationType) {
       case RelationType.father:
         await _updateMemberOrThrow(memberId, {'father_id': relatedMemberId});
-        // Auto-link spouse between father and existing mother
+        // Auto-link spouse between father and existing mother (unless step-parent)
         final memberAfterFather = await getFamilyMemberById(memberId);
-        if (memberAfterFather?.motherId != null) {
+        if (autoLinkSpouse && memberAfterFather?.motherId != null) {
           await _ensureSpouseLink(relatedMemberId, memberAfterFather!.motherId!);
         }
         break;
       case RelationType.mother:
         await _updateMemberOrThrow(memberId, {'mother_id': relatedMemberId});
-        // Auto-link spouse between mother and existing father
+        // Auto-link spouse between mother and existing father (unless step-parent)
         final memberAfterMother = await getFamilyMemberById(memberId);
-        if (memberAfterMother?.fatherId != null) {
+        if (autoLinkSpouse && memberAfterMother?.fatherId != null) {
           await _ensureSpouseLink(memberAfterMother!.fatherId!, relatedMemberId);
         }
         break;

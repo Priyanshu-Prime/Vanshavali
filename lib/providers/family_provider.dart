@@ -357,6 +357,7 @@ class FamilyProvider extends ChangeNotifier {
     required String memberId,
     required String relatedMemberId,
     required RelationType relationType,
+    bool autoLinkSpouse = true,
   }) async {
     _isLoading = true;
     _error = null;
@@ -368,6 +369,7 @@ class FamilyProvider extends ChangeNotifier {
           memberId: memberId,
           relatedMemberId: relatedMemberId,
           relationType: relationType,
+          autoLinkSpouse: autoLinkSpouse,
         );
       } else {
         // Queue for retry on the next sync — without this, a relation link
@@ -381,6 +383,7 @@ class FamilyProvider extends ChangeNotifier {
           {
             'related_member_id': relatedMemberId,
             'relation_type': relationType.name,
+            'auto_link_spouse': autoLinkSpouse,
           },
           dedupeKey: '${memberId}_link_${relationType.name}_$relatedMemberId',
         );

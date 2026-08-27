@@ -486,6 +486,49 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     );
     if (!confirmed) return;
 
+    final newMemberName = _linkExisting && _selectedExistingMember != null
+        ? _selectedExistingMember!.fullNameEn
+        : _firstNameEnController.text.trim();
+
+    // ── Step-parent: adding a parent to a member who already has the OTHER
+    //    parent. Are the two parents a married couple (auto-link them as
+    //    spouses) or is this a step-parent from a different marriage? ──
+    bool autoLinkSpouse = true;
+    if (_selectedRelation == 'father' && effectiveMember.motherId != null) {
+      final other = await familyProvider.getMemberById(effectiveMember.motherId!);
+      if (!mounted) return;
+      autoLinkSpouse =
+          await _askParentsMarried(newMemberName, other?.fullNameEn ?? l10n.mother);
+      if (!mounted) return;
+    } else if (_selectedRelation == 'mother' &&
+        effectiveMember.fatherId != null) {
+      final other = await familyProvider.getMemberById(effectiveMember.fatherId!);
+      if (!mounted) return;
+      autoLinkSpouse =
+          await _askParentsMarried(newMemberName, other?.fullNameEn ?? l10n.father);
+      if (!mounted) return;
+    }
+
+    // ── Half-sibling: when the member has BOTH parents, does the new sibling
+    //    share both, or just one (half-sibling / step-sibling)? ──
+    _SiblingShare siblingShare = _SiblingShare.both;
+    if (_selectedRelation == 'sibling' &&
+        effectiveMember.fatherId != null &&
+        effectiveMember.motherId != null) {
+      final father = await familyProvider.getMemberById(effectiveMember.fatherId!);
+      final mother = await familyProvider.getMemberById(effectiveMember.motherId!);
+      if (!mounted) return;
+      final share = await _askSiblingShare(
+        siblingName: newMemberName,
+        selfName: effectiveMember.fullNameEn,
+        fatherName: father?.fullNameEn ?? l10n.father,
+        motherName: mother?.fullNameEn ?? l10n.mother,
+      );
+      if (!mounted) return;
+      if (share == null) return; // user dismissed — abort the add
+      siblingShare = share;
+    }
+
     // ── For "child" relation: ask who the other parent is ──
     FamilyMember? otherParent;
     bool createNewOtherParent = false;
@@ -546,11 +589,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
       if (_linkExisting && _selectedExistingMember != null) {
         childId = _selectedExistingMember!.id;
         // Link existing member as child
-        final linked = await familyProvider.linkFamilyMember(
-          memberId: effectiveMember.id,
-          relatedMemberId: childId,
-          relationType: _getRelationType(),
-        );
+        final linked = await _applyRelationLink(
+            familyProvider, effectiveMember, childId, autoLinkSpouse, siblingShare);
         if (!linked) throw Exception('Failed to link existing member');
       } else {
         // Create new member
@@ -581,12 +621,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
         if (created == null) throw Exception('Failed to create member');
         childId = created.id;
 
-        // Link the new member
-        final linked = await familyProvider.linkFamilyMember(
-          memberId: effectiveMember.id,
-          relatedMemberId: childId,
-          relationType: _getRelationType(),
-        );
+        // Link the new member (honouring half-sibling / step-parent choices)
+        final linked = await _applyRelationLink(
+            familyProvider, effectiveMember, childId, autoLinkSpouse, siblingShare);
         if (!linked) throw Exception('Failed to link new member');
       }
 
@@ -769,6 +806,107 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
           },
         );
       },
+    );
+  }
+
+  /// Applies the relation link, honouring the step-parent ([autoLinkSpouse])
+  /// and half-sibling ([share]) choices. A half-sibling is modelled by linking
+  /// the new person to just ONE of the member's parents (no spouse link),
+  /// rather than copying both parents as a full sibling does.
+  Future<bool> _applyRelationLink(
+    FamilyProvider fp,
+    FamilyMember self,
+    String newId,
+    bool autoLinkSpouse,
+    _SiblingShare share,
+  ) {
+    if (_selectedRelation == 'sibling') {
+      switch (share) {
+        case _SiblingShare.both:
+          return fp.linkFamilyMember(
+            memberId: self.id,
+            relatedMemberId: newId,
+            relationType: RelationType.sibling,
+          );
+        case _SiblingShare.fatherOnly:
+          return fp.linkFamilyMember(
+            memberId: newId,
+            relatedMemberId: self.fatherId!,
+            relationType: RelationType.father,
+            autoLinkSpouse: false,
+          );
+        case _SiblingShare.motherOnly:
+          return fp.linkFamilyMember(
+            memberId: newId,
+            relatedMemberId: self.motherId!,
+            relationType: RelationType.mother,
+            autoLinkSpouse: false,
+          );
+      }
+    }
+    return fp.linkFamilyMember(
+      memberId: self.id,
+      relatedMemberId: newId,
+      relationType: _getRelationType(),
+      autoLinkSpouse: autoLinkSpouse,
+    );
+  }
+
+  /// Asks whether the newly-added parent and the member's existing other parent
+  /// are a married couple. Returns true (link them as spouses) or false
+  /// (step-parent — keep them separate). Non-dismissible so it always resolves.
+  Future<bool> _askParentsMarried(String newParent, String existingParent) async {
+    final l10n = context.l10n;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.parentsMarriedTitle),
+        content: Text(l10n.parentsMarriedQuestion(newParent, existingParent)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.noDifferentMarriage),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.yesMarried),
+          ),
+        ],
+      ),
+    );
+    return result ?? true;
+  }
+
+  /// Asks which parents a new sibling shares with the member. Returns null if
+  /// the user dismisses (abort the add).
+  Future<_SiblingShare?> _askSiblingShare({
+    required String siblingName,
+    required String selfName,
+    required String fatherName,
+    required String motherName,
+  }) {
+    final l10n = context.l10n;
+    return showDialog<_SiblingShare>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.sharedParentsTitle),
+        content: Text(l10n.sharedParentsQuestion(siblingName, selfName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _SiblingShare.motherOnly),
+            child: Text(l10n.onlyParent(motherName)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _SiblingShare.fatherOnly),
+            child: Text(l10n.onlyParent(fatherName)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _SiblingShare.both),
+            child: Text(l10n.bothParents),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1133,6 +1271,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     }
   }
 }
+
+// Which parents a newly-added sibling shares with the member: both (full
+// sibling) or just one side (half-sibling / step-sibling).
+enum _SiblingShare { both, fatherOnly, motherOnly }
 
 // ─────────────────────────────────────────────────────────
 //  Data class for the other-parent selection result
