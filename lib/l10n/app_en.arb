@@ -37,6 +37,8 @@
   "isAlive": "Living",
   "deceased": "Deceased",
   "villageOrigin": "Village of Origin",
+  "selectVillage": "Select village",
+  "searchVillage": "Search village by name",
   "currentCity": "Current City",
   "education": "Education",
   "occupation": "Occupation",

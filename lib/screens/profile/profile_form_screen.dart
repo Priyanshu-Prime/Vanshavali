@@ -11,6 +11,7 @@ import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
+import '../../widgets/village_picker_field.dart';
 import '../scan/scan_invite_code_screen.dart';
 
 class ProfileFormScreen extends StatefulWidget {
@@ -526,13 +527,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
             SectionCard(
               title: l10n.location,
               children: [
-                TextFormField(
-                  controller: _villageController,
-                  decoration: InputDecoration(
-                    labelText: l10n.villageOrigin,
-                    prefixIcon: const Icon(Icons.home_outlined),
-                  ),
-                  textCapitalization: TextCapitalization.words,
+                VillagePickerField(
+                  value: _villageController.text,
+                  onChanged: (v) =>
+                      setState(() => _villageController.text = v ?? ''),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

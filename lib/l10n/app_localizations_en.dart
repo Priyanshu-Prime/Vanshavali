@@ -112,6 +112,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get villageOrigin => 'Village of Origin';
 
   @override
+  String get selectVillage => 'Select village';
+
+  @override
+  String get searchVillage => 'Search village by name';
+
+  @override
   String get currentCity => 'Current City';
 
   @override
