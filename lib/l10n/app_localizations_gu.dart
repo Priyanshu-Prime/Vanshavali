@@ -598,7 +598,10 @@ class AppLocalizationsGu extends AppLocalizations {
   }
 
   @override
-  String get defaultView => 'કુટુંબ';
+  String get defaultView => 'નજીકના';
+
+  @override
+  String get fullTreeView => 'આખું વૃક્ષ';
 
   @override
   String get pedigreeView => 'વંશાવલી';

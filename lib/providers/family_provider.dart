@@ -157,9 +157,16 @@ class FamilyProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error in loadFullTree: $e');
       _error = e.toString();
-      _fullTree = LocalStorageService.getAllFamilyMembers();
-      _fullTreeSpouseLinks =
-          _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+      // The fallback itself can throw if local storage isn't available (e.g.
+      // in a widget test with no Hive) — never let loadFullTree propagate.
+      try {
+        _fullTree = LocalStorageService.getAllFamilyMembers();
+        _fullTreeSpouseLinks =
+            _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+      } catch (_) {
+        _fullTree = const [];
+        _fullTreeSpouseLinks = const [];
+      }
     }
 
     _isLoadingFullTree = false;

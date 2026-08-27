@@ -597,7 +597,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get defaultView => 'Family';
+  String get defaultView => 'Nearby';
+
+  @override
+  String get fullTreeView => 'Full tree';
 
   @override
   String get pedigreeView => 'Pedigree';

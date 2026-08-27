@@ -19,7 +19,7 @@ import 'member_detail_screen.dart';
 // ─────────────────────────────────────────────────────────
 //  View mode enums
 // ─────────────────────────────────────────────────────────
-enum _ViewMode { defaultView, pedigree }
+enum _ViewMode { fullTree, defaultView, pedigree }
 
 // Pedigree view box/spacing constants. Box size matches _PersonBox's fixed
 // dimensions exactly (the pedigree view reuses _PersonBox directly, one
@@ -275,8 +275,12 @@ class FamilyTreeScreen extends StatefulWidget {
 }
 
 class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
-  _ViewMode _viewMode = _ViewMode.defaultView;
+  _ViewMode _viewMode = _ViewMode.fullTree;
   bool _showSiblings = false;
+
+  // Which root the full-tree view has kicked off a load for, so loadFullTree
+  // fires once per component rather than every rebuild.
+  String? _fullTreeLoadedForRoot;
 
   // Pedigree view's own pan/zoom controller — WE fully own this one
   // (create it, dispose it) since the pedigree view's InteractiveViewer is
@@ -423,6 +427,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           // plain transform reset below.
         }
       }
+    } else if (_viewMode == _ViewMode.fullTree && _graphController != null) {
+      // Recenter on the logged-in user's node in the full tree.
+      final me = context.read<AuthProvider>().currentMember;
+      if (me != null) {
+        try {
+          _graphController!.jumpToNode(ValueKey(me.id));
+          return;
+        } catch (_) {}
+      }
     }
     _activeTransformController?.value = Matrix4.identity();
   }
@@ -523,7 +536,10 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: _viewMode == _ViewMode.defaultView
+                              child: _viewMode == _ViewMode.fullTree
+                                  ? _buildFullTreeView(
+                                      context, familyProvider, locale)
+                                  : _viewMode == _ViewMode.defaultView
                                   ? _buildDefaultView(
                                       context, familyProvider, locale)
                                   : InteractiveViewer(
@@ -573,6 +589,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           SegmentedButton<_ViewMode>(
             segments: [
               ButtonSegment(
+                value: _ViewMode.fullTree,
+                label: Text(l10n.fullTreeView),
+                icon: const Icon(Icons.hub),
+              ),
+              ButtonSegment(
                 value: _ViewMode.defaultView,
                 label: Text(l10n.defaultView),
                 icon: const Icon(Icons.account_tree),
@@ -591,6 +612,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               // Force _buildPedigreeView to auto-fit-to-view again every
               // time Pedigree is (re)selected, not just the first time.
               _pedigreeFitAppliedForKey = null;
+              // Refetch the full component on (re)entry so it reflects any
+              // relations added while in another view.
+              if (_viewMode == _ViewMode.fullTree) _fullTreeLoadedForRoot = null;
             }),
           ),
         ],
@@ -609,6 +633,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   //  off a single root, so the algorithm handles all spacing/centering —
   //  no hand-rolled pixel math, which is what caused the child-drift bug.
   // ═══════════════════════════════════════════════════════
+  // Ego-centric view (one hop around the centered person, tap to re-center).
+  // Kept as a secondary mode; the full tree is the default.
   Widget _buildDefaultView(
     BuildContext context,
     FamilyProvider provider,
@@ -619,12 +645,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
 
     final data = _buildTreeDataCached(provider, focus);
 
-    // A brand-new profile with no father/mother/spouse/children/siblings yet
-    // produces a single-node, edge-less graph. graphview's
-    // BuchheimWalkerAlgorithm isn't designed for a trivial 1-node tree and
-    // can throw a Flutter framework GlobalKey assertion
-    // ('_elements.contains(element)') when asked to lay one out — render the
-    // lone unit directly instead of routing it through the graph library.
+    // A brand-new profile with no relations yet is a single-node graph, which
+    // BuchheimWalkerAlgorithm can't lay out (GlobalKey assertion) — render the
+    // lone unit directly.
     if (data.graph.nodes.length <= 1) {
       final content = data.contents[data.initialNodeId];
       if (content is! TreeUnitContent) return const SizedBox();
@@ -651,13 +674,6 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         configuration, _FamilyTreeEdgeRenderer(configuration));
 
     return _GraphViewHost(
-      // Recreates _GraphViewHost's Element (and re-triggers its initial
-      // jump-to-focus-node) whenever the center member or sibling
-      // visibility changes, so tapping a node to re-center always re-frames
-      // the camera. See _GraphViewHost's own doc comment for why it also
-      // needs to be recreated on *key-unchanged* remounts (loading-state
-      // swap, single-node bypass) — that's handled automatically by tying
-      // controller creation to this widget's own initState, not by this key.
       key: ValueKey('tree_${focus.id}_$_showSiblings'),
       graph: data.graph,
       algorithm: algorithm,
@@ -668,22 +684,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
-      // Not setState() — this fires from the child's initState, which runs
-      // synchronously during THIS widget's own build phase; calling
-      // setState here would throw. _graphController is only read later, on
-      // a button press, by which time initState will already have run.
       onControllerCreated: (c) => _graphController = c,
-      // Only clear if nothing newer has already taken over — see
-      // _GraphViewHost's class doc comment. A same-frame remount (e.g.
-      // tapping the siblings badge, which changes _showSiblings and
-      // therefore this widget's key within one setState) mounts the NEW
-      // _GraphViewHost — calling onControllerCreated — before the OLD
-      // one's dispose() runs this callback. Clearing unconditionally would
-      // let the older instance's cleanup clobber the newer, still-valid
-      // controller — silently breaking the zoom/reset buttons with no
-      // crash to signal it (confirmed by an independent review that wrote
-      // a reproduction test: zoom-in stopped changing the transform matrix
-      // after toggling the siblings badge, with no exception thrown).
       onControllerDisposed: (c) {
         if (identical(_graphController, c)) {
           _graphController = null;
@@ -709,6 +710,104 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           );
         }
         return const SizedBox();
+      },
+    );
+  }
+
+  Widget _buildFullTreeView(
+    BuildContext context,
+    FamilyProvider provider,
+    String locale,
+  ) {
+    // The whole connected family, with the logged-in user highlighted. Root the
+    // component fetch at the user (any node in a component yields the same set),
+    // falling back to whatever node is centered if there's no profile yet.
+    final me = context.read<AuthProvider>().currentMember ?? provider.centerMember;
+    if (me == null) return const SizedBox();
+
+    // Fire the full-component load once per root (guarded so it doesn't refire
+    // every rebuild — same pattern as the pedigree fit).
+    if (!provider.isLoadingFullTree && _fullTreeLoadedForRoot != me.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        provider.loadFullTree(me.id);
+        setState(() => _fullTreeLoadedForRoot = me.id);
+      });
+    }
+
+    final members = provider.fullTree;
+    if (members.isEmpty) {
+      if (provider.isLoadingFullTree) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      // Nothing loaded yet (or a brand-new lone profile): show just you.
+      return Center(
+        child: _PersonBox(
+          member: me,
+          isFocus: true,
+          locale: locale,
+          onTap: () => _showMemberOptions(context, me, provider),
+          onLongPress: () => _showMemberOptions(context, me, provider),
+        ),
+      );
+    }
+
+    final byId = {for (final m in members) m.id: m};
+    final graph = buildFullTreeGraph(members);
+
+    // A single-node component can't be laid out by the graph algorithm (same
+    // GlobalKey assertion the ego view hit) — render the lone box directly.
+    if (graph.nodes.length <= 1) {
+      return Center(
+        child: _PersonBox(
+          member: me,
+          isFocus: true,
+          locale: locale,
+          onTap: () => _showMemberOptions(context, me, provider),
+          onLongPress: () => _showMemberOptions(context, me, provider),
+        ),
+      );
+    }
+
+    // Sugiyama (layered DAG) rather than BuchheimWalker: a full family has two
+    // parents per child and lineages that re-converge through marriage, which a
+    // single-parent tree algorithm can't express.
+    final configuration = SugiyamaConfiguration()
+      ..levelSeparation = 60
+      ..nodeSeparation = 24
+      ..orientation = SugiyamaConfiguration.ORIENTATION_TOP_BOTTOM;
+    final algorithm = SugiyamaAlgorithm(configuration);
+
+    return _GraphViewHost(
+      // Rebuild the host when the component changes (root or size), so the
+      // camera re-frames onto the user.
+      key: ValueKey('fulltree_${me.id}_${members.length}'),
+      graph: graph,
+      algorithm: algorithm,
+      initialNodeId: me.id,
+      paint: Paint()
+        ..color = Theme.of(context).colorScheme.outline
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+      onControllerCreated: (c) => _graphController = c,
+      onControllerDisposed: (c) {
+        if (identical(_graphController, c)) {
+          _graphController = null;
+        }
+      },
+      builder: (node) {
+        final id = node.key!.value as String;
+        final m = byId[id];
+        if (m == null) return const SizedBox();
+        return _PersonBox(
+          member: m,
+          isFocus: m.id == me.id,
+          locale: locale,
+          onTap: () => _showMemberOptions(context, m, provider),
+          onLongPress: () => _showMemberOptions(context, m, provider),
+        );
       },
     );
   }

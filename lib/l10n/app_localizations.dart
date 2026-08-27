@@ -1175,8 +1175,14 @@ abstract class AppLocalizations {
   /// No description provided for @defaultView.
   ///
   /// In en, this message translates to:
-  /// **'Family'**
+  /// **'Nearby'**
   String get defaultView;
+
+  /// No description provided for @fullTreeView.
+  ///
+  /// In en, this message translates to:
+  /// **'Full tree'**
+  String get fullTreeView;
 
   /// No description provided for @pedigreeView.
   ///

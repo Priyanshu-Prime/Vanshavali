@@ -295,7 +295,8 @@
       "count": { "type": "int" }
     }
   },
-  "defaultView": "Family",
+  "defaultView": "Nearby",
+  "fullTreeView": "Full tree",
   "pedigreeView": "Pedigree",
   "editGujaratiSpelling": "Edit Gujarati Spelling",
   "autoTranslation": "Auto Translation",
