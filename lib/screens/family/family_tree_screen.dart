@@ -79,6 +79,12 @@ class SiblingsBadgeContent extends TreeNodeContent {
   const SiblingsBadgeContent(this.count);
 }
 
+/// The invisible node that joins several family roots into one tree in the
+/// full-tree view (BuchheimWalker needs a single root). Rendered as empty space.
+class SuperRootContent extends TreeNodeContent {
+  const SuperRootContent();
+}
+
 /// Builds the graphview [Graph] structure for the default/immediate-family
 /// tree view: an optional parents unit (father + his own spouse(s), so a
 /// remarried parent's other spouse(s) still render coherently) as root, the
@@ -175,34 +181,154 @@ class SiblingsBadgeContent extends TreeNodeContent {
   return (graph: graph, contents: contents, initialNodeId: focusUnitId);
 }
 
-/// Builds a graph of the ENTIRE connected family for the full-tree view: one
-/// node per person (keyed by member id) and a parent->child edge for every
-/// father/mother link whose parent is also in [members]. Unlike the ego view
-/// this is not a strict tree (a child has two parents; lineages re-converge
-/// through marriage), so it's laid out with Sugiyama (a layered DAG algorithm),
-/// not BuchheimWalker. Any id referenced but not present in [members] is
-/// skipped, so a dangling father_id/mother_id can't spawn a phantom node.
-Graph buildFullTreeGraph(List<FamilyMember> members) {
-  final graph = Graph();
-  final ids = {for (final m in members) m.id};
+/// Sentinel id for the synthetic super-root that joins multiple family roots
+/// into one tree (BuchheimWalker needs a single root). Rendered invisibly.
+const String kFullTreeSuperRoot = '__superroot__';
+
+/// Builds the whole connected family as a clean DESCENDANT tree of couple-units
+/// — the standard genealogical layout — reusing the ego view's TreeUnitContent
+/// (a person shown with their spouse(s)) so it renders through the same
+/// BuchheimWalker + _FamilyTreeEdgeRenderer as the "Nearby" view (children hang
+/// tidily under the couple, one clean level per generation). A generic DAG
+/// layout (Sugiyama) produced a haywire mesh here because it neither groups
+/// couples nor keeps generations as rows.
+///
+/// Approach: start at the topmost ancestor on [focusId]'s line, then descend —
+/// each person becomes the "primary" of a unit that absorbs their not-yet-placed
+/// spouse(s), and their children become child-units hanging beneath. Anyone not
+/// reached that way (e.g. a married-in spouse whose own parents are also in the
+/// component) becomes an additional root. Multiple roots are joined under an
+/// invisible super-root so the whole forest lays out as one tree.
+({
+  Graph graph,
+  Map<String, TreeNodeContent> contents,
+  String initialNodeId,
+}) buildFullTreeData({
+  required List<FamilyMember> members,
+  required List<SpouseLink> spouseLinks,
+  required String focusId,
+}) {
+  final byId = {for (final m in members) m.id: m};
+
+  // Spouse adjacency: explicit links, plus co-parents (both parents of a shared
+  // child) inferred as a couple — same rule the ego view uses.
+  final spouseIds = <String, Set<String>>{};
+  void linkSpouse(String a, String b) {
+    if (!byId.containsKey(a) || !byId.containsKey(b) || a == b) return;
+    (spouseIds[a] ??= {}).add(b);
+    (spouseIds[b] ??= {}).add(a);
+  }
+
+  for (final l in spouseLinks) {
+    linkSpouse(l.memberId, l.spouseId);
+  }
+  for (final m in members) {
+    if (m.fatherId != null && m.motherId != null) {
+      linkSpouse(m.fatherId!, m.motherId!);
+    }
+  }
+
+  List<FamilyMember> spousesOf(String id) => (spouseIds[id] ?? const {})
+      .map((s) => byId[s])
+      .whereType<FamilyMember>()
+      .toList();
+
+  final childrenByParent = <String, List<FamilyMember>>{};
+  for (final m in members) {
+    if (m.fatherId != null && byId.containsKey(m.fatherId)) {
+      (childrenByParent[m.fatherId!] ??= []).add(m);
+    }
+    if (m.motherId != null && byId.containsKey(m.motherId)) {
+      (childrenByParent[m.motherId!] ??= []).add(m);
+    }
+  }
+
+  final graph = Graph()..isTree = true;
+  final contents = <String, TreeNodeContent>{};
   final nodeMap = <String, Node>{};
-  Node ensure(String id) => nodeMap.putIfAbsent(id, () {
-        final n = Node.Id(id);
-        graph.addNode(n);
-        return n;
-      });
-  for (final m in members) {
-    ensure(m.id);
-  }
-  for (final m in members) {
-    if (m.fatherId != null && ids.contains(m.fatherId)) {
-      graph.addEdge(ensure(m.fatherId!), ensure(m.id));
+  final placed = <String>{};
+
+  Node makeUnit(FamilyMember primary) {
+    final unitId = 'u:${primary.id}';
+    final existing = nodeMap[unitId];
+    if (existing != null) return existing;
+
+    final spouses =
+        spousesOf(primary.id).where((s) => !placed.contains(s.id)).toList();
+    placed.add(primary.id);
+    for (final s in spouses) {
+      placed.add(s.id);
     }
-    if (m.motherId != null && ids.contains(m.motherId)) {
-      graph.addEdge(ensure(m.motherId!), ensure(m.id));
+    contents[unitId] = TreeUnitContent(primary, spouses);
+    final node = Node.Id(unitId);
+    graph.addNode(node);
+    nodeMap[unitId] = node;
+
+    // Children of the primary OR any of the absorbed spouses, deduped.
+    final seen = <String>{};
+    final kids = <FamilyMember>[];
+    for (final c in [
+      ...?childrenByParent[primary.id],
+      for (final s in spouses) ...?childrenByParent[s.id],
+    ]) {
+      if (seen.add(c.id)) kids.add(c);
     }
+    for (final child in _sortedByDob(kids)) {
+      if (placed.contains(child.id)) continue; // e.g. cousin marriage already placed
+      graph.addEdge(node, makeUnit(child));
+    }
+    return node;
   }
-  return graph;
+
+  // Topmost ancestor on the focus's line (follow father, else mother, upward).
+  FamilyMember climbToRoot(FamilyMember start) {
+    var cur = start;
+    final seen = <String>{};
+    while (seen.add(cur.id)) {
+      final next = (cur.fatherId != null ? byId[cur.fatherId] : null) ??
+          (cur.motherId != null ? byId[cur.motherId] : null);
+      if (next == null) break;
+      cur = next;
+    }
+    return cur;
+  }
+
+  final roots = <Node>[];
+  final focus = byId[focusId] ?? (members.isNotEmpty ? members.first : null);
+  if (focus != null) {
+    roots.add(makeUnit(climbToRoot(focus)));
+  }
+  // Anyone not reached from the main line becomes an additional root — those
+  // with no parents in the set first (true ancestors), then whatever remains.
+  final remaining = members.where((m) => !placed.contains(m.id)).toList()
+    ..sort((a, b) {
+      bool parentless(FamilyMember m) =>
+          !byId.containsKey(m.fatherId) && !byId.containsKey(m.motherId);
+      return (parentless(b) ? 1 : 0).compareTo(parentless(a) ? 1 : 0);
+    });
+  for (final m in remaining) {
+    if (placed.contains(m.id)) continue;
+    roots.add(makeUnit(m));
+  }
+
+  // Join multiple family roots under one invisible super-root.
+  String initialNodeId;
+  if (roots.length > 1) {
+    final superNode = Node.Id(kFullTreeSuperRoot);
+    graph.addNode(superNode);
+    contents[kFullTreeSuperRoot] = const SuperRootContent();
+    for (final r in roots) {
+      graph.addEdge(superNode, r);
+    }
+    initialNodeId = kFullTreeSuperRoot;
+  } else if (roots.length == 1) {
+    initialNodeId =
+        nodeMap.keys.firstWhere((k) => nodeMap[k] == roots.first, orElse: () => '');
+  } else {
+    initialNodeId = '';
+  }
+
+  return (graph: graph, contents: contents, initialNodeId: initialNodeId);
 }
 
 /// Builds an ahnentafel (Sosa-Stradonitz) map of [focus]'s ancestors:
@@ -506,9 +632,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           ),
         ],
       ),
-      body: familyProvider.isLoading
+      // The full-tree view manages its own loading/empty state internally, so
+      // gate the whole-screen loading/empty branches on there being NO data in
+      // EITHER pool — otherwise the default (full-tree) view is hidden whenever
+      // the ego network happens to be empty (e.g. right after opening).
+      body: (familyProvider.isLoading && familyProvider.fullTree.isEmpty)
           ? AppWidgets.loading(message: l10n.loading)
-          : (familyProvider.error != null && familyProvider.egoNetwork.isEmpty)
+          : (familyProvider.error != null &&
+                  familyProvider.egoNetwork.isEmpty &&
+                  familyProvider.fullTree.isEmpty)
               ? AppWidgets.error(
                   context: context,
                   message: friendlyErrorMessage(context, familyProvider.error!),
@@ -520,7 +652,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                     }
                   },
                 )
-              : familyProvider.egoNetwork.isEmpty
+              : (familyProvider.egoNetwork.isEmpty &&
+                      familyProvider.fullTree.isEmpty)
               ? AppWidgets.empty(
                   message: l10n.noFamilyMembers,
                   subtitle: l10n.tapToAdd,
@@ -752,39 +885,47 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       );
     }
 
-    final byId = {for (final m in members) m.id: m};
-    final graph = buildFullTreeGraph(members);
+    final data = buildFullTreeData(
+      members: members,
+      spouseLinks: provider.fullTreeSpouseLinks,
+      focusId: me.id,
+    );
 
     // A single-node component can't be laid out by the graph algorithm (same
-    // GlobalKey assertion the ego view hit) — render the lone box directly.
-    if (graph.nodes.length <= 1) {
+    // GlobalKey assertion the ego view hit) — render the lone unit directly.
+    if (data.graph.nodes.length <= 1) {
+      final content = data.contents[data.initialNodeId];
+      final primary = content is TreeUnitContent ? content.primary : me;
+      final spouses = content is TreeUnitContent ? content.spouses : const <FamilyMember>[];
       return Center(
-        child: _PersonBox(
-          member: me,
-          isFocus: true,
+        child: _UnitWidget(
+          primary: primary,
+          spouses: spouses,
+          focusId: me.id,
           locale: locale,
-          onTap: () => _showMemberOptions(context, me, provider),
-          onLongPress: () => _showMemberOptions(context, me, provider),
+          onTapMember: (m) => _showMemberOptions(context, m, provider),
+          onLongPressMember: (m) => _showMemberOptions(context, m, provider),
         ),
       );
     }
 
-    // Sugiyama (layered DAG) rather than BuchheimWalker: a full family has two
-    // parents per child and lineages that re-converge through marriage, which a
-    // single-parent tree algorithm can't express.
-    final configuration = SugiyamaConfiguration()
-      ..levelSeparation = 60
-      ..nodeSeparation = 24
-      ..orientation = SugiyamaConfiguration.ORIENTATION_TOP_BOTTOM;
-    final algorithm = SugiyamaAlgorithm(configuration);
+    // Reuse the ego view's clean tree layout across the whole descendant tree:
+    // BuchheimWalker + the couple-unit edge renderer, so generations stay in
+    // rows and children hang tidily under each couple.
+    final configuration = BuchheimWalkerConfiguration()
+      ..siblingSeparation = 24
+      ..levelSeparation = 72
+      ..subtreeSeparation = 36
+      ..orientation = BuchheimWalkerConfiguration.ORIENTATION_TOP_BOTTOM
+      ..useCurvedConnections = false;
+    final algorithm = BuchheimWalkerAlgorithm(
+        configuration, _FamilyTreeEdgeRenderer(configuration));
 
     return _GraphViewHost(
-      // Rebuild the host when the component changes (root or size), so the
-      // camera re-frames onto the user.
       key: ValueKey('fulltree_${me.id}_${members.length}'),
-      graph: graph,
+      graph: data.graph,
       algorithm: algorithm,
-      initialNodeId: me.id,
+      initialNodeId: 'u:${me.id}',
       paint: Paint()
         ..color = Theme.of(context).colorScheme.outline
         ..strokeWidth = 2.5
@@ -799,15 +940,20 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       },
       builder: (node) {
         final id = node.key!.value as String;
-        final m = byId[id];
-        if (m == null) return const SizedBox();
-        return _PersonBox(
-          member: m,
-          isFocus: m.id == me.id,
-          locale: locale,
-          onTap: () => _showMemberOptions(context, m, provider),
-          onLongPress: () => _showMemberOptions(context, m, provider),
-        );
+        final content = data.contents[id];
+        // The invisible super-root joining multiple family roots.
+        if (content is SuperRootContent) return const SizedBox.shrink();
+        if (content is TreeUnitContent) {
+          return _UnitWidget(
+            primary: content.primary,
+            spouses: content.spouses,
+            focusId: me.id,
+            locale: locale,
+            onTapMember: (m) => _showMemberOptions(context, m, provider),
+            onLongPressMember: (m) => _showMemberOptions(context, m, provider),
+          );
+        }
+        return const SizedBox();
       },
     );
   }

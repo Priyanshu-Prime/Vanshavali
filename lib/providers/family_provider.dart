@@ -138,6 +138,7 @@ class FamilyProvider extends ChangeNotifier {
   /// cached locally (still correct, just possibly stale/partial). This is a
   /// deliberate full-component fetch, distinct from the routine ego load.
   Future<void> loadFullTree(String rootId) async {
+    if (_fullTreeInjectedForTesting) return; // keep the test fixture
     _isLoadingFullTree = true;
     _error = null;
     notifyListeners();
@@ -230,6 +231,24 @@ class FamilyProvider extends ChangeNotifier {
     _centerMember = member;
     notifyListeners();
   }
+
+  /// Test-only seam: inject the full connected tree directly, bypassing
+  /// [loadFullTree]'s live backend call. Used to render/verify the full-tree
+  /// layout against a fixture. Not used by any production code path.
+  @visibleForTesting
+  void debugSetFullTreeForTesting({
+    required List<FamilyMember> fullTree,
+    List<SpouseLink> spouseLinks = const [],
+  }) {
+    _fullTree = fullTree;
+    _fullTreeSpouseLinks = spouseLinks;
+    _fullTreeInjectedForTesting = true;
+    notifyListeners();
+  }
+
+  // When a test injects the full tree, loadFullTree keeps the fixture instead
+  // of trying (and failing) to fetch from a backend that isn't there.
+  bool _fullTreeInjectedForTesting = false;
 
   /// Test-only seam: directly injects an ego network + spouse links (and
   /// optionally a center member) without going through [loadEgoNetwork],
