@@ -308,6 +308,23 @@ class AppLocalizationsGu extends AppLocalizations {
   String get search => 'શોધ';
 
   @override
+  String get directory => 'ડિરેક્ટરી';
+
+  @override
+  String get searchByName => 'નામથી શોધો';
+
+  @override
+  String get allVillages => 'બધા ગામ';
+
+  @override
+  String peopleCount(int count) {
+    return '$count લોકો';
+  }
+
+  @override
+  String get you => 'તમે';
+
+  @override
   String get notifications => 'સૂચનાઓ';
 
   @override

@@ -115,6 +115,14 @@
   "termsOfService": "Terms of Service",
   "home": "Home",
   "search": "Search",
+  "directory": "Directory",
+  "searchByName": "Search by name",
+  "allVillages": "All villages",
+  "peopleCount": "{count} people",
+  "@peopleCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "you": "You",
   "notifications": "Notifications",
   "pendingInvites": "Pending Invites",
   "acceptInvite": "Accept",

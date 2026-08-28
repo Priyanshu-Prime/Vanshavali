@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -10,6 +9,7 @@ import '../profile/profile_form_screen.dart';
 import '../family/family_tree_screen.dart';
 import '../family/add_family_member_screen.dart';
 import '../settings/settings_screen.dart';
+import '../directory/directory_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,12 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const _DashboardTab(),
                 const FamilyTreeScreen(),
-                _SearchTab(
-                  onMemberSelected: (member) async {
-                    await context.read<FamilyProvider>().loadEgoNetwork(member.id);
-                    if (mounted) setState(() => _currentIndex = 1);
-                  },
-                ),
+                const DirectoryScreen(),
                 const SettingsScreen(),
               ],
             ),
@@ -106,9 +101,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: l10n.familyTree,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.search_outlined),
-            activeIcon: const Icon(Icons.search),
-            label: l10n.search,
+            icon: const Icon(Icons.people_outline),
+            activeIcon: const Icon(Icons.people),
+            label: l10n.directory,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.settings_outlined),
@@ -463,106 +458,3 @@ class _SiblingChip extends StatelessWidget {
   }
 }
 
-class _SearchTab extends StatefulWidget {
-  final void Function(FamilyMember member) onMemberSelected;
-
-  const _SearchTab({required this.onMemberSelected});
-
-  @override
-  State<_SearchTab> createState() => _SearchTabState();
-}
-
-class _SearchTabState extends State<_SearchTab> {
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final familyProvider = context.watch<FamilyProvider>();
-    final settingsProvider = context.watch<SettingsProvider>();
-    final locale = settingsProvider.locale.languageCode;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.search)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: l10n.searchMembers,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          familyProvider.clearSearch();
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (value) {
-                if (value.length >= 2) {
-                  familyProvider.searchMembers(value);
-                } else {
-                  familyProvider.clearSearch();
-                }
-                setState(() {});
-              },
-            ),
-          ),
-          Expanded(
-            child: familyProvider.isLoading
-                ? AppWidgets.loading()
-                : (familyProvider.error != null &&
-                      familyProvider.searchResults.isEmpty &&
-                      _searchController.text.trim().length >= 2)
-                ? AppWidgets.error(
-                    context: context,
-                    message: friendlyErrorMessage(
-                      context,
-                      familyProvider.error!,
-                    ),
-                    onRetry: () =>
-                        familyProvider.searchMembers(_searchController.text),
-                  )
-                : familyProvider.searchResults.isEmpty
-                ? AppWidgets.empty(
-                    message: l10n.searchMembers,
-                    icon: Icons.search,
-                  )
-                : ListView.builder(
-                    itemCount: familyProvider.searchResults.length,
-                    itemBuilder: (context, index) {
-                      final member = familyProvider.searchResults[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            member.initial,
-                          ),
-                        ),
-                        title: Text(member.getFullName(locale)),
-                        subtitle: member.currentCity != null
-                            ? Text(member.currentCity!)
-                            : null,
-                        trailing: member.isClaimed
-                            ? const Icon(Icons.verified, color: Colors.green)
-                            : const Icon(Icons.person_outline),
-                        onTap: () => widget.onMemberSelected(member),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -308,6 +308,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get search => 'Search';
 
   @override
+  String get directory => 'Directory';
+
+  @override
+  String get searchByName => 'Search by name';
+
+  @override
+  String get allVillages => 'All villages';
+
+  @override
+  String peopleCount(int count) {
+    return '$count people';
+  }
+
+  @override
+  String get you => 'You';
+
+  @override
   String get notifications => 'Notifications';
 
   @override
