@@ -69,7 +69,7 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
   GjPlace? _district;
   GjPlace? _taluka;
   final _searchController = TextEditingController();
-  List<GjPlace> _searchResults = const [];
+  List<GjVillageHit> _searchResults = const [];
 
   @override
   void initState() {
@@ -103,11 +103,24 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
       );
     } else if (_searchController.text.trim().length >= 2) {
       // State-wide search results (village — Taluka handled by caller display).
-      body = _list(
-        _searchResults,
-        (v) => Navigator.pop(context, v.name),
-        emptyText: l10n.noResultsFound,
-      );
+      body = _searchResults.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.noResultsFound, textAlign: TextAlign.center),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              itemCount: _searchResults.length,
+              itemBuilder: (_, i) {
+                final h = _searchResults[i];
+                return ListTile(
+                  dense: true,
+                  title: Text(h.name),
+                  subtitle: Text('${h.taluka}, ${h.district}'),
+                  onTap: () => Navigator.pop(context, h.name),
+                );
+              },
+            );
     } else if (_district == null) {
       body = _list(GujaratPlacesService.districts(),
           (d) => setState(() => _district = d));

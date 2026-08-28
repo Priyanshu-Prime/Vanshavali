@@ -11,6 +11,16 @@ class GjPlace {
   const GjPlace(this.name, this.code);
 }
 
+/// A village search hit carrying its taluka + district, so same-named villages
+/// in different places (e.g. two "Jakhana") can be told apart in the picker.
+class GjVillageHit {
+  final String name;
+  final String code;
+  final String taluka;
+  final String district;
+  const GjVillageHit(this.name, this.code, this.taluka, this.district);
+}
+
 /// Loads and queries the bundled Gujarat district -> taluka -> village
 /// directory (assets/data/gujarat_places.json). Village entry in the app is a
 /// strict pick from this list — never free text — so village_origin stays
@@ -74,25 +84,27 @@ class GujaratPlacesService {
   /// Case/space-insensitive village name search across the whole state, for
   /// normalizing legacy free-text values and for a type-to-filter picker.
   /// Returns up to [limit] matches, exact/prefix matches first.
-  static List<GjPlace> searchVillages(String query, {int limit = 30}) {
+  static List<GjVillageHit> searchVillages(String query, {int limit = 40}) {
     final q = _norm(query);
     if (q.isEmpty || _byDistrict == null) return const [];
-    final exact = <GjPlace>[];
-    final prefix = <GjPlace>[];
-    final contains = <GjPlace>[];
+    final exact = <GjVillageHit>[];
+    final prefix = <GjVillageHit>[];
+    final contains = <GjVillageHit>[];
     for (final d in _byDistrict!.values.cast<Map<String, dynamic>>()) {
+      final district = d['name'] as String;
       for (final t in (d['talukas'] as List).cast<Map<String, dynamic>>()) {
+        final taluka = t['name'] as String;
         for (final v in (t['villages'] as List).cast<Map<String, dynamic>>()) {
           final name = v['name'] as String;
           final n = _norm(name);
+          final hit = GjVillageHit(name, v['code'] as String, taluka, district);
           if (n == q) {
-            exact.add(GjPlace(name, v['code'] as String));
+            exact.add(hit);
           } else if (n.startsWith(q)) {
-            prefix.add(GjPlace(name, v['code'] as String));
+            prefix.add(hit);
           } else if (n.contains(q)) {
-            contains.add(GjPlace(name, v['code'] as String));
+            contains.add(hit);
           }
-          if (exact.length >= limit) return exact;
         }
       }
     }
