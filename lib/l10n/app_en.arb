@@ -44,6 +44,16 @@
   "occupation": "Occupation",
   "medicalInfo": "Medical Information",
   "familyTree": "Family Tree",
+  "exploreBranch": "Explore {name}'s family",
+  "@exploreBranch": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "exploreBranchDesc": "Re-root the tree on their side of the family",
+  "viewingFamily": "Viewing {name}'s family",
+  "@viewingFamily": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "backToMyFamily": "Back to mine",
   "myFamily": "My Family",
   "father": "Father",
   "mother": "Mother",

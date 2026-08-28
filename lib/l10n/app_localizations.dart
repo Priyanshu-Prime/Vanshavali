@@ -344,6 +344,30 @@ abstract class AppLocalizations {
   /// **'Family Tree'**
   String get familyTree;
 
+  /// No description provided for @exploreBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore {name}\'s family'**
+  String exploreBranch(String name);
+
+  /// No description provided for @exploreBranchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-root the tree on their side of the family'**
+  String get exploreBranchDesc;
+
+  /// No description provided for @viewingFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing {name}\'s family'**
+  String viewingFamily(String name);
+
+  /// No description provided for @backToMyFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to mine'**
+  String get backToMyFamily;
+
   /// No description provided for @myFamily.
   ///
   /// In en, this message translates to:

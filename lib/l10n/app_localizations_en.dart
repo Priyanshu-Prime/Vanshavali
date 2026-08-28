@@ -133,6 +133,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get familyTree => 'Family Tree';
 
   @override
+  String exploreBranch(String name) {
+    return 'Explore $name\'s family';
+  }
+
+  @override
+  String get exploreBranchDesc =>
+      'Re-root the tree on their side of the family';
+
+  @override
+  String viewingFamily(String name) {
+    return 'Viewing $name\'s family';
+  }
+
+  @override
+  String get backToMyFamily => 'Back to mine';
+
+  @override
   String get myFamily => 'My Family';
 
   @override

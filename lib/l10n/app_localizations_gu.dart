@@ -132,6 +132,22 @@ class AppLocalizationsGu extends AppLocalizations {
   String get familyTree => 'વંશવૃક્ષ';
 
   @override
+  String exploreBranch(String name) {
+    return '$name નું કુટુંબ જુઓ';
+  }
+
+  @override
+  String get exploreBranchDesc => 'ઝાડને તેમના પરિવારની બાજુ પર ફરીથી ગોઠવો';
+
+  @override
+  String viewingFamily(String name) {
+    return '$name નું કુટુંબ જોઈ રહ્યા છો';
+  }
+
+  @override
+  String get backToMyFamily => 'મારા પર પાછા';
+
+  @override
   String get myFamily => 'મારો પરિવાર';
 
   @override

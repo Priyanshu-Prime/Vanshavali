@@ -79,11 +79,6 @@ class SiblingsBadgeContent extends TreeNodeContent {
   const SiblingsBadgeContent(this.count);
 }
 
-/// The invisible node that joins several family roots into one tree in the
-/// full-tree view (BuchheimWalker needs a single root). Rendered as empty space.
-class SuperRootContent extends TreeNodeContent {
-  const SuperRootContent();
-}
 
 /// Builds the graphview [Graph] structure for the default/immediate-family
 /// tree view: an optional parents unit (father + his own spouse(s), so a
@@ -181,10 +176,6 @@ class SuperRootContent extends TreeNodeContent {
   return (graph: graph, contents: contents, initialNodeId: focusUnitId);
 }
 
-/// Sentinel id for the synthetic super-root that joins multiple family roots
-/// into one tree (BuchheimWalker needs a single root). Rendered invisibly.
-const String kFullTreeSuperRoot = '__superroot__';
-
 /// Builds the whole connected family as a clean DESCENDANT tree of couple-units
 /// — the standard genealogical layout — reusing the ego view's TreeUnitContent
 /// (a person shown with their spouse(s)) so it renders through the same
@@ -197,8 +188,12 @@ const String kFullTreeSuperRoot = '__superroot__';
 /// each person becomes the "primary" of a unit that absorbs their not-yet-placed
 /// spouse(s), and their children become child-units hanging beneath. Anyone not
 /// reached that way (e.g. a married-in spouse whose own parents are also in the
-/// component) becomes an additional root. Multiple roots are joined under an
-/// invisible super-root so the whole forest lays out as one tree.
+/// Shows exactly ONE lineage's clan: the descendant tree of the topmost ancestor
+/// on [rootPersonId]'s line (default: [focusId]). Married-in spouses are absorbed
+/// as leaves — their own relatives aren't shown here; you pivot the view onto a
+/// spouse to explore their side instead (a clean single tree every time, never a
+/// disconnected cluster or a general graph). [focusId] is highlighted wherever
+/// they appear in this lineage.
 ({
   Graph graph,
   Map<String, TreeNodeContent> contents,
@@ -207,6 +202,7 @@ const String kFullTreeSuperRoot = '__superroot__';
   required List<FamilyMember> members,
   required List<SpouseLink> spouseLinks,
   required String focusId,
+  String? rootPersonId,
 }) {
   final byId = {for (final m in members) m.id: m};
 
@@ -293,40 +289,18 @@ const String kFullTreeSuperRoot = '__superroot__';
     return cur;
   }
 
-  final roots = <Node>[];
-  final focus = byId[focusId] ?? (members.isNotEmpty ? members.first : null);
-  if (focus != null) {
-    roots.add(makeUnit(climbToRoot(focus)));
+  final startId = rootPersonId ?? focusId;
+  final start = byId[startId] ?? (members.isNotEmpty ? members.first : null);
+  if (start == null) {
+    return (graph: graph, contents: contents, initialNodeId: '');
   }
-  // Anyone not reached from the main line becomes an additional root — those
-  // with no parents in the set first (true ancestors), then whatever remains.
-  final remaining = members.where((m) => !placed.contains(m.id)).toList()
-    ..sort((a, b) {
-      bool parentless(FamilyMember m) =>
-          !byId.containsKey(m.fatherId) && !byId.containsKey(m.motherId);
-      return (parentless(b) ? 1 : 0).compareTo(parentless(a) ? 1 : 0);
-    });
-  for (final m in remaining) {
-    if (placed.contains(m.id)) continue;
-    roots.add(makeUnit(m));
-  }
+  final root = climbToRoot(start);
+  makeUnit(root);
 
-  // Join multiple family roots under one invisible super-root.
-  String initialNodeId;
-  if (roots.length > 1) {
-    final superNode = Node.Id(kFullTreeSuperRoot);
-    graph.addNode(superNode);
-    contents[kFullTreeSuperRoot] = const SuperRootContent();
-    for (final r in roots) {
-      graph.addEdge(superNode, r);
-    }
-    initialNodeId = kFullTreeSuperRoot;
-  } else if (roots.length == 1) {
-    initialNodeId =
-        nodeMap.keys.firstWhere((k) => nodeMap[k] == roots.first, orElse: () => '');
-  } else {
-    initialNodeId = '';
-  }
+  // Center on the highlighted person if they're in this lineage; else the root.
+  final focusUnit = 'u:$focusId';
+  final initialNodeId =
+      nodeMap.containsKey(focusUnit) ? focusUnit : 'u:${root.id}';
 
   return (graph: graph, contents: contents, initialNodeId: initialNodeId);
 }
@@ -407,6 +381,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   // Which root the full-tree view has kicked off a load for, so loadFullTree
   // fires once per component rather than every rebuild.
   String? _fullTreeLoadedForRoot;
+
+  // The lineage the full-tree view is currently rooted on (a person whose
+  // family branch we're exploring). Null = your own line. Changing it re-roots
+  // the tree client-side; the loaded component is unchanged.
+  String? _fullTreeRootId;
 
   // Pedigree view's own pan/zoom controller — WE fully own this one
   // (create it, dispose it) since the pedigree view's InteractiveViewer is
@@ -615,6 +594,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
             icon: const Icon(Icons.center_focus_strong),
             tooltip: l10n.centerOnMe,
             onPressed: () {
+              setState(() => _fullTreeRootId = null); // back to your own line
               if (authProvider.currentMember != null) {
                 _focusOn(familyProvider, authProvider.currentMember!);
               }
@@ -889,6 +869,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       members: members,
       spouseLinks: provider.fullTreeSpouseLinks,
       focusId: me.id,
+      rootPersonId: _fullTreeRootId,
     );
 
     // A single-node component can't be laid out by the graph algorithm (same
@@ -921,11 +902,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     final algorithm = BuchheimWalkerAlgorithm(
         configuration, _FamilyTreeEdgeRenderer(configuration));
 
-    return _GraphViewHost(
-      key: ValueKey('fulltree_${me.id}_${members.length}'),
+    final host = _GraphViewHost(
+      key: ValueKey('fulltree_${me.id}_${_fullTreeRootId}_${members.length}'),
       graph: data.graph,
       algorithm: algorithm,
-      initialNodeId: 'u:${me.id}',
+      initialNodeId: data.initialNodeId,
       paint: Paint()
         ..color = Theme.of(context).colorScheme.outline
         ..strokeWidth = 2.5
@@ -941,8 +922,6 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       builder: (node) {
         final id = node.key!.value as String;
         final content = data.contents[id];
-        // The invisible super-root joining multiple family roots.
-        if (content is SuperRootContent) return const SizedBox.shrink();
         if (content is TreeUnitContent) {
           return _UnitWidget(
             primary: content.primary,
@@ -955,6 +934,27 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         }
         return const SizedBox();
       },
+    );
+
+    // When exploring someone else's branch, show a "Viewing X's family" banner
+    // with a one-tap return to your own line.
+    final rooted = _fullTreeRootId != null && _fullTreeRootId != me.id
+        ? provider.fullTree.where((m) => m.id == _fullTreeRootId).firstOrNull
+        : null;
+    if (rooted == null) return host;
+    return Stack(
+      children: [
+        Positioned.fill(child: host),
+        Positioned(
+          top: 8,
+          left: 8,
+          right: 8,
+          child: _LineageBanner(
+            name: rooted.getFullName(locale),
+            onBack: () => setState(() => _fullTreeRootId = null),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1150,6 +1150,19 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               onTap: () {
                 Navigator.pop(ctx);
                 _focusOn(provider, member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_tree),
+              title: Text(l10n.exploreBranch(member.firstNameEn)),
+              subtitle: Text(l10n.exploreBranchDesc,
+                  style: Theme.of(context).textTheme.bodySmall),
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() {
+                  _viewMode = _ViewMode.fullTree;
+                  _fullTreeRootId = member.id;
+                });
               },
             ),
             if (canAddRelations)
@@ -1762,6 +1775,57 @@ class _PedigreeConnectorPainter extends CustomPainter {
 //  Explicit zoom controls — a simpler alternative to pinch gestures for a
 //  low-tech-literacy audience. Large (48dp) touch targets.
 // ─────────────────────────────────────────────────────────
+class _LineageBanner extends StatelessWidget {
+  final String name;
+  final VoidCallback onBack;
+  const _LineageBanner({required this.name, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Center(
+      child: Material(
+        elevation: 3,
+        borderRadius: BorderRadius.circular(24),
+        color: theme.colorScheme.secondaryContainer,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onBack,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.account_tree,
+                    size: 18, color: theme.colorScheme.onSecondaryContainer),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    l10n.viewingFamily(name),
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(l10n.backToMyFamily,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                Icon(Icons.close,
+                    size: 16, color: theme.colorScheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ZoomControls extends StatelessWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;

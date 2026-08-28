@@ -14,54 +14,47 @@ FamilyMember _m(String id, {String? father, String? mother, String? dob}) =>
     );
 
 void main() {
-  test('builds a descendant tree of couple-units, spouses absorbed', () {
-    // gp -> p (married to ps) -> c1, c2
-    final gp = _m('gp');
-    final p = _m('p', father: 'gp');
-    final ps = _m('ps'); // married-in, inferred as p's spouse via shared children
-    final c1 = _m('c1', father: 'p', mother: 'ps', dob: '2000-01-01');
-    final c2 = _m('c2', father: 'p', mother: 'ps', dob: '1998-01-01');
+  // Family: paternal gp1 -> dad (m. mom) -> me (m. spouse) -> kid.
+  // Maternal: mgp1 -> mom (+ maternalAunt). Spouse married in.
+  final gp1 = _m('gp1');
+  final dad = _m('dad', father: 'gp1');
+  final mgp1 = _m('mgp1');
+  final mom = _m('mom', father: 'mgp1', dob: '1961-01-01');
+  final maternalAunt = _m('maternalAunt', father: 'mgp1', dob: '1963-01-01');
+  final me = _m('me', father: 'dad', mother: 'mom');
+  final spouse = _m('spouse');
+  final kid = _m('kid', father: 'me', mother: 'spouse');
+  final members = [gp1, dad, mgp1, mom, maternalAunt, me, spouse, kid];
 
-    final data = buildFullTreeData(
-      members: [gp, p, ps, c1, c2],
-      spouseLinks: const [],
-      focusId: 'c1',
-    );
-
-    // Units: gp, p(+ps), c1, c2 — ps is absorbed into p's unit, not its own.
-    expect(data.graph.nodes.length, 4);
-    expect(data.contents.containsKey('u:ps'), isFalse);
-
-    final pUnit = data.contents['u:p'];
-    expect(pUnit, isA<TreeUnitContent>());
-    pUnit as TreeUnitContent;
-    expect(pUnit.primary.id, 'p');
-    expect(pUnit.spouses.map((s) => s.id), contains('ps'));
-
-    // gp->p, p->c1, p->c2
-    expect(data.graph.edges.length, 3);
-
-    // Roots at the top ancestor; single root means no super-root.
-    expect(data.initialNodeId, 'u:gp');
-    expect(data.contents.containsKey(kFullTreeSuperRoot), isFalse);
+  test('default view shows the paternal clan; mom is a married-in leaf', () {
+    final data =
+        buildFullTreeData(members: members, spouseLinks: const [], focusId: 'me');
+    // Paternal lineage: gp1, dad(+mom), me(+spouse), kid.
+    expect(data.contents.containsKey('u:gp1'), isTrue);
+    expect(data.contents.containsKey('u:dad'), isTrue);
+    expect(data.contents.containsKey('u:me'), isTrue);
+    expect(data.contents.containsKey('u:kid'), isTrue);
+    // Mom is absorbed into dad's unit — no unit of her own, and her parents /
+    // sister are NOT in this lineage.
+    expect(data.contents.containsKey('u:mom'), isFalse);
+    expect(data.contents.containsKey('u:mgp1'), isFalse);
+    expect(data.contents.containsKey('u:maternalAunt'), isFalse);
+    // Centered on me.
+    expect(data.initialNodeId, 'u:me');
   });
 
-  test('joins multiple family roots under an invisible super-root', () {
-    // Two unconnected mini-families in one member set.
-    final a = _m('a');
-    final ac = _m('ac', father: 'a');
-    final b = _m('b');
-    final bc = _m('bc', father: 'b');
-
+  test('pivoting to the mother re-roots on her lineage', () {
     final data = buildFullTreeData(
-      members: [a, ac, b, bc],
-      spouseLinks: const [],
-      focusId: 'ac',
-    );
-
-    expect(data.contents[kFullTreeSuperRoot], isA<SuperRootContent>());
-    expect(data.initialNodeId, kFullTreeSuperRoot);
-    // 4 person-units + 1 super-root.
-    expect(data.graph.nodes.length, 5);
+        members: members,
+        spouseLinks: const [],
+        focusId: 'me',
+        rootPersonId: 'mom');
+    // Maternal lineage now shown: mgp1 -> mom(+dad) -> me -> ...; sister too.
+    expect(data.contents.containsKey('u:mgp1'), isTrue);
+    expect(data.contents.containsKey('u:maternalAunt'), isTrue);
+    // Dad is now the married-in leaf (absorbed into mom's unit), paternal gp gone.
+    expect(data.contents.containsKey('u:gp1'), isFalse);
+    // You're still highlighted / centered.
+    expect(data.initialNodeId, 'u:me');
   });
 }
