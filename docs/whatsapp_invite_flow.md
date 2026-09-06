@@ -68,3 +68,39 @@ migration 008) + debugPrint breadcrumbs:
 - Enable GitHub Pages for the repo (source: the deploy workflow / gh-pages).
 - Upload the current alpha APK to a GitHub Release (or add signing secrets so
   `release.yml` does it), so the page's Download button resolves.
+
+## End-to-end test checklist
+
+### Automated (headless, real local-Supabase backend)
+- `test/services/deep_link_service_test.dart` — code extraction from both URL
+  forms, `?c`/`?code`, malformed/missing, host gating; invite-text contents.
+- `test/screens/auth/signup_prefill_test.dart` — SignupScreen renders a
+  prefilled code in the field.
+- `integration_test/flows/invite_deeplink_test.dart` — the app's own
+  `buildInviteUrl` → `parseInviteCodeFromUri` round-trips (https + custom
+  scheme), and the parsed code claims the seeded `TEST01`/Ramesh placeholder
+  end to end. Run via `scripts/e2e/run_e2e.sh integration_test/flows/invite_deeplink_test.dart`.
+
+### On-device (the intent → handler half a headless test can't reach)
+Run `scripts/e2e/fire_invite_intent.sh [CODE]` against an emulator with the app
+installed, then watch:
+`adb logcat -s flutter | grep -iE 'deeplink|invite|claim'`
+
+| # | Action | Expected result | Confirmed by log line |
+|---|--------|-----------------|-----------------------|
+| 1 | Fire `vanshavali://invite?code=TEST01` (script or a tapped link) | App opens on Sign Up, 6-char field pre-filled `TEST01` | `deeplink: link received` → `invite code parsed` → `routed to signup` |
+| 2 | Complete sign up (email + password) | Lands on Home as **Ramesh** (claimed), not a new profile | `deeplink: claim attempt result: success` |
+| 3 | Malformed code `vanshavali://invite?code=ZZ` | App opens signup, field NOT filled (invalid), no crash | `invite code parsed` absent / null |
+
+### Full manual journey (the parts no tooling can drive)
+1. **Generate + share** — in the app, open a placeholder's profile → Invite →
+   share to WhatsApp. Message contains `https://priyanshu-prime.github.io/Vanshavali/?c=<CODE>&n=<name>` + the bare code.
+2. **Tap the link (no app yet)** → landing page loads (bilingual), shows the
+   code + Copy, a Download button, and Open-in-app.
+3. **Download + sideload** the APK from the GitHub Release; allow "unknown
+   sources".
+4. **Tap "Open in app"** (or re-tap the WhatsApp link) → app opens on Sign Up
+   with the code pre-filled → complete signup → claimed.
+5. **Fallback** — if Open-in-app does nothing, the code + Copy button let the
+   invitee type/paste it manually on the Sign Up screen. This path must always
+   work even when deep linking fails.
