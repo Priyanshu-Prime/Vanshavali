@@ -1,0 +1,3 @@
+# Keeps this declared Flutter asset dir (pubspec.yaml `assets/images/`) present
+# in fresh checkouts. Git ignores empty dirs, so without a tracked file here CI
+# fails `flutter analyze` with asset_directory_does_not_exist.
