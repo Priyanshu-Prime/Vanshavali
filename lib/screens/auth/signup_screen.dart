@@ -7,7 +7,12 @@ import '../../widgets/common_widgets.dart';
 import '../scan/scan_invite_code_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  /// Optional invite code to prefill the invite-code field with — supplied by
+  /// the WhatsApp deep-link flow (see main.dart `_handleDeepLink`) so an
+  /// invitee never has to type it. Manual entry and the QR scanner still work.
+  final String? prefilledInviteCode;
+
+  const SignupScreen({super.key, this.prefilledInviteCode});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -23,6 +28,19 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _invitePreviewName;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill the invite code delivered by the deep-link flow, if any, and run
+    // the same preview lookup that manual typing / scanning triggers.
+    final code = widget.prefilledInviteCode;
+    if (code != null && code.isNotEmpty) {
+      debugPrint('signup: prefilled invite code from deep link: $code');
+      _inviteCodeController.text = code;
+      _lookupInviteCode(code);
+    }
+  }
 
   @override
   void dispose() {
@@ -76,7 +94,10 @@ class _SignupScreenState extends State<SignupScreen> {
       // If invite code was entered, claim the profile
       final code = _inviteCodeController.text.trim().toUpperCase();
       if (code.length == 6) {
+        debugPrint('deeplink: claim attempt starting for code');
         final claimed = await authProvider.claimProfileByCode(code);
+        debugPrint('deeplink: claim attempt result: '
+            '${claimed ? 'success' : authProvider.hasPendingMergeConflict ? 'merge-conflict (flagged for review)' : 'failed (invalid code)'}');
         if (mounted) {
           if (claimed) {
             showAppSnackBar(context, context.l10n.profileClaimed);

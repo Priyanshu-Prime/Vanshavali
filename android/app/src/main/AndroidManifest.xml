@@ -38,6 +38,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="vanshavali" android:host="auth" />
             </intent-filter>
+
+            <!-- Deep linking for WhatsApp invites: the hosted landing page's
+                 "Open in app" button fires vanshavali://invite?code=<CODE>.
+                 See docs/whatsapp_invite_flow.md. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="vanshavali" android:host="invite" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
