@@ -1,0 +1,55 @@
+name: Deploy landing page to GitHub Pages
+
+# Publishes the static landing/ folder (authored separately) to GitHub Pages
+# whenever it changes on main. The landing page hosts the WhatsApp invite flow
+# (https://priyanshu-prime.github.io/Vanshavali/).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'landing/**'
+      - '.github/workflows/deploy-pages.yml'
+  # Allow manual runs from the Actions tab (e.g. first-time enable).
+  workflow_dispatch:
+
+# Least-privilege permissions required by the official Pages deploy actions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment at a time; don't cancel an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ensure landing/ exists so upload-pages-artifact doesn't hard-fail if the
+      # folder hasn't been authored yet. A placeholder index.html is written only
+      # when landing/ is empty/missing; a real index.html is never overwritten.
+      - name: Ensure landing/ is non-empty
+        run: |
+          mkdir -p landing
+          if [ -z "$(ls -A landing)" ]; then
+            echo '<!doctype html><meta charset="utf-8"><title>Vanshavali</title><p>Coming soon.</p>' > landing/index.html
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload landing/ as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: landing
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

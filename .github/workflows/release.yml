@@ -1,0 +1,81 @@
+name: Release APK
+
+# On a version tag (v*), build the release APK and publish it to a GitHub
+# Release so https://github.com/Priyanshu-Prime/Vanshavali/releases/latest
+# resolves to a downloadable APK (the landing page's Download button target).
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Needed to create the Release and upload the APK asset.
+permissions:
+  contents: write
+
+# --- Release signing (optional for alpha) ---
+# To ship a properly signed release APK, add these repository secrets
+# (Settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64  - base64 of your release keystore (.jks/.keystore)
+#   ANDROID_KEYSTORE_PASSWORD - keystore password (storePassword)
+#   ANDROID_KEY_ALIAS         - key alias
+#   ANDROID_KEY_PASSWORD      - key password (keyPassword)
+# When these are present the workflow materializes android/key.properties and
+# a keystore file so Gradle's release signingConfig can use them.
+# FALLBACK (alpha): if the secrets are absent, the build still runs but the APK
+# is signed with the debug key (as configured in android/app/build.gradle).
+# That is fine for family/side-load testing; replace with a real keystore
+# before any wider distribution.
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.8
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Generate Hive adapters
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Only writes signing config if the keystore secret is present; otherwise
+      # the release build falls back to debug signing without failing.
+      - name: Set up release signing (if secrets present)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Signing secrets found — configuring release keystore."
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+            {
+              echo "storeFile=release.keystore"
+              echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+              echo "keyAlias=$ANDROID_KEY_ALIAS"
+              echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            } > android/key.properties
+          else
+            echo "No signing secrets — release APK will use debug signing (alpha fallback)."
+          fi
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Publish GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: build/app/outputs/flutter-apk/app-release.apk

@@ -69,3 +69,6 @@ android/*.keystore
 # Node dependencies for scripts/backend_audit — regenerable via `npm install`,
 # package.json/package-lock.json are tracked so it can be reproduced
 node_modules/
+
+# WhatsApp-share release APK (local artifact, see APK overwrite rule)
+Vanshavali-alpha2.apk

@@ -1,10 +1,11 @@
 name: CI
 
+# Run on every branch push and every pull request, so that feature branches
+# (e.g. feature/qr-invite) are checked before they are committed/deployed —
+# not just main. No branch filter = all branches.
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   analyze-and-test:
@@ -32,3 +33,29 @@ jobs:
 
       - name: Run tests
         run: flutter test
+
+  # Build verification: a debug APK compile. This fails CI on any compile break
+  # that analyze/test would miss. Debug build needs no signing secrets.
+  build-apk:
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.8
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Generate Hive adapters
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build debug APK (compile check)
+        run: flutter build apk --debug
