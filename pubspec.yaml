@@ -6,7 +6,7 @@ publish_to: 'none'
 # number (+N) increments every distributed alpha build; bump the pre-release
 # label (-alpha.N) for notable milestones. Do NOT move to 1.0.0 until the
 # app ships to all users.
-version: 0.1.0-alpha.2+10
+version: 0.1.0-alpha.2+11
 
 environment:
   sdk: ^3.10.7
