@@ -92,6 +92,38 @@ class LocalStorageService {
         .toList();
   }
 
+  /// Rebuilds a member's ancestor chain (the member plus all cached ancestors,
+  /// walking father_id/mother_id upward) from the LOCAL cache — the offline /
+  /// failed-fetch counterpart to the get_ancestor_chain RPC, so the pedigree
+  /// shows more than one generation even when the network call can't complete.
+  /// Bounded by [maxGenerations] and cycle-safe. Only as deep as the cache goes
+  /// (the full-tree load or a prior online pedigree load populates it); returns
+  /// [] if the member isn't cached at all.
+  static List<FamilyMember> getAncestorChain(String memberId,
+      {int maxGenerations = 6}) {
+    final start = getFamilyMember(memberId);
+    if (start == null) return [];
+    final result = <String, FamilyMember>{memberId: start};
+    var frontier = <String>[memberId];
+    for (var gen = 0; gen < maxGenerations && frontier.isNotEmpty; gen++) {
+      final next = <String>[];
+      for (final id in frontier) {
+        final m = result[id];
+        if (m == null) continue;
+        for (final pid in [m.fatherId, m.motherId]) {
+          if (pid == null || result.containsKey(pid)) continue;
+          final p = getFamilyMember(pid);
+          if (p != null) {
+            result[pid] = p;
+            next.add(pid);
+          }
+        }
+      }
+      frontier = next;
+    }
+    return result.values.toList();
+  }
+
   static List<FamilyMember> getChildren(String memberId) {
     return _familyMembersBox.values
         .where((m) => m.fatherId == memberId || m.motherId == memberId)

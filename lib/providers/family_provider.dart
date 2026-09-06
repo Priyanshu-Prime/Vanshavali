@@ -199,14 +199,33 @@ class FamilyProvider extends ChangeNotifier {
     _isLoadingAncestors = true;
     notifyListeners();
 
+    // Local fallback so the pedigree still shows deeper generations (not just
+    // parents) when the network call is offline, slow, or fails — the ancestors
+    // are already cached by the full-tree load or a prior online pedigree load.
+    void useLocalIfBetter() {
+      final cached = LocalStorageService.getAncestorChain(memberId);
+      // Only adopt the cache if it actually reaches past the one-generation
+      // ego data (i.e. has grandparents), so we never regress a good chain.
+      if (cached.length > _ancestorChain.length ||
+          (_ancestorChainForId != memberId && cached.length > 1)) {
+        _ancestorChain = cached;
+        _ancestorChainForId = memberId;
+      }
+    }
+
     try {
       if (await SyncService.isOnline()) {
         _ancestorChain = await SupabaseService.getAncestorChain(memberId);
         _ancestorChainForId = memberId;
+        // Cache the fetched ancestors for the offline/failed-fetch fallback.
+        await LocalStorageService.saveFamilyMembers(_ancestorChain);
+      } else {
+        useLocalIfBetter();
       }
     } catch (e) {
       debugPrint('Error in loadAncestorChain: $e');
       _error = e.toString();
+      useLocalIfBetter();
     }
 
     _isLoadingAncestors = false;
