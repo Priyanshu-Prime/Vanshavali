@@ -1,3 +1,6 @@
+@Tags(['golden'])
+library;
+
 // Renders the full-tree view with a rich fake family to a golden PNG so the
 // layout (clean generational rows + couples + children hanging under them) can
 // be eyeballed. Not a strict pixel assertion — generated with --update-goldens

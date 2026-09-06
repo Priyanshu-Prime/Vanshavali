@@ -1,3 +1,6 @@
+@Tags(['golden'])
+library;
+
 // Golden: pivot the full tree onto the mother, verifying it re-roots into a
 // clean maternal-lineage tree (her parents at top, her siblings, you below).
 import 'package:flutter/material.dart';

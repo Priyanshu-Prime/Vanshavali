@@ -32,7 +32,10 @@ jobs:
         run: flutter analyze
 
       - name: Run tests
-        run: flutter test
+        # Golden/pixel tests are excluded: their PNGs are platform-specific and
+        # can't match cross-platform on Linux CI (see dart_test.yaml). They run
+        # locally as a visual check.
+        run: flutter test --exclude-tags golden
 
   # Build verification: a debug APK compile. This fails CI on any compile break
   # that analyze/test would miss. Debug build needs no signing secrets.

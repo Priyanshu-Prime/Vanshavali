@@ -81,7 +81,7 @@ jobs:
 
       - name: Test
         if: steps.check.outputs.exists == 'false'
-        run: flutter test
+        run: flutter test --exclude-tags golden
 
       - name: Reconstruct release keystore from secrets
         if: steps.check.outputs.exists == 'false'

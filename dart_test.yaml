@@ -1,0 +1,10 @@
+# Test tag configuration.
+#
+# `golden` marks pixel/image tests (matchesGoldenFile). Golden PNGs are
+# platform-specific — fonts and anti-aliasing differ between the Windows dev
+# machine that generated them and the Linux CI runner — so they can't pass
+# cross-platform. CI runs `flutter test --exclude-tags golden`; run them locally
+# (all platforms match the committed PNGs on the machine that made them) as a
+# visual regression check, regenerating with `flutter test --update-goldens`.
+tags:
+  golden:
