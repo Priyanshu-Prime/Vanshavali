@@ -107,9 +107,18 @@ class FamilyProvider extends ChangeNotifier {
         _egoNetwork = await SupabaseService.getEgoCentricNetwork(memberId);
         final ids = _egoNetwork.map((m) => m.id).toList();
         _spouseLinks = await SupabaseService.getSpouseLinksFor(ids);
-        // Cache locally (incremental — merges this neighborhood in, doesn't
-        // clear previously cached ones).
-        await LocalStorageService.saveFamilyMembers(_egoNetwork);
+        // Cache locally AND purge stale rows: within this member's cached ego
+        // neighbourhood, anyone the fresh server result no longer includes has
+        // been deleted server-side (e.g. a removed test profile) and must not
+        // linger in the cache as a phantom sibling/child. Reconciling here is
+        // safe because get_ego_network returns the same neighbourhood the box
+        // computes (parents + spouses + children + siblings).
+        final egoScope = {
+          for (final m in LocalStorageService.getEgoCentricNetwork(memberId))
+            m.id
+        };
+        await LocalStorageService.reconcileFamilyMembers(_egoNetwork,
+            scopeIds: egoScope);
         await LocalStorageService.saveSpouseLinks(_spouseLinks);
       } else {
         _egoNetwork = LocalStorageService.getEgoCentricNetwork(memberId);
@@ -148,7 +157,21 @@ class FamilyProvider extends ChangeNotifier {
         _fullTree = await SupabaseService.getConnectedTree(rootId);
         final ids = _fullTree.map((m) => m.id).toList();
         _fullTreeSpouseLinks = await SupabaseService.getSpouseLinksFor(ids);
-        await LocalStorageService.saveFamilyMembers(_fullTree);
+        // getConnectedTree returns the WHOLE component the user can see, so it
+        // is authoritative: purge any cached row hanging off this component
+        // (its id, or a member whose parent is in the component) that the fresh
+        // fetch no longer contains — i.e. deleted profiles — while leaving any
+        // unrelated cached component alone.
+        final freshIds = ids.toSet();
+        final componentScope = {
+          for (final m in LocalStorageService.getAllFamilyMembers())
+            if (freshIds.contains(m.id) ||
+                freshIds.contains(m.fatherId) ||
+                freshIds.contains(m.motherId))
+              m.id
+        };
+        await LocalStorageService.reconcileFamilyMembers(_fullTree,
+            scopeIds: componentScope);
         await LocalStorageService.saveSpouseLinks(_fullTreeSpouseLinks);
       } else {
         _fullTree = LocalStorageService.getAllFamilyMembers();

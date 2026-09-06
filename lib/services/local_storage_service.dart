@@ -150,6 +150,28 @@ class LocalStorageService {
     await _familyMembersBox.clear();
   }
 
+  /// Merge [fresh] into the cache AND purge stale rows within [scopeIds].
+  ///
+  /// [saveFamilyMembers] is additive (putAll) — it never removes a member the
+  /// server deleted, so a profile deleted in the DB lingers in the cache
+  /// forever and keeps rendering (e.g. as a phantom sibling once a view is
+  /// served from cache). This reconciles: within the authoritative window the
+  /// caller just fetched ([scopeIds] = the ids that fetch was responsible for),
+  /// any cached id NOT in [fresh] has been deleted server-side and is removed.
+  /// Rows outside [scopeIds] are left untouched, so an ego fetch never drops
+  /// members it wasn't looking at.
+  static Future<void> reconcileFamilyMembers(
+    List<FamilyMember> fresh, {
+    required Set<String> scopeIds,
+  }) async {
+    final freshIds = {for (final m in fresh) m.id};
+    final stale = scopeIds.where((id) => !freshIds.contains(id)).toList();
+    for (final id in stale) {
+      await _familyMembersBox.delete(id);
+    }
+    await saveFamilyMembers(fresh);
+  }
+
   // ==================== SPOUSE LINKS ====================
 
   /// Merge spouse links into the local adjacency cache (additive — does not
