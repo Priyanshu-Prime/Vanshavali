@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/family_member.dart';
@@ -18,7 +19,7 @@ import 'member_detail_screen.dart';
 // ─────────────────────────────────────────────────────────
 //  View mode enums
 // ─────────────────────────────────────────────────────────
-enum _ViewMode { defaultView, pedigree }
+enum _ViewMode { fullTree, defaultView, pedigree }
 
 // Pedigree view box/spacing constants. Box size matches _PersonBox's fixed
 // dimensions exactly (the pedigree view reuses _PersonBox directly, one
@@ -27,6 +28,13 @@ const double _pedigreeBoxWidth = 136;
 const double _pedigreeBoxHeight = 152;
 const double _pedigreeColGap = 64;
 const double _pedigreeRowGap = 24;
+
+// Zoom bounds shared by both views' pan/zoom (the zoom buttons, the pedigree
+// InteractiveViewer, and the fit-to-view). The lower bound is deliberately far
+// out (10x) so a large multi-generation pedigree can be zoomed/fitted to show
+// every node at once instead of bottoming out and forcing the user to scroll.
+const double _kMinZoom = 0.1;
+const double _kMaxZoom = 2.5;
 
 /// Sorts members eldest → youngest (unknown DOB sorts last), matching the
 /// reading order genealogical charts conventionally use for siblings/children.
@@ -70,6 +78,7 @@ class SiblingsBadgeContent extends TreeNodeContent {
   final int count;
   const SiblingsBadgeContent(this.count);
 }
+
 
 /// Builds the graphview [Graph] structure for the default/immediate-family
 /// tree view: an optional parents unit (father + his own spouse(s), so a
@@ -167,6 +176,135 @@ class SiblingsBadgeContent extends TreeNodeContent {
   return (graph: graph, contents: contents, initialNodeId: focusUnitId);
 }
 
+/// Builds the whole connected family as a clean DESCENDANT tree of couple-units
+/// — the standard genealogical layout — reusing the ego view's TreeUnitContent
+/// (a person shown with their spouse(s)) so it renders through the same
+/// BuchheimWalker + _FamilyTreeEdgeRenderer as the "Nearby" view (children hang
+/// tidily under the couple, one clean level per generation). A generic DAG
+/// layout (Sugiyama) produced a haywire mesh here because it neither groups
+/// couples nor keeps generations as rows.
+///
+/// Approach: start at the topmost ancestor on [focusId]'s line, then descend —
+/// each person becomes the "primary" of a unit that absorbs their not-yet-placed
+/// spouse(s), and their children become child-units hanging beneath. Anyone not
+/// reached that way (e.g. a married-in spouse whose own parents are also in the
+/// Shows exactly ONE lineage's clan: the descendant tree of the topmost ancestor
+/// on [rootPersonId]'s line (default: [focusId]). Married-in spouses are absorbed
+/// as leaves — their own relatives aren't shown here; you pivot the view onto a
+/// spouse to explore their side instead (a clean single tree every time, never a
+/// disconnected cluster or a general graph). [focusId] is highlighted wherever
+/// they appear in this lineage.
+({
+  Graph graph,
+  Map<String, TreeNodeContent> contents,
+  String initialNodeId,
+}) buildFullTreeData({
+  required List<FamilyMember> members,
+  required List<SpouseLink> spouseLinks,
+  required String focusId,
+  String? rootPersonId,
+}) {
+  final byId = {for (final m in members) m.id: m};
+
+  // Spouse adjacency: explicit links, plus co-parents (both parents of a shared
+  // child) inferred as a couple — same rule the ego view uses.
+  final spouseIds = <String, Set<String>>{};
+  void linkSpouse(String a, String b) {
+    if (!byId.containsKey(a) || !byId.containsKey(b) || a == b) return;
+    (spouseIds[a] ??= {}).add(b);
+    (spouseIds[b] ??= {}).add(a);
+  }
+
+  for (final l in spouseLinks) {
+    linkSpouse(l.memberId, l.spouseId);
+  }
+  for (final m in members) {
+    if (m.fatherId != null && m.motherId != null) {
+      linkSpouse(m.fatherId!, m.motherId!);
+    }
+  }
+
+  List<FamilyMember> spousesOf(String id) => (spouseIds[id] ?? const {})
+      .map((s) => byId[s])
+      .whereType<FamilyMember>()
+      .toList();
+
+  final childrenByParent = <String, List<FamilyMember>>{};
+  for (final m in members) {
+    if (m.fatherId != null && byId.containsKey(m.fatherId)) {
+      (childrenByParent[m.fatherId!] ??= []).add(m);
+    }
+    if (m.motherId != null && byId.containsKey(m.motherId)) {
+      (childrenByParent[m.motherId!] ??= []).add(m);
+    }
+  }
+
+  final graph = Graph()..isTree = true;
+  final contents = <String, TreeNodeContent>{};
+  final nodeMap = <String, Node>{};
+  final placed = <String>{};
+
+  Node makeUnit(FamilyMember primary) {
+    final unitId = 'u:${primary.id}';
+    final existing = nodeMap[unitId];
+    if (existing != null) return existing;
+
+    final spouses =
+        spousesOf(primary.id).where((s) => !placed.contains(s.id)).toList();
+    placed.add(primary.id);
+    for (final s in spouses) {
+      placed.add(s.id);
+    }
+    contents[unitId] = TreeUnitContent(primary, spouses);
+    final node = Node.Id(unitId);
+    graph.addNode(node);
+    nodeMap[unitId] = node;
+
+    // Children of the primary OR any of the absorbed spouses, deduped.
+    final seen = <String>{};
+    final kids = <FamilyMember>[];
+    for (final c in [
+      ...?childrenByParent[primary.id],
+      for (final s in spouses) ...?childrenByParent[s.id],
+    ]) {
+      if (seen.add(c.id)) kids.add(c);
+    }
+    for (final child in _sortedByDob(kids)) {
+      if (placed.contains(child.id)) continue; // e.g. cousin marriage already placed
+      graph.addEdge(node, makeUnit(child));
+    }
+    return node;
+  }
+
+  // Topmost ancestor on the focus's line (follow father, else mother, upward).
+  FamilyMember climbToRoot(FamilyMember start) {
+    var cur = start;
+    final seen = <String>{};
+    while (seen.add(cur.id)) {
+      final next = (cur.fatherId != null ? byId[cur.fatherId] : null) ??
+          (cur.motherId != null ? byId[cur.motherId] : null);
+      if (next == null) break;
+      cur = next;
+    }
+    return cur;
+  }
+
+  final startId = rootPersonId ?? focusId;
+  final start = byId[startId] ?? (members.isNotEmpty ? members.first : null);
+  if (start == null) {
+    return (graph: graph, contents: contents, initialNodeId: '');
+  }
+  final root = climbToRoot(start);
+  makeUnit(root);
+
+  // Center on the highlighted person if they're in this lineage; else the root.
+  final focusUnit = 'u:$focusId';
+  final initialNodeId =
+      nodeMap.containsKey(focusUnit) ? focusUnit : 'u:${root.id}';
+
+  return (graph: graph, contents: contents, initialNodeId: initialNodeId);
+}
+
 /// Builds an ahnentafel (Sosa-Stradonitz) map of [focus]'s ancestors:
 /// index 1 is [focus] itself, index `2n` is the father of index `n`, index
 /// `2n+1` is the mother of index `n` — the standard numbering used by real
@@ -237,8 +375,17 @@ class FamilyTreeScreen extends StatefulWidget {
 }
 
 class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
-  _ViewMode _viewMode = _ViewMode.defaultView;
+  _ViewMode _viewMode = _ViewMode.fullTree;
   bool _showSiblings = false;
+
+  // Which root the full-tree view has kicked off a load for, so loadFullTree
+  // fires once per component rather than every rebuild.
+  String? _fullTreeLoadedForRoot;
+
+  // The lineage the full-tree view is currently rooted on (a person whose
+  // family branch we're exploring). Null = your own line. Changing it re-roots
+  // the tree client-side; the loaded component is unchanged.
+  String? _fullTreeRootId;
 
   // Pedigree view's own pan/zoom controller — WE fully own this one
   // (create it, dispose it) since the pedigree view's InteractiveViewer is
@@ -351,7 +498,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     if (controller == null) return;
 
     final currentScale = controller.value.getMaxScaleOnAxis();
-    final targetScale = (currentScale * factor).clamp(0.35, 2.5);
+    final targetScale = (currentScale * factor).clamp(_kMinZoom, _kMaxZoom);
     if ((targetScale - currentScale).abs() < 0.001) return;
     final effectiveFactor = targetScale / currentScale;
 
@@ -385,6 +532,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           // plain transform reset below.
         }
       }
+    } else if (_viewMode == _ViewMode.fullTree && _graphController != null) {
+      // Recenter on the logged-in user's node in the full tree.
+      final me = context.read<AuthProvider>().currentMember;
+      if (me != null) {
+        try {
+          _graphController!.jumpToNode(ValueKey(me.id));
+          return;
+        } catch (_) {}
+      }
     }
     _activeTransformController?.value = Matrix4.identity();
   }
@@ -410,7 +566,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     final widthScale = viewportSize.width / contentWidth;
     final heightScale = viewportSize.height / contentHeight;
     final scale = (widthScale < heightScale ? widthScale : heightScale)
-        .clamp(0.35, 1.0);
+        .clamp(_kMinZoom, 1.0);
 
     final scaledWidth = contentWidth * scale;
     final scaledHeight = contentHeight * scale;
@@ -438,6 +594,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
             icon: const Icon(Icons.center_focus_strong),
             tooltip: l10n.centerOnMe,
             onPressed: () {
+              setState(() => _fullTreeRootId = null); // back to your own line
               if (authProvider.currentMember != null) {
                 _focusOn(familyProvider, authProvider.currentMember!);
               }
@@ -455,9 +612,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           ),
         ],
       ),
-      body: familyProvider.isLoading
+      // The full-tree view manages its own loading/empty state internally, so
+      // gate the whole-screen loading/empty branches on there being NO data in
+      // EITHER pool — otherwise the default (full-tree) view is hidden whenever
+      // the ego network happens to be empty (e.g. right after opening).
+      body: (familyProvider.isLoading && familyProvider.fullTree.isEmpty)
           ? AppWidgets.loading(message: l10n.loading)
-          : (familyProvider.error != null && familyProvider.egoNetwork.isEmpty)
+          : (familyProvider.error != null &&
+                  familyProvider.egoNetwork.isEmpty &&
+                  familyProvider.fullTree.isEmpty)
               ? AppWidgets.error(
                   context: context,
                   message: friendlyErrorMessage(context, familyProvider.error!),
@@ -469,7 +632,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                     }
                   },
                 )
-              : familyProvider.egoNetwork.isEmpty
+              : (familyProvider.egoNetwork.isEmpty &&
+                      familyProvider.fullTree.isEmpty)
               ? AppWidgets.empty(
                   message: l10n.noFamilyMembers,
                   subtitle: l10n.tapToAdd,
@@ -485,15 +649,18 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: _viewMode == _ViewMode.defaultView
+                              child: _viewMode == _ViewMode.fullTree
+                                  ? _buildFullTreeView(
+                                      context, familyProvider, locale)
+                                  : _viewMode == _ViewMode.defaultView
                                   ? _buildDefaultView(
                                       context, familyProvider, locale)
                                   : InteractiveViewer(
                                       transformationController:
                                           _pedigreeTransformController,
                                       constrained: false,
-                                      minScale: 0.35,
-                                      maxScale: 2.5,
+                                      minScale: _kMinZoom,
+                                      maxScale: _kMaxZoom,
                                       boundaryMargin:
                                           const EdgeInsets.all(160),
                                       child: Padding(
@@ -535,6 +702,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           SegmentedButton<_ViewMode>(
             segments: [
               ButtonSegment(
+                value: _ViewMode.fullTree,
+                label: Text(l10n.fullTreeView),
+                icon: const Icon(Icons.hub),
+              ),
+              ButtonSegment(
                 value: _ViewMode.defaultView,
                 label: Text(l10n.defaultView),
                 icon: const Icon(Icons.account_tree),
@@ -553,6 +725,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               // Force _buildPedigreeView to auto-fit-to-view again every
               // time Pedigree is (re)selected, not just the first time.
               _pedigreeFitAppliedForKey = null;
+              // Refetch the full component on (re)entry so it reflects any
+              // relations added while in another view.
+              if (_viewMode == _ViewMode.fullTree) _fullTreeLoadedForRoot = null;
             }),
           ),
         ],
@@ -571,6 +746,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   //  off a single root, so the algorithm handles all spacing/centering —
   //  no hand-rolled pixel math, which is what caused the child-drift bug.
   // ═══════════════════════════════════════════════════════
+  // Ego-centric view (one hop around the centered person, tap to re-center).
+  // Kept as a secondary mode; the full tree is the default.
   Widget _buildDefaultView(
     BuildContext context,
     FamilyProvider provider,
@@ -581,12 +758,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
 
     final data = _buildTreeDataCached(provider, focus);
 
-    // A brand-new profile with no father/mother/spouse/children/siblings yet
-    // produces a single-node, edge-less graph. graphview's
-    // BuchheimWalkerAlgorithm isn't designed for a trivial 1-node tree and
-    // can throw a Flutter framework GlobalKey assertion
-    // ('_elements.contains(element)') when asked to lay one out — render the
-    // lone unit directly instead of routing it through the graph library.
+    // A brand-new profile with no relations yet is a single-node graph, which
+    // BuchheimWalkerAlgorithm can't lay out (GlobalKey assertion) — render the
+    // lone unit directly.
     if (data.graph.nodes.length <= 1) {
       final content = data.contents[data.initialNodeId];
       if (content is! TreeUnitContent) return const SizedBox();
@@ -613,13 +787,6 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         configuration, _FamilyTreeEdgeRenderer(configuration));
 
     return _GraphViewHost(
-      // Recreates _GraphViewHost's Element (and re-triggers its initial
-      // jump-to-focus-node) whenever the center member or sibling
-      // visibility changes, so tapping a node to re-center always re-frames
-      // the camera. See _GraphViewHost's own doc comment for why it also
-      // needs to be recreated on *key-unchanged* remounts (loading-state
-      // swap, single-node bypass) — that's handled automatically by tying
-      // controller creation to this widget's own initState, not by this key.
       key: ValueKey('tree_${focus.id}_$_showSiblings'),
       graph: data.graph,
       algorithm: algorithm,
@@ -630,22 +797,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
-      // Not setState() — this fires from the child's initState, which runs
-      // synchronously during THIS widget's own build phase; calling
-      // setState here would throw. _graphController is only read later, on
-      // a button press, by which time initState will already have run.
       onControllerCreated: (c) => _graphController = c,
-      // Only clear if nothing newer has already taken over — see
-      // _GraphViewHost's class doc comment. A same-frame remount (e.g.
-      // tapping the siblings badge, which changes _showSiblings and
-      // therefore this widget's key within one setState) mounts the NEW
-      // _GraphViewHost — calling onControllerCreated — before the OLD
-      // one's dispose() runs this callback. Clearing unconditionally would
-      // let the older instance's cleanup clobber the newer, still-valid
-      // controller — silently breaking the zoom/reset buttons with no
-      // crash to signal it (confirmed by an independent review that wrote
-      // a reproduction test: zoom-in stopped changing the transform matrix
-      // after toggling the siblings badge, with no exception thrown).
       onControllerDisposed: (c) {
         if (identical(_graphController, c)) {
           _graphController = null;
@@ -672,6 +824,137 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         }
         return const SizedBox();
       },
+    );
+  }
+
+  Widget _buildFullTreeView(
+    BuildContext context,
+    FamilyProvider provider,
+    String locale,
+  ) {
+    // The whole connected family, with the logged-in user highlighted. Root the
+    // component fetch at the user (any node in a component yields the same set),
+    // falling back to whatever node is centered if there's no profile yet.
+    final me = context.read<AuthProvider>().currentMember ?? provider.centerMember;
+    if (me == null) return const SizedBox();
+
+    // Fire the full-component load once per root (guarded so it doesn't refire
+    // every rebuild — same pattern as the pedigree fit).
+    if (!provider.isLoadingFullTree && _fullTreeLoadedForRoot != me.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        provider.loadFullTree(me.id);
+        setState(() => _fullTreeLoadedForRoot = me.id);
+      });
+    }
+
+    final members = provider.fullTree;
+    if (members.isEmpty) {
+      if (provider.isLoadingFullTree) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      // Nothing loaded yet (or a brand-new lone profile): show just you.
+      return Center(
+        child: _PersonBox(
+          member: me,
+          isFocus: true,
+          locale: locale,
+          onTap: () => _showMemberOptions(context, me, provider),
+          onLongPress: () => _showMemberOptions(context, me, provider),
+        ),
+      );
+    }
+
+    final data = buildFullTreeData(
+      members: members,
+      spouseLinks: provider.fullTreeSpouseLinks,
+      focusId: me.id,
+      rootPersonId: _fullTreeRootId,
+    );
+
+    // A single-node component can't be laid out by the graph algorithm (same
+    // GlobalKey assertion the ego view hit) — render the lone unit directly.
+    if (data.graph.nodes.length <= 1) {
+      final content = data.contents[data.initialNodeId];
+      final primary = content is TreeUnitContent ? content.primary : me;
+      final spouses = content is TreeUnitContent ? content.spouses : const <FamilyMember>[];
+      return Center(
+        child: _UnitWidget(
+          primary: primary,
+          spouses: spouses,
+          focusId: me.id,
+          locale: locale,
+          onTapMember: (m) => _showMemberOptions(context, m, provider),
+          onLongPressMember: (m) => _showMemberOptions(context, m, provider),
+        ),
+      );
+    }
+
+    // Reuse the ego view's clean tree layout across the whole descendant tree:
+    // BuchheimWalker + the couple-unit edge renderer, so generations stay in
+    // rows and children hang tidily under each couple.
+    final configuration = BuchheimWalkerConfiguration()
+      ..siblingSeparation = 24
+      ..levelSeparation = 72
+      ..subtreeSeparation = 36
+      ..orientation = BuchheimWalkerConfiguration.ORIENTATION_TOP_BOTTOM
+      ..useCurvedConnections = false;
+    final algorithm = BuchheimWalkerAlgorithm(
+        configuration, _FamilyTreeEdgeRenderer(configuration));
+
+    final host = _GraphViewHost(
+      key: ValueKey('fulltree_${me.id}_${_fullTreeRootId}_${members.length}'),
+      graph: data.graph,
+      algorithm: algorithm,
+      initialNodeId: data.initialNodeId,
+      paint: Paint()
+        ..color = Theme.of(context).colorScheme.outline
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+      onControllerCreated: (c) => _graphController = c,
+      onControllerDisposed: (c) {
+        if (identical(_graphController, c)) {
+          _graphController = null;
+        }
+      },
+      builder: (node) {
+        final id = node.key!.value as String;
+        final content = data.contents[id];
+        if (content is TreeUnitContent) {
+          return _UnitWidget(
+            primary: content.primary,
+            spouses: content.spouses,
+            focusId: me.id,
+            locale: locale,
+            onTapMember: (m) => _showMemberOptions(context, m, provider),
+            onLongPressMember: (m) => _showMemberOptions(context, m, provider),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+
+    // When exploring someone else's branch, show a "Viewing X's family" banner
+    // with a one-tap return to your own line.
+    final rooted = _fullTreeRootId != null && _fullTreeRootId != me.id
+        ? provider.fullTree.where((m) => m.id == _fullTreeRootId).firstOrNull
+        : null;
+    if (rooted == null) return host;
+    return Stack(
+      children: [
+        Positioned.fill(child: host),
+        Positioned(
+          top: 8,
+          left: 8,
+          right: 8,
+          child: _LineageBanner(
+            name: rooted.getFullName(locale),
+            onBack: () => setState(() => _fullTreeRootId = null),
+          ),
+        ),
+      ],
     );
   }
 
@@ -742,26 +1025,51 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         .map(pedigreeGeneration)
         .reduce((a, b) => a > b ? a : b);
 
-    // Each ahnentafel index is vertically centered exactly between its two
-    // parents (see the class doc comment on _PedigreeConnectorPainter for
-    // why that makes the connector math land cleanly with no gap/offset):
-    // slotHeight halves every generation closer to the leaves, so a node's
-    // center is always the midpoint of its children's slot ranges.
     const leafUnit = _pedigreeBoxHeight + _pedigreeRowGap;
     // Focus (generation 0) on the right, ancestors fanning leftward as
     // generation increases — so (maxGeneration - generation), not
     // generation directly.
     double xOf(int n) => (maxGeneration - pedigreeGeneration(n)) *
         (_pedigreeBoxWidth + _pedigreeColGap);
-    double yOf(int n) {
-      final slotHeight =
-          (1 << (maxGeneration - pedigreeGeneration(n))) * leafUnit;
-      return (pedigreeSlot(n) + 0.5) * slotHeight - _pedigreeBoxHeight / 2;
+
+    // Compact vertical layout. The old ahnentafel "even-spread" positioned
+    // every generation across the FULL canvas height, so father and mother were
+    // pushed ~half a canvas apart whenever deeper generations existed — a huge
+    // empty vertical band that got worse each generation. Instead, pack only the
+    // deepest PRESENT ancestors (the leaves) tightly, then center each
+    // descendant midway between its actual present parent(s). The gap between
+    // any two branches is then only as tall as their own subtrees need, and it
+    // adapts to how much of the tree is actually filled in (sparse lineages stay
+    // compact) rather than to the theoretical 2^generation width.
+    final yCenter = <int, double>{};
+    double nextLeafTop = 0;
+    double computeCenterY(int n) {
+      final hasFather = ahnentafel.containsKey(2 * n);
+      final hasMother = ahnentafel.containsKey(2 * n + 1);
+      double centerY;
+      if (!hasFather && !hasMother) {
+        centerY = nextLeafTop + _pedigreeBoxHeight / 2;
+        nextLeafTop += leafUnit;
+      } else {
+        // Recurse father (2n) before mother (2n+1) so the father side stacks
+        // above the mother side, matching the connector painter's assumptions.
+        final centers = <double>[];
+        if (hasFather) centers.add(computeCenterY(2 * n));
+        if (hasMother) centers.add(computeCenterY(2 * n + 1));
+        centerY = centers.reduce((a, b) => a + b) / centers.length;
+      }
+      yCenter[n] = centerY;
+      return centerY;
     }
+    computeCenterY(1);
+
+    double yOf(int n) => (yCenter[n] ?? 0) - _pedigreeBoxHeight / 2;
 
     final canvasWidth =
         (maxGeneration + 1) * (_pedigreeBoxWidth + _pedigreeColGap);
-    final canvasHeight = (1 << maxGeneration) * leafUnit;
+    // nextLeafTop is one leafUnit past the last leaf; trim the trailing row gap.
+    final canvasHeight =
+        nextLeafTop <= 0 ? _pedigreeBoxHeight : nextLeafTop - _pedigreeRowGap;
 
     // Auto-zoom-out to fit the whole chart on entry — refit whenever the
     // shape actually changes (switching into this view, or the ancestor
@@ -842,6 +1150,19 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               onTap: () {
                 Navigator.pop(ctx);
                 _focusOn(provider, member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_tree),
+              title: Text(l10n.exploreBranch(member.firstNameEn)),
+              subtitle: Text(l10n.exploreBranchDesc,
+                  style: Theme.of(context).textTheme.bodySmall),
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() {
+                  _viewMode = _ViewMode.fullTree;
+                  _fullTreeRootId = member.id;
+                });
               },
             ),
             if (canAddRelations)
@@ -1378,9 +1699,10 @@ class _SiblingsBadge extends StatelessWidget {
 //  from the spine into each parent's box. Standard genealogical
 //  pedigree-chart connector shape. Matches _buildPedigreeView's xOf/yOf
 //  exactly: each parent pair's midpoint always falls precisely on the
-//  child's own vertical center (by construction of the ahnentafel
-//  slot-centering math), so the horizontal stub from the child always lands
-//  exactly on the spine with no gap or offset to account for here.
+//  child's own vertical center (by construction of the compact layout —
+//  every descendant's center is the average of its present parents'
+//  centers), so the horizontal stub from the child always lands exactly on
+//  the spine with no gap or offset to account for here.
 //
 //  Ancestors are laid out to the LEFT of their descendants (focus is the
 //  rightmost box, generation increases leftward — see xOf), so a child
@@ -1453,6 +1775,57 @@ class _PedigreeConnectorPainter extends CustomPainter {
 //  Explicit zoom controls — a simpler alternative to pinch gestures for a
 //  low-tech-literacy audience. Large (48dp) touch targets.
 // ─────────────────────────────────────────────────────────
+class _LineageBanner extends StatelessWidget {
+  final String name;
+  final VoidCallback onBack;
+  const _LineageBanner({required this.name, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Center(
+      child: Material(
+        elevation: 3,
+        borderRadius: BorderRadius.circular(24),
+        color: theme.colorScheme.secondaryContainer,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onBack,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.account_tree,
+                    size: 18, color: theme.colorScheme.onSecondaryContainer),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    l10n.viewingFamily(name),
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(l10n.backToMyFamily,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                Icon(Icons.close,
+                    size: 16, color: theme.colorScheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ZoomControls extends StatelessWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
@@ -1631,6 +2004,25 @@ class _InviteSheetState extends State<_InviteSheet> {
                       ),
                     ],
                   ),
+                // Scannable QR of the bare code; the text code above is the
+                // fallback for anyone who can't scan.
+                if (_inviteCode != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: QrImageView(
+                      data: _inviteCode!,
+                      version: QrVersions.auto,
+                      size: 160,
+                      backgroundColor: Colors.white,
+                      semanticsLabel: l10n.inviteQrCode,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   l10n.inviteCodeDesc,

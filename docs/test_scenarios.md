@@ -1,0 +1,87 @@
+# Vanshavali E2E Test Scenarios — the steering document
+
+This is **your control surface** for the automated end-to-end rig. Each
+in-scope row here becomes a real test that drives the actual app on an emulator
+against a real local Supabase backend (see `integration_test/` and
+`scripts/e2e/`). To change what gets tested, edit this file:
+
+- Mark a row `[ ] in scope` → I write/keep the test for it.
+- Mark a row `~ out of scope` → I skip it (with a one-line reason).
+- Add a new row in plain language → I turn it into a test.
+
+Status legend: `TODO` (not yet automated) · `AUTOMATED` (test exists & runs) ·
+`MANUAL` (can't be automated locally — human check) · `SKIP` (de-scoped).
+
+---
+
+## 1. Auth
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 1.1 | Fresh signup with email+password creates a session and lands on profile-creation | in | TODO |
+| 1.2 | Signing up with an already-registered email is rejected with the "already exists" message (no duplicate profile) | in | TODO |
+| 1.3 | Password login for an existing account reaches Home | in | TODO |
+| 1.4 | Wrong password shows a friendly error, stays on login | in | TODO |
+| 1.5 | Magic-link sign-in: request link, read it from the local mail capture, follow it, reach the app | in | TODO |
+| 1.6 | Password reset: request, read link from mail capture, set new password, log in with it | in | TODO |
+| 1.7 | Real magic-link email deliverability on the hosted project | out | MANUAL — no real inbox in the rig |
+
+## 2. Invite & Claim
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 2.1 | Signup + valid invite code claims the placeholder, no second password prompt, lands on Home as that person | in | AUTOMATED (flows/signup_claim_test.dart) — previously blocked by an intermittent claim-race crash (claimProfileByCode's `_currentMember!` nulled by the concurrent signedIn profile-load mid-await); fixed by capturing the claimed member into a local. |
+| 2.2 | Claiming from the profile-completion screen (not just signup) works | in | AUTOMATED (flows/claim_from_form_test.dart) |
+| 2.3 | Invalid/unknown invite code falls through to manual profile creation, no crash | in | AUTOMATED (flows/invalid_code_test.dart) |
+| 2.4 | An invite code is single-use — a second claim of the same code fails cleanly | in | AUTOMATED (flows/signup_claim_test.dart) — unblocked by the same claim-race fix as 2.1. |
+| 2.5 | A user who already has a profile trying to claim another is flagged for merge, shown the reassuring message (not a raw error) | in | TODO |
+| 2.6 | Invite-code preview shows the placeholder's name before claiming | in | TODO |
+
+## 3. Profile
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 3.1 | Create profile with required fields, lands on Home showing that name | in | AUTOMATED (flows/create_profile_test.dart) |
+| 3.2 | Edit own profile, changes persist after reload | in | AUTOMATED (flows/edit_profile_persist_test.dart) |
+| 3.3 | Profile-creation screen has a working sign-out escape hatch (no dead-end) | in | AUTOMATED (flows/signout_escape_test.dart) |
+| 3.4 | Gujarati auto-translation fills the Gujarati name field | out | MANUAL — depends on external translate API |
+
+## 4. Family & Tree
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 4.1 | Add a father/mother/child/spouse/sibling and see them linked | in | AUTOMATED — child add+ego (flows/relations_and_ego_test.dart); the two-step create-then-link path the UI actually uses (flows/add_sibling_and_link_child_test.dart) covering add-sibling + link-existing-child. NOTE: migration 010's edit policy silently blocked those two link-UPDATEs (kinship didn't exist yet at write time → RLS filtered the row, 0 rows, no error); the earlier relations test missed it because it baked the link into the INSERT. Fixed by the set_member_parents RPC (migration 011). |
+| 4.2 | Relationship chips are readable in both selected and unselected states | in | TODO |
+| 4.3 | Tapping a node re-centers the ego network on that person | in | TODO |
+| 4.4 | Pedigree view shows grandparents once the ancestor chain loads | in | TODO |
+| 4.5 | Home dashboard shows my own family after exploring the tree (no drift) | in | TODO |
+| 4.6 | One-to-one relation guards (no duplicate father, ancestry-cycle block) | in | PARTIAL — 30 unit tests (relation_guards_test.dart) + ancestry-cycle via real DB resolver (flows/relations_and_ego_test.dart); UI-level guard firing still TODO |
+| 4.7 | Edit authorization (migration 012): own profile + ANY unclaimed node editable (any hop distance); only someone else's CLAIMED node is blocked. Relaxed from the original 010 "direct relatives only" rule, which broke tree-building. | in | AUTOMATED (flows/edit_authorization_test.dart) |
+| 4.8 | The original creator of a placeholder can NO LONGER edit it once someone else claims it (real-user-reported hole; RPC returns false AND the RLS UPDATE does not persist) | in | AUTOMATED (flows/claimed_node_edit_guard_test.dart) |
+| 4.9 | Build out a multi-generation chain past your direct relatives — add a father to your grandfather (2 hops), and edit a distant unclaimed node — must persist (real-user-reported: "grandfather's father won't add"; migrations 011+012). | in | AUTOMATED (flows/distant_ancestor_and_edit_test.dart) |
+| 4.10 | Add sibling + link an existing person as a child via the real two-step create-then-link path (regressed by 010, fixed by the 011 RPC). | in | AUTOMATED (flows/add_sibling_and_link_child_test.dart) |
+| 4.11 | Delete authorization (migration 013): delete any unclaimed node and your OWN claimed profile; someone else's claimed node is undeletable. No silent 0-row delete. | in | AUTOMATED (flows/delete_node_test.dart) |
+
+## 5. Localization
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 5.1 | Language toggle on first onboarding screen switches EN↔GU immediately | in | AUTOMATED (flows/language_toggle_test.dart — taps ગુજરાતી, asserts the title re-renders in Gujarati) |
+| 5.2 | Every user-facing string has both EN and GU (key parity) | in | TODO |
+
+## 6. Offline / Reliability
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 6.1 | With the backend unreachable, an existing user still reaches Home from cache (no forced re-profile) | in | TODO |
+| 6.2 | Edits made offline sync when back online | in | TODO |
+| 6.3 | Real rural-network flakiness (partial timeouts) | out | MANUAL — approximated by 6.1, not fully reproducible locally |
+
+## 7. Deep links
+| # | Scenario | Scope | Status |
+|---|----------|-------|--------|
+| 7.1 | `vanshavali://auth/callback` deep link is handled without crashing | in | TODO |
+| 7.2 | Deferred deep link after Play Store install | out | MANUAL — no store in alpha |
+
+---
+
+## Notes / divergences from production to be aware of
+- The local stack mirrors `supabase/config.toml` (email confirmation OFF —
+  matches the production toggle). If production auth settings change, mirror
+  them here so tests stay representative.
+- Auth users are created by the tests themselves; only unclaimed placeholder
+  profiles are seeded (`supabase/seed.sql`).

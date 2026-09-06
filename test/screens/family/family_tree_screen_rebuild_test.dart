@@ -127,6 +127,14 @@ Future<
       ),
     ),
   );
+  // The default view is now the full connected tree, which kicks off a
+  // component fetch — with no backend in a widget test its loading spinner
+  // animates forever and pumpAndSettle would time out. These are regression
+  // tests for the ego graphview host, so switch straight to the "Nearby" mode
+  // (pump one frame first so the view-mode bar is present) where that host
+  // renders the seeded egoNetwork directly.
+  await tester.pump();
+  await tester.tap(find.text('Nearby'));
   await tester.pumpAndSettle();
   expect(tester.takeException(), isNull);
 
@@ -234,10 +242,10 @@ void main() {
         expect(tester.takeException(), isNull,
             reason: 'Switch to Pedigree view #$i threw');
 
-        await tester.tap(find.text('Family'));
+        await tester.tap(find.text('Nearby'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull,
-            reason: 'Switch back to Family view #$i threw');
+            reason: 'Switch back to Nearby view #$i threw');
       }
     },
   );
@@ -325,6 +333,11 @@ void main() {
           ),
         ),
       );
+      // Switch to the ego "Nearby" mode (the full-tree default would hang on
+      // its backend-less loading spinner) — this is where the siblings badge
+      // and graphview host live.
+      await tester.pump();
+      await tester.tap(find.text('Nearby'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
@@ -484,6 +497,11 @@ void main() {
           ),
         ),
       );
+      // Switch to the ego "Nearby" mode's single-node bypass (the full-tree
+      // default would hang on its backend-less loading spinner) — that's the
+      // path that renders the focused _PersonBox this test checks for overflow.
+      await tester.pump();
+      await tester.tap(find.text('Nearby'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

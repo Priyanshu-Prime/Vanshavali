@@ -111,6 +111,12 @@ class AppLocalizationsGu extends AppLocalizations {
   String get villageOrigin => 'મૂળ ગામ';
 
   @override
+  String get selectVillage => 'ગામ પસંદ કરો';
+
+  @override
+  String get searchVillage => 'નામથી ગામ શોધો';
+
+  @override
   String get currentCity => 'વર્તમાન શહેર';
 
   @override
@@ -124,6 +130,22 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get familyTree => 'વંશવૃક્ષ';
+
+  @override
+  String exploreBranch(String name) {
+    return '$name નું કુટુંબ જુઓ';
+  }
+
+  @override
+  String get exploreBranchDesc => 'ઝાડને તેમના પરિવારની બાજુ પર ફરીથી ગોઠવો';
+
+  @override
+  String viewingFamily(String name) {
+    return '$name નું કુટુંબ જોઈ રહ્યા છો';
+  }
+
+  @override
+  String get backToMyFamily => 'મારા પર પાછા';
 
   @override
   String get myFamily => 'મારો પરિવાર';
@@ -302,6 +324,23 @@ class AppLocalizationsGu extends AppLocalizations {
   String get search => 'શોધ';
 
   @override
+  String get directory => 'ડિરેક્ટરી';
+
+  @override
+  String get searchByName => 'નામથી શોધો';
+
+  @override
+  String get allVillages => 'બધા ગામ';
+
+  @override
+  String peopleCount(int count) {
+    return '$count લોકો';
+  }
+
+  @override
+  String get you => 'તમે';
+
+  @override
   String get notifications => 'સૂચનાઓ';
 
   @override
@@ -425,6 +464,36 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get add => 'ઉમેરો';
+
+  @override
+  String get parentsMarriedTitle => 'લગ્ન';
+
+  @override
+  String parentsMarriedQuestion(String newParent, String existingParent) {
+    return 'શું $newParent અને $existingParent લગ્નથી જોડાયેલા છે?';
+  }
+
+  @override
+  String get yesMarried => 'હા, તેઓ પરિણીત છે';
+
+  @override
+  String get noDifferentMarriage => 'ના, સાવકા માતા-પિતા';
+
+  @override
+  String get sharedParentsTitle => 'સહિયારા માતા-પિતા';
+
+  @override
+  String sharedParentsQuestion(String name, String self) {
+    return '$name અને $self કયા માતા-પિતા વહેંચે છે?';
+  }
+
+  @override
+  String get bothParents => 'બંને માતા-પિતા';
+
+  @override
+  String onlyParent(String name) {
+    return 'ફક્ત $name (સાવકા ભાઈ-બહેન)';
+  }
 
   @override
   String get familyMemberAdded => 'કુટુંબના સભ્ય સફળતાપૂર્વક ઉમેરાયા!';
@@ -562,7 +631,10 @@ class AppLocalizationsGu extends AppLocalizations {
   }
 
   @override
-  String get defaultView => 'કુટુંબ';
+  String get defaultView => 'નજીકના';
+
+  @override
+  String get fullTreeView => 'આખું વૃક્ષ';
 
   @override
   String get pedigreeView => 'વંશાવલી';
@@ -575,6 +647,15 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get transliteration => 'લિપ્યંતર';
+
+  @override
+  String get typeNameInEnglish => 'નામ અંગ્રેજીમાં લખો';
+
+  @override
+  String get gujaratiSpellingOptions => 'ગુજરાતી જોડણી પસંદ કરો';
+
+  @override
+  String get noSpellingSuggestions => 'કોઈ સૂચન નથી — નીચે જોડણી લખો';
 
   @override
   String get typeManually => 'ગુજરાતીમાં મેન્યુઅલી ટાઈપ કરો';
@@ -636,6 +717,26 @@ class AppLocalizationsGu extends AppLocalizations {
   String get orUseInviteCode => 'અથવા આમંત્રણ કોડ દાખલ કરો';
 
   @override
+  String get scanInviteCode => 'આમંત્રણ કોડ સ્કૅન કરો';
+
+  @override
+  String get scanQrInstruction => 'તમારા કૅમેરાને આમંત્રણ QR કોડ સામે રાખો';
+
+  @override
+  String get cameraPermissionNeeded =>
+      'સ્કૅન કરવા માટે કૅમેરાની પરવાનગી જરૂરી છે. તમે કોડ જાતે પણ દાખલ કરી શકો છો.';
+
+  @override
+  String get scanInvalidCode =>
+      'તે QR કોડમાં માન્ય 6 અક્ષરનો આમંત્રણ કોડ મળ્યો નથી.';
+
+  @override
+  String get inviteQrCode => 'આમંત્રણ QR કોડ';
+
+  @override
+  String get enterManually => 'કોડ જાતે દાખલ કરો';
+
+  @override
   String get linkChildrenToSpouse => 'બાળકોને જીવનસાથી સાથે જોડવા?';
 
   @override
@@ -695,6 +796,10 @@ class AppLocalizationsGu extends AppLocalizations {
   String get errorGeneric => 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.';
 
   @override
+  String get errorEditNotPermitted =>
+      'આ ફેરફાર સાચવી શકાયો નથી. તમને આ વ્યક્તિમાં ફેરફાર કરવાની પરવાનગી કદાચ ન હોય.';
+
+  @override
   String get errorEmailAlreadyRegistered =>
       'આ ઇમેઇલ સાથે એકાઉન્ટ પહેલેથી જ છે. કૃપા કરીને લોગિન કરો — જો તમે મેજિક લિંકથી સાઇન અપ કર્યું હોય, તો આગલી વખતે લોગિન કરતી વખતે તમને પાસવર્ડ સેટ કરવાનું કહેવામાં આવશે.';
 
@@ -717,4 +822,16 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get duplicateProfileFlaggedForReview =>
       'આ પ્રોફાઇલ તમારા બીજા ખાતા સાથે પહેલેથી જ જોડાયેલ હોય તેવું લાગે છે. તેની સમીક્ષા માટે નોંધ કરવામાં આવી છે જેથી તેને ઉકેલી શકાય — હમણાં માટે તમારે બીજું કંઈ કરવાની જરૂર નથી.';
+
+  @override
+  String get errorEmailConfirmationRequired =>
+      'એકાઉન્ટ બની ગયું! કૃપા કરીને તમારો ઇમેઇલ તપાસો અને કન્ફર્મેશન લિંક પર ટેપ કરો, પછી પાછા આવીને લોગિન કરો જેથી તમારા કુટુંબના વૃક્ષ સાથે જોડાણ પૂર્ણ થાય.';
+
+  @override
+  String get errorEmailNotConfirmed =>
+      'કૃપા કરીને પહેલા તમારો ઇમેઇલ કન્ફર્મ કરો — સાઇન અપ કરતી વખતે અમે મોકલેલી કન્ફર્મેશન લિંક માટે તમારું ઇનબોક્સ તપાસો.';
+
+  @override
+  String get errorPasswordSameAsOld =>
+      'કૃપા કરીને તમારી પાસે પહેલેથી છે તેનાથી અલગ પાસવર્ડ પસંદ કરો.';
 }

@@ -167,7 +167,13 @@ class AppTheme {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
-      labelStyle: GoogleFonts.notoSans(fontSize: 14),
+      // An explicit label color is required: with only a font set (no color),
+      // Material 3 skips its default unselected-label color resolution and the
+      // text renders invisibly against the chip surface until selected. Dark
+      // text is readable both on the light unselected surface and on the amber
+      // secondaryContainer used for the selected state.
+      labelStyle: GoogleFonts.notoSans(fontSize: 14, color: lightText),
+      secondaryLabelStyle: GoogleFonts.notoSans(fontSize: 14, color: lightText),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -352,7 +358,15 @@ class AppTheme {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
-      labelStyle: GoogleFonts.notoSans(fontSize: 14),
+      // See the light theme's chip note. Light label so the unselected chip
+      // text is visible on the dark surface; the selected chip switches to the
+      // amber secondaryContainer, where dark text reads better, so the
+      // selected label is kept dark.
+      labelStyle: GoogleFonts.notoSans(fontSize: 14, color: darkText),
+      secondaryLabelStyle: GoogleFonts.notoSans(
+        fontSize: 14,
+        color: lightText,
+      ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,

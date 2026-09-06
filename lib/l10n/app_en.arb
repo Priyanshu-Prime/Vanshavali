@@ -37,11 +37,23 @@
   "isAlive": "Living",
   "deceased": "Deceased",
   "villageOrigin": "Village of Origin",
+  "selectVillage": "Select village",
+  "searchVillage": "Search village by name",
   "currentCity": "Current City",
   "education": "Education",
   "occupation": "Occupation",
   "medicalInfo": "Medical Information",
   "familyTree": "Family Tree",
+  "exploreBranch": "Explore {name}'s family",
+  "@exploreBranch": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "exploreBranchDesc": "Re-root the tree on their side of the family",
+  "viewingFamily": "Viewing {name}'s family",
+  "@viewingFamily": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "backToMyFamily": "Back to mine",
   "myFamily": "My Family",
   "father": "Father",
   "mother": "Mother",
@@ -113,6 +125,14 @@
   "termsOfService": "Terms of Service",
   "home": "Home",
   "search": "Search",
+  "directory": "Directory",
+  "searchByName": "Search by name",
+  "allVillages": "All villages",
+  "peopleCount": "{count} people",
+  "@peopleCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "you": "You",
   "notifications": "Notifications",
   "pendingInvites": "Pending Invites",
   "acceptInvite": "Accept",
@@ -176,6 +196,31 @@
   },
   "confirm": "Confirm",
   "add": "Add",
+  "parentsMarriedTitle": "Marriage",
+  "parentsMarriedQuestion": "Is {newParent} married to {existingParent}?",
+  "@parentsMarriedQuestion": {
+    "placeholders": {
+      "newParent": { "type": "String" },
+      "existingParent": { "type": "String" }
+    }
+  },
+  "yesMarried": "Yes, they are married",
+  "noDifferentMarriage": "No, a step-parent",
+  "sharedParentsTitle": "Shared parents",
+  "sharedParentsQuestion": "Which parents does {name} share with {self}?",
+  "@sharedParentsQuestion": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "self": { "type": "String" }
+    }
+  },
+  "bothParents": "Both parents",
+  "onlyParent": "Only {name} (half-sibling)",
+  "@onlyParent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "familyMemberAdded": "Family member added successfully",
   "familyMemberAddedPartial": "Family member added, but linking some existing children to them failed — please check and try again",
   "noResultsFound": "No matching members found",
@@ -268,11 +313,15 @@
       "count": { "type": "int" }
     }
   },
-  "defaultView": "Family",
+  "defaultView": "Nearby",
+  "fullTreeView": "Full tree",
   "pedigreeView": "Pedigree",
   "editGujaratiSpelling": "Edit Gujarati Spelling",
   "autoTranslation": "Auto Translation",
   "transliteration": "Transliteration",
+  "typeNameInEnglish": "Type the name in English",
+  "gujaratiSpellingOptions": "Tap a Gujarati spelling",
+  "noSpellingSuggestions": "No suggestions — type the spelling below",
   "typeManually": "Type manually in Gujarati",
   "apply": "Apply",
   "noEnglishText": "Enter the English name first",
@@ -292,6 +341,12 @@
   "codeCopied": "Invite code copied",
   "generatingCode": "Generating code...",
   "orUseInviteCode": "Or enter an invite code",
+  "scanInviteCode": "Scan invite code",
+  "scanQrInstruction": "Point your camera at the invite QR code",
+  "cameraPermissionNeeded": "Camera access is needed to scan. You can still enter the code by hand.",
+  "scanInvalidCode": "No valid 6-character invite code found in that QR code.",
+  "inviteQrCode": "Invite QR code",
+  "enterManually": "Enter code manually",
   "linkChildrenToSpouse": "Link children to spouse?",
   "linkChildrenToSpouseDesc": "These children don't have the other parent set. Would you like to link them to the new spouse?",
   "zoomIn": "Zoom In",
@@ -319,11 +374,15 @@
   "errorTimeout": "That took too long. Please try again.",
   "errorServiceFailure": "Something went wrong on our end. Please try again in a moment.",
   "errorGeneric": "Something went wrong. Please try again.",
+  "errorEditNotPermitted": "This change couldn't be saved. You may not have permission to edit this person.",
   "errorEmailAlreadyRegistered": "An account with this email already exists. Please log in instead — if you signed up with a magic link, you'll be asked to set a password the next time you log in.",
   "setPasswordTitle": "Set a Password",
   "setPasswordDescription": "You signed in using a magic link. Please set a password now so you can log in on any device without needing to check your email every time.",
   "setPasswordButton": "Set Password",
   "passwordSetSuccess": "Password set successfully",
   "duplicateProfileTitle": "Profile Already Linked",
-  "duplicateProfileFlaggedForReview": "This profile appears to already be linked to another account of yours. We've flagged it for review so it can be sorted out — no need to do anything else for now."
+  "duplicateProfileFlaggedForReview": "This profile appears to already be linked to another account of yours. We've flagged it for review so it can be sorted out — no need to do anything else for now.",
+  "errorEmailConfirmationRequired": "Account created! Please check your email and tap the confirmation link, then come back and log in to finish joining your family tree.",
+  "errorEmailNotConfirmed": "Please confirm your email first — check your inbox for the confirmation link we sent when you signed up.",
+  "errorPasswordSameAsOld": "Please choose a different password than the one you already have."
 }

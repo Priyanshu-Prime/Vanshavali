@@ -2,7 +2,11 @@ name: vanshavali
 description: "Community Lineage App - Track ancestry and family connections"
 publish_to: 'none'
 
-version: 1.0.0+1
+# Alpha versioning: stay on 0.x until a full public release. The build
+# number (+N) increments every distributed alpha build; bump the pre-release
+# label (-alpha.N) for notable milestones. Do NOT move to 1.0.0 until the
+# app ships to all users.
+version: 0.1.0-alpha.2+11
 
 environment:
   sdk: ^3.10.7
@@ -39,13 +43,22 @@ dependencies:
   uuid: ^4.5.1
   intl: ^0.20.1
   
-  # Translation (free API)
+  # Translation / transliteration (free APIs)
   translator: ^1.0.0
+  http: ^1.2.0
   url_launcher: ^6.3.2
   share_plus: ^12.0.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  # Drives the real app on a device/emulator against a real backend — the
+  # E2E rig (see integration_test/ and scripts/e2e/). Distinct from the
+  # mock-based unit/widget tests under test/, which can't catch backend-seam
+  # bugs (session handling, RLS, single-use invite codes, etc.).
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   hive_generator: ^2.0.1
@@ -58,6 +71,7 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/data/
   #         style: italic
   #   - family: Trajan Pro
   #     fonts:

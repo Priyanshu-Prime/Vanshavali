@@ -4,9 +4,15 @@ import '../../providers/auth_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
+import '../scan/scan_invite_code_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  /// Optional invite code to prefill the invite-code field with — supplied by
+  /// the WhatsApp deep-link flow (see main.dart `_handleDeepLink`) so an
+  /// invitee never has to type it. Manual entry and the QR scanner still work.
+  final String? prefilledInviteCode;
+
+  const SignupScreen({super.key, this.prefilledInviteCode});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -24,12 +30,38 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _invitePreviewName;
 
   @override
+  void initState() {
+    super.initState();
+    // Prefill the invite code delivered by the deep-link flow, if any, and run
+    // the same preview lookup that manual typing / scanning triggers.
+    final code = widget.prefilledInviteCode;
+    if (code != null && code.isNotEmpty) {
+      debugPrint('signup: prefilled invite code from deep link: $code');
+      _inviteCodeController.text = code;
+      _lookupInviteCode(code);
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _inviteCodeController.dispose();
     super.dispose();
+  }
+
+  /// Opens the QR scanner; on a successful scan fills the invite-code field
+  /// and runs the same preview lookup as manual typing. Manual entry is never
+  /// disabled — this is an optional shortcut.
+  Future<void> _scanInviteCode() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanInviteCodeScreen()),
+    );
+    if (code == null || !mounted) return;
+    _inviteCodeController.text = code;
+    _lookupInviteCode(code);
   }
 
   Future<void> _lookupInviteCode(String code) async {
@@ -62,7 +94,10 @@ class _SignupScreenState extends State<SignupScreen> {
       // If invite code was entered, claim the profile
       final code = _inviteCodeController.text.trim().toUpperCase();
       if (code.length == 6) {
+        debugPrint('deeplink: claim attempt starting for code');
         final claimed = await authProvider.claimProfileByCode(code);
+        debugPrint('deeplink: claim attempt result: '
+            '${claimed ? 'success' : authProvider.hasPendingMergeConflict ? 'merge-conflict (flagged for review)' : 'failed (invalid code)'}');
         if (mounted) {
           if (claimed) {
             showAppSnackBar(context, context.l10n.profileClaimed);
@@ -248,6 +283,15 @@ class _SignupScreenState extends State<SignupScreen> {
                           textInputAction: TextInputAction.done,
                           maxLength: 6,
                           onChanged: _lookupInviteCode,
+                        ),
+                        // Optional QR shortcut — manual typing above always works.
+                        OutlinedButton.icon(
+                          onPressed: _scanInviteCode,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: Text(l10n.scanInviteCode),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                          ),
                         ),
                         if (_invitePreviewName != null) ...[
                           const SizedBox(height: 4),

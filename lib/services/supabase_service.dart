@@ -350,32 +350,47 @@ class SupabaseService {
     return FamilyMember.fromJson(response as Map<String, dynamic>);
   }
 
-  /// Link family members
+  /// Fetches the entire connected family component reachable from [rootId] —
+  /// parents, children, and spouses, transitively — via get_connected_tree
+  /// (migration 014). This is the whole-tree view's data source and the basis
+  /// for cross-tree isolation: a family that isn't connected to [rootId] never
+  /// appears here. Unlike the ego network this is intentionally the full
+  /// component, so callers should use it only for the dedicated whole-tree view,
+  /// not the routine per-node navigation.
+  static Future<List<FamilyMember>> getConnectedTree(String rootId) async {
+    final response =
+        await client.rpc('get_connected_tree', params: {'root': rootId});
+    return (response as List)
+        .map((json) => FamilyMember.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Link family members.
+  ///
+  /// [autoLinkSpouse] controls the father<->mother convenience link: when you
+  /// add a parent to a member who already has the other parent, they're assumed
+  /// married and linked as spouses. Pass false for a STEP-parent (a parent from
+  /// a different marriage), so the two parents are NOT linked as a couple.
   static Future<void> linkFamilyMembers({
     required String memberId,
     required String relatedMemberId,
     required RelationType relationType,
+    bool autoLinkSpouse = true,
   }) async {
     switch (relationType) {
       case RelationType.father:
-        await client
-            .from('family_members')
-            .update({'father_id': relatedMemberId})
-            .eq('id', memberId);
-        // Auto-link spouse between father and existing mother
+        await _updateMemberOrThrow(memberId, {'father_id': relatedMemberId});
+        // Auto-link spouse between father and existing mother (unless step-parent)
         final memberAfterFather = await getFamilyMemberById(memberId);
-        if (memberAfterFather?.motherId != null) {
+        if (autoLinkSpouse && memberAfterFather?.motherId != null) {
           await _ensureSpouseLink(relatedMemberId, memberAfterFather!.motherId!);
         }
         break;
       case RelationType.mother:
-        await client
-            .from('family_members')
-            .update({'mother_id': relatedMemberId})
-            .eq('id', memberId);
-        // Auto-link spouse between mother and existing father
+        await _updateMemberOrThrow(memberId, {'mother_id': relatedMemberId});
+        // Auto-link spouse between mother and existing father (unless step-parent)
         final memberAfterMother = await getFamilyMemberById(memberId);
-        if (memberAfterMother?.fatherId != null) {
+        if (autoLinkSpouse && memberAfterMother?.fatherId != null) {
           await _ensureSpouseLink(memberAfterMother!.fatherId!, relatedMemberId);
         }
         break;
@@ -383,37 +398,36 @@ class SupabaseService {
         await addSpouseLink(memberId, relatedMemberId);
         break;
       case RelationType.child:
-        // Determine if current user is father or mother
+        // Sets a parent pointer on the CHILD's row — which is the write that
+        // *creates* the parent-child edge. That can't go through a direct table
+        // UPDATE: migration 010's RLS policy authorizes an edit by reading the
+        // row's CURRENT relationships, and at this instant the child has none,
+        // so RLS silently filters the row out (0 rows, no error) and the link
+        // is lost. Route it through set_member_parents (migration 011), a
+        // SECURITY DEFINER RPC that still enforces "own row or unclaimed node".
         final currentMember = await getFamilyMemberById(memberId);
-        if (currentMember?.gender == 'Male') {
-          await client
-              .from('family_members')
-              .update({'father_id': memberId})
-              .eq('id', relatedMemberId);
-        } else {
-          await client
-              .from('family_members')
-              .update({'mother_id': memberId})
-              .eq('id', relatedMemberId);
-        }
+        await client.rpc('set_member_parents', params: {
+          'p_child': relatedMemberId,
+          if (currentMember?.gender == 'Male')
+            'p_father': memberId
+          else
+            'p_mother': memberId,
+        });
         break;
       case RelationType.sibling:
-        // Share parents
+        // Same reason as child above: this UPDATE creates the sibling's link to
+        // the shared parents, so it must go through the RPC, not a direct write
+        // the 010 policy would block. Copies whichever parents the caller has.
         final currentMember = await getFamilyMemberById(memberId);
-        if (currentMember != null) {
-          final updates = <String, dynamic>{};
-          if (currentMember.fatherId != null) {
-            updates['father_id'] = currentMember.fatherId;
-          }
-          if (currentMember.motherId != null) {
-            updates['mother_id'] = currentMember.motherId;
-          }
-          if (updates.isNotEmpty) {
-            await client
-                .from('family_members')
-                .update(updates)
-                .eq('id', relatedMemberId);
-          }
+        if (currentMember != null &&
+            (currentMember.fatherId != null || currentMember.motherId != null)) {
+          await client.rpc('set_member_parents', params: {
+            'p_child': relatedMemberId,
+            if (currentMember.fatherId != null)
+              'p_father': currentMember.fatherId,
+            if (currentMember.motherId != null)
+              'p_mother': currentMember.motherId,
+          });
         }
         break;
     }
@@ -425,9 +439,43 @@ class SupabaseService {
     await addSpouseLink(idA, idB);
   }
 
-  /// Delete a family member
+  /// Updates a family_members row and throws if the write reached ZERO rows.
+  ///
+  /// A Supabase UPDATE filtered out by RLS (no permission to edit this node)
+  /// affects zero rows and returns NO error — so a relation link would look
+  /// like it succeeded while nothing actually changed, and the node silently
+  /// never appears in the tree (this is exactly how the "adding completes but
+  /// the node never shows up" bug manifested). Asking for the updated rows back
+  /// via .select() lets us detect the no-op and surface a real error instead of
+  /// a false "added" toast. The sentinel is mapped to a friendly, localized
+  /// message in friendlyErrorMessage (lib/widgets/common_widgets.dart).
+  static Future<void> _updateMemberOrThrow(
+    String memberId,
+    Map<String, dynamic> updates,
+  ) async {
+    final rows = await client
+        .from('family_members')
+        .update(updates)
+        .eq('id', memberId)
+        .select('id');
+    if ((rows as List).isEmpty) {
+      throw Exception('vanshavali_edit_not_permitted');
+    }
+  }
+
+  /// Delete a family member.
+  ///
+  /// Like the link/edit writes, a DELETE that RLS filters out (e.g. trying to
+  /// delete someone else's claimed node) affects zero rows and returns NO
+  /// error — which would look like a successful delete while the node stays in
+  /// the tree. .select() the deleted rows and throw the same sentinel when none
+  /// were removed, so the UI shows a real message instead of a false success.
   static Future<void> deleteFamilyMember(String id) async {
-    await client.from('family_members').delete().eq('id', id);
+    final rows =
+        await client.from('family_members').delete().eq('id', id).select('id');
+    if ((rows as List).isEmpty) {
+      throw Exception('vanshavali_edit_not_permitted');
+    }
   }
 
   /// Get all family members (for offline sync).
@@ -541,5 +589,21 @@ class SupabaseService {
       'flag_duplicate_for_merge',
       params: {'duplicate_placeholder_id': duplicatePlaceholderId},
     );
+  }
+
+  /// Whether the current user is allowed to edit [memberId], via the
+  /// `can_edit_family_member` RPC (migration 010) — the single source of
+  /// truth also enforced by the family_members UPDATE RLS policy. True for
+  /// one's own profile, or for an unclaimed direct relative (father, mother,
+  /// child, spouse, sibling); false for anyone else's claimed profile and for
+  /// unrelated nodes. Used to gate the edit UI so users never see an edit
+  /// affordance the backend would reject.
+  static Future<bool> canEditMember(String memberId) async {
+    if (currentUser == null) return false;
+    final response = await client.rpc(
+      'can_edit_family_member',
+      params: {'target_id': memberId},
+    );
+    return response == true;
   }
 }

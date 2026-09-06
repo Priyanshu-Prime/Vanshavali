@@ -6,10 +6,13 @@ import 'package:uuid/uuid.dart';
 import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
-import '../../services/translation_service.dart';
+import '../../services/supabase_service.dart';
+import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
+import '../../widgets/village_picker_field.dart';
+import '../scan/scan_invite_code_screen.dart';
 
 class ProfileFormScreen extends StatefulWidget {
   final FamilyMember? existingMember;
@@ -35,6 +38,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   final _cityController = TextEditingController();
   final _educationController = TextEditingController();
   final _occupationController = TextEditingController();
+  final _inviteCodeController = TextEditingController();
 
   String? _selectedGender;
   DateTime? _selectedDob;
@@ -42,6 +46,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   bool _isLoading = false;
   Timer? _firstNameDebounce;
   Timer? _lastNameDebounce;
+  String? _invitePreviewName;
 
   @override
   void initState() {
@@ -85,7 +90,34 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     _cityController.dispose();
     _educationController.dispose();
     _occupationController.dispose();
+    _inviteCodeController.dispose();
     super.dispose();
+  }
+
+  /// Opens the QR scanner; on a successful scan fills the invite-code field
+  /// and runs the same preview lookup as manual typing. Manual entry is never
+  /// disabled — this is an optional shortcut.
+  Future<void> _scanInviteCode() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanInviteCodeScreen()),
+    );
+    if (code == null || !mounted) return;
+    _inviteCodeController.text = code;
+    _lookupInviteCode(code);
+  }
+
+  Future<void> _lookupInviteCode(String code) async {
+    if (code.length != 6) {
+      setState(() => _invitePreviewName = null);
+      return;
+    }
+    try {
+      final member = await SupabaseService.getMemberByInviteCode(code);
+      if (mounted) {
+        setState(() => _invitePreviewName = member?.fullNameEn);
+      }
+    } catch (_) {}
   }
 
   void _onFirstNameEnChanged() {
@@ -94,7 +126,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     if (text.isEmpty) return;
     _firstNameDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final translated = await TranslationService.translateToGujarati(text);
+        final translated = await TransliterationService.best(text);
         if (translated != null && mounted) {
           _firstNameGuController.text = translated;
         }
@@ -108,7 +140,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     if (text.isEmpty) return;
     _lastNameDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final translated = await TranslationService.translateToGujarati(text);
+        final translated = await TransliterationService.best(text);
         if (translated != null && mounted) {
           _lastNameGuController.text = translated;
         }
@@ -135,6 +167,39 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+
+    // Only for a brand-new profile: an invite code claims an already-existing
+    // placeholder (created by a relative) instead of creating a fresh row for
+    // the same person. Reachable from here (not just the signup screen) so a
+    // magic-link user, or anyone who reaches this screen without having typed
+    // a code during signup, still has a way to link to their placeholder.
+    if (widget.isCreatingProfile) {
+      final code = _inviteCodeController.text.trim().toUpperCase();
+      if (code.length == 6) {
+        final claimed = await authProvider.claimProfileByCode(code);
+        if (!mounted) return;
+        if (claimed) {
+          setState(() => _isLoading = false);
+          showAppSnackBar(context, context.l10n.profileClaimed);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) Navigator.pop(context, true);
+          });
+          return;
+        } else if (authProvider.hasPendingMergeConflict) {
+          showAppSnackBar(
+            context,
+            context.l10n.duplicateProfileFlaggedForReview,
+          );
+          authProvider.acknowledgeMergeConflict();
+          // Fall through — let them save the profile they filled in below
+          // rather than leaving them stuck with an unusable form.
+        }
+        // Invalid/unmatched code: fall through silently to manual profile
+        // creation below, same forgiving behavior as the signup screen.
+      }
+    }
 
     final member = FamilyMember(
       id: widget.existingMember?.id ?? const Uuid().v4(),
@@ -179,7 +244,6 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
       },
     );
 
-    final authProvider = context.read<AuthProvider>();
     bool success;
 
     // Determine if we are editing our own profile or someone else's
@@ -228,12 +292,111 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         title: Text(
           widget.isCreatingProfile ? l10n.completeProfile : l10n.editProfile,
         ),
+        // When creating the mandatory first profile, this screen has no
+        // previous route to pop to (it's shown in place of the app's root
+        // by AppNavigator) — without an explicit way out, a user who signed
+        // up by mistake, or wants to retry with a different invite code, is
+        // stuck filling in the whole form with no escape. Mirrors the same
+        // sign-out escape hatch already used on SetPasswordScreen.
+        actions: widget.isCreatingProfile
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: l10n.logout,
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          final confirmed = await showConfirmDialog(
+                            context: context,
+                            title: l10n.logout,
+                            message: l10n.confirmLogout,
+                            isDestructive: true,
+                          );
+                          if (confirmed && context.mounted) {
+                            await context.read<AuthProvider>().signOut();
+                          }
+                        },
+                ),
+              ]
+            : null,
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
+            // ── Invite Code (optional, new profiles only) ──
+            if (widget.isCreatingProfile) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.card_giftcard,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.enterInviteCode,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _inviteCodeController,
+                        decoration: InputDecoration(
+                          hintText: l10n.enterInviteCodeHint,
+                          prefixIcon: const Icon(Icons.key),
+                        ),
+                        textCapitalization: TextCapitalization.characters,
+                        textInputAction: TextInputAction.done,
+                        maxLength: 6,
+                        onChanged: _lookupInviteCode,
+                      ),
+                      // Optional QR shortcut — manual typing above always works.
+                      OutlinedButton.icon(
+                        onPressed: _scanInviteCode,
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: Text(l10n.scanInviteCode),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                        ),
+                      ),
+                      if (_invitePreviewName != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green.shade700,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _invitePreviewName!,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
             // Names Section
             SectionCard(
               title: l10n.name,
@@ -364,13 +527,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
             SectionCard(
               title: l10n.location,
               children: [
-                TextFormField(
-                  controller: _villageController,
-                  decoration: InputDecoration(
-                    labelText: l10n.villageOrigin,
-                    prefixIcon: const Icon(Icons.home_outlined),
-                  ),
-                  textCapitalization: TextCapitalization.words,
+                VillagePickerField(
+                  value: _villageController.text,
+                  onChanged: (v) =>
+                      setState(() => _villageController.text = v ?? ''),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

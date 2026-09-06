@@ -1,10 +1,24 @@
 /// Supabase Configuration
 class SupabaseConfig {
-  static const String supabaseUrl = 'https://lsmualpdhtpdpdhfmdmj.supabase.co';
+  // URL/key default to the hosted alpha project, but can be overridden at
+  // build time with --dart-define so the E2E rig can point the real app at a
+  // local Supabase stack without editing this file. A production build with
+  // no --dart-define is byte-for-byte unchanged. From the Android emulator,
+  // localhost is reachable as 10.0.2.2, so the local override is typically
+  //   --dart-define=SUPABASE_URL=http://10.0.2.2:54321
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://lsmualpdhtpdpdhfmdmj.supabase.co',
+  );
 
   // New-format Supabase publishable key (replaces the old anon JWT format;
   // supabase_flutter accepts either interchangeably as the client API key).
-  static const String supabaseAnonKey = 'sb_publishable_sihPTWjfbjQeqvY1OqI8Uw_lnfcMbye';
+  // The local stack prints its own anon key on `supabase start`; pass it via
+  // --dart-define=SUPABASE_ANON_KEY=... for E2E runs.
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'sb_publishable_sihPTWjfbjQeqvY1OqI8Uw_lnfcMbye',
+  );
   
   // Deep link scheme for the app
   static const String deepLinkScheme = 'vanshavali';

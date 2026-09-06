@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Camera is used only to scan invite-code QR codes (mobile_scanner);
+         not required, so devices without a camera can still install and use
+         manual invite-code entry. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="Vanshavali"
         android:name="${applicationName}"
@@ -32,6 +37,16 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="vanshavali" android:host="auth" />
+            </intent-filter>
+
+            <!-- Deep linking for WhatsApp invites: the hosted landing page's
+                 "Open in app" button fires vanshavali://invite?code=<CODE>.
+                 See docs/whatsapp_invite_flow.md. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="vanshavali" android:host="invite" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

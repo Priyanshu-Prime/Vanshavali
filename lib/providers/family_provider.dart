@@ -7,6 +7,12 @@ import '../services/local_storage_service.dart';
 class FamilyProvider extends ChangeNotifier {
   List<FamilyMember> _egoNetwork = [];
   List<SpouseLink> _spouseLinks = [];
+  // The entire connected family component for the full-tree view (see
+  // get_connected_tree). Separate from the ego network so switching views
+  // never drops the other's cached data.
+  List<FamilyMember> _fullTree = [];
+  List<SpouseLink> _fullTreeSpouseLinks = [];
+  bool _isLoadingFullTree = false;
   List<FamilyMember> _searchResults = [];
   FamilyMember? _selectedMember;
   FamilyMember? _centerMember;
@@ -15,6 +21,9 @@ class FamilyProvider extends ChangeNotifier {
 
   List<FamilyMember> get egoNetwork => _egoNetwork;
   List<SpouseLink> get spouseLinks => _spouseLinks;
+  List<FamilyMember> get fullTree => _fullTree;
+  List<SpouseLink> get fullTreeSpouseLinks => _fullTreeSpouseLinks;
+  bool get isLoadingFullTree => _isLoadingFullTree;
   List<FamilyMember> get searchResults => _searchResults;
   FamilyMember? get selectedMember => _selectedMember;
   FamilyMember? get centerMember => _centerMember;
@@ -98,9 +107,18 @@ class FamilyProvider extends ChangeNotifier {
         _egoNetwork = await SupabaseService.getEgoCentricNetwork(memberId);
         final ids = _egoNetwork.map((m) => m.id).toList();
         _spouseLinks = await SupabaseService.getSpouseLinksFor(ids);
-        // Cache locally (incremental — merges this neighborhood in, doesn't
-        // clear previously cached ones).
-        await LocalStorageService.saveFamilyMembers(_egoNetwork);
+        // Cache locally AND purge stale rows: within this member's cached ego
+        // neighbourhood, anyone the fresh server result no longer includes has
+        // been deleted server-side (e.g. a removed test profile) and must not
+        // linger in the cache as a phantom sibling/child. Reconciling here is
+        // safe because get_ego_network returns the same neighbourhood the box
+        // computes (parents + spouses + children + siblings).
+        final egoScope = {
+          for (final m in LocalStorageService.getEgoCentricNetwork(memberId))
+            m.id
+        };
+        await LocalStorageService.reconcileFamilyMembers(_egoNetwork,
+            scopeIds: egoScope);
         await LocalStorageService.saveSpouseLinks(_spouseLinks);
       } else {
         _egoNetwork = LocalStorageService.getEgoCentricNetwork(memberId);
@@ -119,6 +137,63 @@ class FamilyProvider extends ChangeNotifier {
     }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Loads the ENTIRE connected family component (see get_connected_tree,
+  /// migration 014) for the full-tree view — every relative reachable from
+  /// [rootId] through parents, children, and marriages. Online-only for the
+  /// authoritative component; offline it falls back to whatever whole set is
+  /// cached locally (still correct, just possibly stale/partial). This is a
+  /// deliberate full-component fetch, distinct from the routine ego load.
+  Future<void> loadFullTree(String rootId) async {
+    if (_fullTreeInjectedForTesting) return; // keep the test fixture
+    _isLoadingFullTree = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      if (await SyncService.isOnline()) {
+        _fullTree = await SupabaseService.getConnectedTree(rootId);
+        final ids = _fullTree.map((m) => m.id).toList();
+        _fullTreeSpouseLinks = await SupabaseService.getSpouseLinksFor(ids);
+        // getConnectedTree returns the WHOLE component the user can see, so it
+        // is authoritative: purge any cached row hanging off this component
+        // (its id, or a member whose parent is in the component) that the fresh
+        // fetch no longer contains — i.e. deleted profiles — while leaving any
+        // unrelated cached component alone.
+        final freshIds = ids.toSet();
+        final componentScope = {
+          for (final m in LocalStorageService.getAllFamilyMembers())
+            if (freshIds.contains(m.id) ||
+                freshIds.contains(m.fatherId) ||
+                freshIds.contains(m.motherId))
+              m.id
+        };
+        await LocalStorageService.reconcileFamilyMembers(_fullTree,
+            scopeIds: componentScope);
+        await LocalStorageService.saveSpouseLinks(_fullTreeSpouseLinks);
+      } else {
+        _fullTree = LocalStorageService.getAllFamilyMembers();
+        _fullTreeSpouseLinks =
+            _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+      }
+    } catch (e) {
+      debugPrint('Error in loadFullTree: $e');
+      _error = e.toString();
+      // The fallback itself can throw if local storage isn't available (e.g.
+      // in a widget test with no Hive) — never let loadFullTree propagate.
+      try {
+        _fullTree = LocalStorageService.getAllFamilyMembers();
+        _fullTreeSpouseLinks =
+            _localSpouseLinksFor(_fullTree.map((m) => m.id).toList());
+      } catch (_) {
+        _fullTree = const [];
+        _fullTreeSpouseLinks = const [];
+      }
+    }
+
+    _isLoadingFullTree = false;
     notifyListeners();
   }
 
@@ -147,14 +222,33 @@ class FamilyProvider extends ChangeNotifier {
     _isLoadingAncestors = true;
     notifyListeners();
 
+    // Local fallback so the pedigree still shows deeper generations (not just
+    // parents) when the network call is offline, slow, or fails — the ancestors
+    // are already cached by the full-tree load or a prior online pedigree load.
+    void useLocalIfBetter() {
+      final cached = LocalStorageService.getAncestorChain(memberId);
+      // Only adopt the cache if it actually reaches past the one-generation
+      // ego data (i.e. has grandparents), so we never regress a good chain.
+      if (cached.length > _ancestorChain.length ||
+          (_ancestorChainForId != memberId && cached.length > 1)) {
+        _ancestorChain = cached;
+        _ancestorChainForId = memberId;
+      }
+    }
+
     try {
       if (await SyncService.isOnline()) {
         _ancestorChain = await SupabaseService.getAncestorChain(memberId);
         _ancestorChainForId = memberId;
+        // Cache the fetched ancestors for the offline/failed-fetch fallback.
+        await LocalStorageService.saveFamilyMembers(_ancestorChain);
+      } else {
+        useLocalIfBetter();
       }
     } catch (e) {
       debugPrint('Error in loadAncestorChain: $e');
       _error = e.toString();
+      useLocalIfBetter();
     }
 
     _isLoadingAncestors = false;
@@ -179,6 +273,24 @@ class FamilyProvider extends ChangeNotifier {
     _centerMember = member;
     notifyListeners();
   }
+
+  /// Test-only seam: inject the full connected tree directly, bypassing
+  /// [loadFullTree]'s live backend call. Used to render/verify the full-tree
+  /// layout against a fixture. Not used by any production code path.
+  @visibleForTesting
+  void debugSetFullTreeForTesting({
+    required List<FamilyMember> fullTree,
+    List<SpouseLink> spouseLinks = const [],
+  }) {
+    _fullTree = fullTree;
+    _fullTreeSpouseLinks = spouseLinks;
+    _fullTreeInjectedForTesting = true;
+    notifyListeners();
+  }
+
+  // When a test injects the full tree, loadFullTree keeps the fixture instead
+  // of trying (and failing) to fetch from a backend that isn't there.
+  bool _fullTreeInjectedForTesting = false;
 
   /// Test-only seam: directly injects an ego network + spouse links (and
   /// optionally a center member) without going through [loadEgoNetwork],
@@ -357,6 +469,7 @@ class FamilyProvider extends ChangeNotifier {
     required String memberId,
     required String relatedMemberId,
     required RelationType relationType,
+    bool autoLinkSpouse = true,
   }) async {
     _isLoading = true;
     _error = null;
@@ -368,6 +481,7 @@ class FamilyProvider extends ChangeNotifier {
           memberId: memberId,
           relatedMemberId: relatedMemberId,
           relationType: relationType,
+          autoLinkSpouse: autoLinkSpouse,
         );
       } else {
         // Queue for retry on the next sync — without this, a relation link
@@ -381,6 +495,7 @@ class FamilyProvider extends ChangeNotifier {
           {
             'related_member_id': relatedMemberId,
             'relation_type': relationType.name,
+            'auto_link_spouse': autoLinkSpouse,
           },
           dedupeKey: '${memberId}_link_${relationType.name}_$relatedMemberId',
         );

@@ -13,6 +13,7 @@ import 'services/deep_link_service.dart';
 import 'services/error_reporting_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/signup_screen.dart';
 import 'screens/auth/set_password_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/profile/profile_form_screen.dart';
@@ -132,18 +133,55 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 
   void _handleDeepLink(Uri uri) {
-    final authProvider = context.read<AuthProvider>();
-    
-    // Handle invite links
-    final memberId = DeepLinkService.parseInviteLink(uri);
-    if (memberId != null) {
-      authProvider.setPendingInvite(memberId);
+    debugPrint('deeplink: link received: $uri');
+    try {
+      // Preferred: an invite CODE carried by the hosted landing page or the
+      // vanshavali://invite custom scheme (docs/whatsapp_invite_flow.md).
+      final code = DeepLinkService.parseInviteCodeFromUri(uri);
+      if (code != null) {
+        debugPrint('deeplink: invite code parsed: $code');
+        _routeToSignupWithCode(code);
+        return;
+      }
+
+      // Legacy defensive fallback: vanshavali://invite/<memberId> path form.
+      final memberId = DeepLinkService.parseInviteLink(uri);
+      if (memberId != null) {
+        debugPrint('deeplink: legacy invite memberId parsed: $memberId');
+        context.read<AuthProvider>().setPendingInvite(memberId);
+        return;
+      }
+
+      // Handle auth callbacks — Supabase handles these automatically.
+      if (DeepLinkService.isAuthCallback(uri)) {
+        debugPrint('deeplink: auth callback (handled by Supabase)');
+      }
+    } catch (e, st) {
+      ErrorReportingService.reportCaught(e, st, context: 'deeplink.handle');
     }
-    
-    // Handle auth callbacks
-    if (DeepLinkService.isAuthCallback(uri)) {
-      // Supabase handles this automatically
-    }
+  }
+
+  /// Routes to the signup/claim screen with [code] prefilled. Deferred to a
+  /// post-frame callback so the root Navigator is guaranteed to be mounted
+  /// (an initial deep link can resolve before the first frame is laid out).
+  void _routeToSignupWithCode(String code) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        debugPrint('deeplink: routed to signup with prefilled code');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SignupScreen(prefilledInviteCode: code),
+          ),
+        );
+      } catch (e, st) {
+        ErrorReportingService.reportCaught(
+          e,
+          st,
+          context: 'deeplink.route_signup',
+        );
+      }
+    });
   }
 
   @override

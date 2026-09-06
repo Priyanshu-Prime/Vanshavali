@@ -302,6 +302,18 @@ abstract class AppLocalizations {
   /// **'Village of Origin'**
   String get villageOrigin;
 
+  /// No description provided for @selectVillage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select village'**
+  String get selectVillage;
+
+  /// No description provided for @searchVillage.
+  ///
+  /// In en, this message translates to:
+  /// **'Search village by name'**
+  String get searchVillage;
+
   /// No description provided for @currentCity.
   ///
   /// In en, this message translates to:
@@ -331,6 +343,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Family Tree'**
   String get familyTree;
+
+  /// No description provided for @exploreBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore {name}\'s family'**
+  String exploreBranch(String name);
+
+  /// No description provided for @exploreBranchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-root the tree on their side of the family'**
+  String get exploreBranchDesc;
+
+  /// No description provided for @viewingFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing {name}\'s family'**
+  String viewingFamily(String name);
+
+  /// No description provided for @backToMyFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to mine'**
+  String get backToMyFamily;
 
   /// No description provided for @myFamily.
   ///
@@ -674,6 +710,36 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get search;
 
+  /// No description provided for @directory.
+  ///
+  /// In en, this message translates to:
+  /// **'Directory'**
+  String get directory;
+
+  /// No description provided for @searchByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name'**
+  String get searchByName;
+
+  /// No description provided for @allVillages.
+  ///
+  /// In en, this message translates to:
+  /// **'All villages'**
+  String get allVillages;
+
+  /// No description provided for @peopleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people'**
+  String peopleCount(int count);
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
@@ -889,6 +955,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get add;
+
+  /// No description provided for @parentsMarriedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage'**
+  String get parentsMarriedTitle;
+
+  /// No description provided for @parentsMarriedQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Is {newParent} married to {existingParent}?'**
+  String parentsMarriedQuestion(String newParent, String existingParent);
+
+  /// No description provided for @yesMarried.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, they are married'**
+  String get yesMarried;
+
+  /// No description provided for @noDifferentMarriage.
+  ///
+  /// In en, this message translates to:
+  /// **'No, a step-parent'**
+  String get noDifferentMarriage;
+
+  /// No description provided for @sharedParentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared parents'**
+  String get sharedParentsTitle;
+
+  /// No description provided for @sharedParentsQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Which parents does {name} share with {self}?'**
+  String sharedParentsQuestion(String name, String self);
+
+  /// No description provided for @bothParents.
+  ///
+  /// In en, this message translates to:
+  /// **'Both parents'**
+  String get bothParents;
+
+  /// No description provided for @onlyParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {name} (half-sibling)'**
+  String onlyParent(String name);
 
   /// No description provided for @familyMemberAdded.
   ///
@@ -1115,8 +1229,14 @@ abstract class AppLocalizations {
   /// No description provided for @defaultView.
   ///
   /// In en, this message translates to:
-  /// **'Family'**
+  /// **'Nearby'**
   String get defaultView;
+
+  /// No description provided for @fullTreeView.
+  ///
+  /// In en, this message translates to:
+  /// **'Full tree'**
+  String get fullTreeView;
 
   /// No description provided for @pedigreeView.
   ///
@@ -1141,6 +1261,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transliteration'**
   String get transliteration;
+
+  /// No description provided for @typeNameInEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the name in English'**
+  String get typeNameInEnglish;
+
+  /// No description provided for @gujaratiSpellingOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a Gujarati spelling'**
+  String get gujaratiSpellingOptions;
+
+  /// No description provided for @noSpellingSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No suggestions — type the spelling below'**
+  String get noSpellingSuggestions;
 
   /// No description provided for @typeManually.
   ///
@@ -1256,6 +1394,42 @@ abstract class AppLocalizations {
   /// **'Or enter an invite code'**
   String get orUseInviteCode;
 
+  /// No description provided for @scanInviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invite code'**
+  String get scanInviteCode;
+
+  /// No description provided for @scanQrInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at the invite QR code'**
+  String get scanQrInstruction;
+
+  /// No description provided for @cameraPermissionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access is needed to scan. You can still enter the code by hand.'**
+  String get cameraPermissionNeeded;
+
+  /// No description provided for @scanInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'No valid 6-character invite code found in that QR code.'**
+  String get scanInvalidCode;
+
+  /// No description provided for @inviteQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite QR code'**
+  String get inviteQrCode;
+
+  /// No description provided for @enterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code manually'**
+  String get enterManually;
+
   /// No description provided for @linkChildrenToSpouse.
   ///
   /// In en, this message translates to:
@@ -1358,6 +1532,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errorGeneric;
 
+  /// No description provided for @errorEditNotPermitted.
+  ///
+  /// In en, this message translates to:
+  /// **'This change couldn\'t be saved. You may not have permission to edit this person.'**
+  String get errorEditNotPermitted;
+
   /// No description provided for @errorEmailAlreadyRegistered.
   ///
   /// In en, this message translates to:
@@ -1399,6 +1579,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This profile appears to already be linked to another account of yours. We\'ve flagged it for review so it can be sorted out — no need to do anything else for now.'**
   String get duplicateProfileFlaggedForReview;
+
+  /// No description provided for @errorEmailConfirmationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created! Please check your email and tap the confirmation link, then come back and log in to finish joining your family tree.'**
+  String get errorEmailConfirmationRequired;
+
+  /// No description provided for @errorEmailNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your email first — check your inbox for the confirmation link we sent when you signed up.'**
+  String get errorEmailNotConfirmed;
+
+  /// No description provided for @errorPasswordSameAsOld.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a different password than the one you already have.'**
+  String get errorPasswordSameAsOld;
 }
 
 class _AppLocalizationsDelegate

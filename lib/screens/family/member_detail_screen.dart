@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/family_member.dart';
@@ -27,11 +28,19 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   String? _inviteCode;
   bool _loadingCode = false;
 
+  // Whether the current user may edit THIS node. Only your own profile, or an
+  // unclaimed direct relative (father/mother/child/spouse/sibling), is
+  // editable — enforced by RLS (migration 010) and mirrored here so the edit
+  // affordance never appears for a node the backend would reject. Defaults to
+  // false; resolved in initState.
+  bool _canEdit = false;
+
   FamilyMember get member => widget.member;
 
   @override
   void initState() {
     super.initState();
+    _resolveCanEdit();
     if (!member.isClaimed) _loadInviteCode();
     // Ensure the loaded ego network is actually centered on the member this
     // screen is showing, not whatever was last centered (e.g. "Self" from
@@ -42,6 +51,25 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<FamilyProvider>().loadEgoNetwork(member.id);
     });
+  }
+
+  Future<void> _resolveCanEdit() async {
+    final me = context.read<AuthProvider>().currentMember;
+    // Own profile is always editable, and works offline (no round-trip).
+    if (me != null && me.id == member.id) {
+      setState(() => _canEdit = true);
+      return;
+    }
+    // A claimed node that isn't mine is never editable — skip the call.
+    if (member.isClaimed) return;
+    // Unclaimed: ask the backend (authoritative; also covers spouse kinship).
+    // Defaults to false on error/offline, which is the safe direction.
+    try {
+      final allowed = await SupabaseService.canEditMember(member.id);
+      if (mounted) setState(() => _canEdit = allowed);
+    } catch (_) {
+      // Leave _canEdit false.
+    }
   }
 
   Future<void> _loadInviteCode() async {
@@ -69,28 +97,34 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
       appBar: AppBar(
         title: Text(l10n.viewProfile),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: l10n.editProfile,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfileFormScreen(
-                    existingMember: member,
-                    isCreatingProfile: false,
+          if (_canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: l10n.editProfile,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileFormScreen(
+                      existingMember: member,
+                      isCreatingProfile: false,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
           if (!member.isClaimed)
             IconButton(
               icon: const Icon(Icons.share),
               tooltip: l10n.share,
               onPressed: () => _shareInvite(context),
             ),
-          if (!member.isClaimed)
+          // Delete is offered for any unclaimed node (clean up bad data) and
+          // for your OWN claimed profile (a claimed node is deletable only by
+          // its owner — enforced at the DB by can_edit_family_member, migration
+          // 013). Someone else's claimed node shows no delete affordance.
+          if (!member.isClaimed ||
+              context.read<AuthProvider>().currentMember?.id == member.id)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: l10n.deleteProfile,
@@ -337,6 +371,26 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                                   ),
                                 ],
                               ),
+                            // Scannable QR of the bare code — the invitee can
+                            // scan it from inside their app instead of typing.
+                            // The text code above stays as the fallback.
+                            if (_inviteCode != null) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: QrImageView(
+                                  data: _inviteCode!,
+                                  version: QrVersions.auto,
+                                  size: 160,
+                                  backgroundColor: Colors.white,
+                                  semanticsLabel: l10n.inviteQrCode,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -443,7 +497,12 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   Future<void> _deleteProfile(BuildContext context) async {
     final l10n = context.l10n;
     try {
+      final authProvider = context.read<AuthProvider>();
       final familyProvider = context.read<FamilyProvider>();
+      // Capture before the delete: deleting your own profile means the app can
+      // no longer treat you as having one, so we sign out afterwards for a
+      // clean re-entry (the auth wrapper then routes to login/profile setup).
+      final wasOwnProfile = authProvider.currentMember?.id == member.id;
       final success = await familyProvider.deleteFamilyMember(member.id);
 
       if (context.mounted) {
@@ -456,7 +515,11 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               ),
             ),
           );
-          Navigator.pop(context, true);
+          if (wasOwnProfile) {
+            await authProvider.signOut();
+          } else if (context.mounted) {
+            Navigator.pop(context, true);
+          }
         } else {
           showAppSnackBar(
             context,

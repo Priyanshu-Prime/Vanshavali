@@ -112,6 +112,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get villageOrigin => 'Village of Origin';
 
   @override
+  String get selectVillage => 'Select village';
+
+  @override
+  String get searchVillage => 'Search village by name';
+
+  @override
   String get currentCity => 'Current City';
 
   @override
@@ -125,6 +131,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get familyTree => 'Family Tree';
+
+  @override
+  String exploreBranch(String name) {
+    return 'Explore $name\'s family';
+  }
+
+  @override
+  String get exploreBranchDesc =>
+      'Re-root the tree on their side of the family';
+
+  @override
+  String viewingFamily(String name) {
+    return 'Viewing $name\'s family';
+  }
+
+  @override
+  String get backToMyFamily => 'Back to mine';
 
   @override
   String get myFamily => 'My Family';
@@ -302,6 +325,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get search => 'Search';
 
   @override
+  String get directory => 'Directory';
+
+  @override
+  String get searchByName => 'Search by name';
+
+  @override
+  String get allVillages => 'All villages';
+
+  @override
+  String peopleCount(int count) {
+    return '$count people';
+  }
+
+  @override
+  String get you => 'You';
+
+  @override
   String get notifications => 'Notifications';
 
   @override
@@ -424,6 +464,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add => 'Add';
+
+  @override
+  String get parentsMarriedTitle => 'Marriage';
+
+  @override
+  String parentsMarriedQuestion(String newParent, String existingParent) {
+    return 'Is $newParent married to $existingParent?';
+  }
+
+  @override
+  String get yesMarried => 'Yes, they are married';
+
+  @override
+  String get noDifferentMarriage => 'No, a step-parent';
+
+  @override
+  String get sharedParentsTitle => 'Shared parents';
+
+  @override
+  String sharedParentsQuestion(String name, String self) {
+    return 'Which parents does $name share with $self?';
+  }
+
+  @override
+  String get bothParents => 'Both parents';
+
+  @override
+  String onlyParent(String name) {
+    return 'Only $name (half-sibling)';
+  }
 
   @override
   String get familyMemberAdded => 'Family member added successfully';
@@ -561,7 +631,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get defaultView => 'Family';
+  String get defaultView => 'Nearby';
+
+  @override
+  String get fullTreeView => 'Full tree';
 
   @override
   String get pedigreeView => 'Pedigree';
@@ -574,6 +647,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transliteration => 'Transliteration';
+
+  @override
+  String get typeNameInEnglish => 'Type the name in English';
+
+  @override
+  String get gujaratiSpellingOptions => 'Tap a Gujarati spelling';
+
+  @override
+  String get noSpellingSuggestions =>
+      'No suggestions — type the spelling below';
 
   @override
   String get typeManually => 'Type manually in Gujarati';
@@ -635,6 +718,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orUseInviteCode => 'Or enter an invite code';
 
   @override
+  String get scanInviteCode => 'Scan invite code';
+
+  @override
+  String get scanQrInstruction => 'Point your camera at the invite QR code';
+
+  @override
+  String get cameraPermissionNeeded =>
+      'Camera access is needed to scan. You can still enter the code by hand.';
+
+  @override
+  String get scanInvalidCode =>
+      'No valid 6-character invite code found in that QR code.';
+
+  @override
+  String get inviteQrCode => 'Invite QR code';
+
+  @override
+  String get enterManually => 'Enter code manually';
+
+  @override
   String get linkChildrenToSpouse => 'Link children to spouse?';
 
   @override
@@ -694,6 +797,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get errorEditNotPermitted =>
+      'This change couldn\'t be saved. You may not have permission to edit this person.';
+
+  @override
   String get errorEmailAlreadyRegistered =>
       'An account with this email already exists. Please log in instead — if you signed up with a magic link, you\'ll be asked to set a password the next time you log in.';
 
@@ -716,4 +823,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get duplicateProfileFlaggedForReview =>
       'This profile appears to already be linked to another account of yours. We\'ve flagged it for review so it can be sorted out — no need to do anything else for now.';
+
+  @override
+  String get errorEmailConfirmationRequired =>
+      'Account created! Please check your email and tap the confirmation link, then come back and log in to finish joining your family tree.';
+
+  @override
+  String get errorEmailNotConfirmed =>
+      'Please confirm your email first — check your inbox for the confirmation link we sent when you signed up.';
+
+  @override
+  String get errorPasswordSameAsOld =>
+      'Please choose a different password than the one you already have.';
 }
