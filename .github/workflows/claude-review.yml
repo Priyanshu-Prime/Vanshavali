@@ -1,0 +1,66 @@
+name: Claude PR Review
+
+# Automated Claude code review on every pull request (no @claude mention needed).
+# Posts findings as review comments. Advisory — it does not block or merge on its
+# own; CI (analyze/test/build) is the hard gate, and auto-merge (if enabled on a
+# PR) merges once the required CI checks pass.
+#
+# Requires:
+#   - the Claude GitHub App installed on this repo (https://github.com/apps/claude)
+#   - repository secret ANTHROPIC_API_KEY  (bills Anthropic API usage)
+# The step is a no-op-with-warning if the key is absent, so PRs aren't blocked
+# before it's configured.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    # Skip on fork PRs, which can't access the secret anyway.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Skip if no API key
+        id: guard
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::warning::ANTHROPIC_API_KEY not set — skipping Claude review."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.run == 'true'
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.guard.outputs.run == 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: false
+          include_fix_links: true
+          prompt: |
+            Review this pull request for the Vanshavali app (Flutter + Supabase,
+            bilingual EN/GU, ~500 village users). Focus on:
+            - Correctness bugs and crashes, especially in family-relation logic
+              (father/mother/spouse/child links, ego-network fetch) and the
+              custom tree layout.
+            - Security: Supabase RLS assumptions, invite/claim RPCs, anything that
+              could leak or corrupt other users' data.
+            - Bilingual parity: every user-facing string must exist in BOTH
+              app_en.arb and app_gu.arb.
+            - Portability (this repo has been bitten by Windows-only paths and
+              platform-specific golden tests slipping into CI).
+            Post concise, actionable inline comments. End with a short verdict:
+            whether it looks safe to merge, or the blocking issues if not.
+          claude_args: |
+            --max-turns 15
