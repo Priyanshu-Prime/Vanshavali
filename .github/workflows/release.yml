@@ -104,9 +104,14 @@ jobs:
             echo "keyPassword=$ANDROID_KEY_PASSWORD"
           } > android/key.properties
 
-      - name: Build signed release APK
+      - name: Build signed release APKs (universal + per-ABI)
         if: steps.check.outputs.exists == 'false'
-        run: flutter build apk --release
+        # Universal APK works on every phone (the "old phone" fallback); the
+        # per-ABI splits are much smaller (~30 MB arm64 vs ~70 MB universal) —
+        # the landing page serves arm64 as the default fast download.
+        run: |
+          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       - name: Publish GitHub Release with APK
         if: steps.check.outputs.exists == 'false'
@@ -115,7 +120,10 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: ${{ steps.ver.outputs.tag }}
           generate_release_notes: true
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
 
       - name: Distribute to Firebase testers
         if: steps.check.outputs.exists == 'false'
