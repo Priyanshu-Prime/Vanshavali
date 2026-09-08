@@ -484,6 +484,42 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     provider.loadEgoNetwork(member.id);
   }
 
+  /// Single-tap behaviour for every node: open the member's profile, which is
+  /// viewable AND editable (MemberDetailScreen resolves edit permission for
+  /// own/claimed/placeholder nodes). Re-centering, exploring, adding relations
+  /// and inviting now live on long-press via [_showMemberOptions]. On return,
+  /// refresh so any edit/add/delete made inside is reflected without leaving
+  /// the tree.
+  Future<void> _openMemberDetail(
+      BuildContext context, FamilyMember member, FamilyProvider provider) async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
+    );
+    if (mounted) await _refreshTreeViews(provider, fallbackId: member.id);
+  }
+
+  /// Reliably refreshes whatever view is showing after a mutation (add/edit/
+  /// delete). Reloads BOTH the ego network and the full-tree component — the
+  /// default view is the full tree, and a member can be added to someone
+  /// outside the center's ego neighbourhood, so refreshing only the ego
+  /// network left the new node invisible until the user left and returned.
+  /// The new member/relation is already written to the local cache by the add
+  /// path (FamilyProvider.createFamilyMember / linkFamilyMember), so the
+  /// reload surfaces it even if an immediate server read races replication.
+  Future<void> _refreshTreeViews(FamilyProvider provider,
+      {required String fallbackId}) async {
+    final centerId = provider.centerMember?.id ?? fallbackId;
+    await provider.loadEgoNetwork(centerId);
+    if (!mounted) return;
+    // Force the once-per-root full-tree guard to reload, then drive it now so
+    // the default view updates in place.
+    final me = context.read<AuthProvider>().currentMember ?? provider.centerMember;
+    final rootId = me?.id ?? centerId;
+    await provider.loadFullTree(rootId);
+    if (mounted) setState(() => _fullTreeLoadedForRoot = rootId);
+  }
+
   /// The controller actually driving the currently-visible view — null if
   /// the default view's _GraphViewHost isn't mounted right now (pedigree
   /// view active, or the single-node bypass). Zoom buttons no-op rather
@@ -770,7 +806,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           spouses: content.spouses,
           focusId: focus.id,
           locale: locale,
-          onTapMember: (m) => _focusOn(provider, m),
+          onTapMember: (m) => _openMemberDetail(context, m, provider),
           onLongPressMember: (m) => _showMemberOptions(context, m, provider),
         ),
       );
@@ -818,7 +854,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
             spouses: content.spouses,
             focusId: focus.id,
             locale: locale,
-            onTapMember: (m) => _focusOn(provider, m),
+            onTapMember: (m) => _openMemberDetail(context, m, provider),
             onLongPressMember: (m) => _showMemberOptions(context, m, provider),
           );
         }
@@ -859,7 +895,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           member: me,
           isFocus: true,
           locale: locale,
-          onTap: () => _showMemberOptions(context, me, provider),
+          onTap: () => _openMemberDetail(context, me, provider),
           onLongPress: () => _showMemberOptions(context, me, provider),
         ),
       );
@@ -884,7 +920,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           spouses: spouses,
           focusId: me.id,
           locale: locale,
-          onTapMember: (m) => _showMemberOptions(context, m, provider),
+          onTapMember: (m) => _openMemberDetail(context, m, provider),
           onLongPressMember: (m) => _showMemberOptions(context, m, provider),
         ),
       );
@@ -928,7 +964,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
             spouses: content.spouses,
             focusId: me.id,
             locale: locale,
-            onTapMember: (m) => _showMemberOptions(context, m, provider),
+            onTapMember: (m) => _openMemberDetail(context, m, provider),
             onLongPressMember: (m) => _showMemberOptions(context, m, provider),
           );
         }
@@ -1108,7 +1144,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                 member: entry.value,
                 isFocus: entry.value.id == focus.id,
                 locale: locale,
-                onTap: () => _focusOn(provider, entry.value),
+                onTap: () => _openMemberDetail(context, entry.value, provider),
                 onLongPress: () =>
                     _showMemberOptions(context, entry.value, provider),
               ),
@@ -1209,9 +1245,12 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       ),
     );
 
-    // Refresh tree if a member was added
-    if (result == true) {
-      provider.loadEgoNetwork(provider.centerMember?.id ?? member.id);
+    // Refresh tree if a member was added. Reload BOTH the ego network and the
+    // full-tree (default) view and setState, so the new node shows in place
+    // without leaving the screen — regardless of which view is active or
+    // whether the member was added outside the center's ego neighbourhood.
+    if (result == true && mounted) {
+      await _refreshTreeViews(provider, fallbackId: member.id);
     }
   }
 

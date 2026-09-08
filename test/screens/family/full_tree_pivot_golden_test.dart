@@ -53,8 +53,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // Tap mom's box, then "Explore Rekha's family" in the sheet.
-    await tester.tap(find.textContaining('Rekha').first);
+    // Long-press mom's box (single tap now opens her profile), then
+    // "Explore Rekha's family" in the options sheet.
+    await tester.longPress(find.textContaining('Rekha').first);
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining("Rekha's family"));
     await tester.pumpAndSettle();
