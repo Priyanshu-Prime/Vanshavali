@@ -72,3 +72,7 @@ node_modules/
 
 # WhatsApp-share release APK (local artifact, see APK overwrite rule)
 Vanshavali-alpha2.apk
+
+# Firebase service-account keys — NEVER commit (secret credentials)
+*firebase-adminsdk*.json
+vanshavali-*.json

@@ -150,14 +150,14 @@
     <div class="h1-gu">તમારું ડાઉનલોડ શરૂ થઈ રહ્યું છે…</div>
 
     <p class="status">
-      If it doesn't begin automatically, tap the button below.
+      Tap Download below — it opens in a new tab and the file appears in your notification bar.
       <br>
-      જો તે આપમેળે શરૂ ન થાય, તો નીચેનું બટન દબાવો.
+      નીચે ડાઉનલોડ દબાવો — તે નવી ટૅબમાં ખૂલશે અને ફાઇલ નોટિફિકેશન બારમાં દેખાશે.
     </p>
 
     <a class="btn" id="dlBtn"
        href="https://github.com/Priyanshu-Prime/Vanshavali/releases/latest/download/app-release.apk"
-       download="Vanshavali.apk" rel="noopener">
+       download="Vanshavali.apk" target="_blank" rel="noopener">
       <span class="ic" aria-hidden="true">⬇</span>
       <span>Download<small>ડાઉનલોડ</small></span>
     </a>
@@ -177,20 +177,25 @@
   "use strict";
   var APK = "https://github.com/Priyanshu-Prime/Vanshavali/releases/latest/download/app-release.apk";
 
-  // Auto-start the download on load via a programmatic <a download> click.
+  // Best-effort auto-start: open the download in a NEW tab so this page never
+  // navigates away into a "loading" state. The APK is cross-origin (GitHub), so
+  // a same-page navigation would just hang on redirects with no clear "download
+  // started" feedback. A new tab lets the browser show its download UI while
+  // this page stays put. If the browser blocks the programmatic open (no user
+  // gesture), the visible Download button below is the reliable path.
   function autoDownload() {
     try {
       var a = document.createElement("a");
       a.href = APK;
       a.setAttribute("download", "Vanshavali.apk");
+      a.target = "_blank";
       a.rel = "noopener";
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     } catch (e) {
-      // Last-resort fallback: navigate the page straight to the asset.
-      try { window.location.href = APK; } catch (e2) { /* manual button remains */ }
+      /* blocked — the visible Download button remains */
     }
   }
 
