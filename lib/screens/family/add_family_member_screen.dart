@@ -11,6 +11,7 @@ import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
+import '../../widgets/village_picker_field.dart';
 
 // ─────────────────────────────────────────────────────────
 //  Pure, testable relation-guard helpers.
@@ -133,9 +134,20 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   final _lastNameEnController = TextEditingController();
   final _lastNameGuController = TextEditingController();
   final _existingMemberSearchController = TextEditingController();
+  // Optional detail fields, so a relative can be created with their full
+  // profile in one step (village, city, education, occupation, dob, status).
+  // Mirrors the field set profile_form_screen.dart already collects — the
+  // create call persists them via FamilyMember.toJson (deep_details for
+  // education/occupation), same as a self-profile save.
+  final _villageController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _educationController = TextEditingController();
+  final _occupationController = TextEditingController();
 
   String? _selectedRelation;
   String? _selectedGender;
+  DateTime? _selectedDob;
+  bool _isAlive = true;
   bool _isLoading = false;
   bool _linkExisting = false;
   Timer? _firstNameDebounce;
@@ -274,6 +286,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     _lastNameEnController.dispose();
     _lastNameGuController.dispose();
     _existingMemberSearchController.dispose();
+    _villageController.dispose();
+    _cityController.dispose();
+    _educationController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 
@@ -303,6 +319,21 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
         }
       } catch (_) {}
     });
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate:
+          _selectedDob ??
+          DateTime.now().subtract(const Duration(days: 365 * 25)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      locale: const Locale('en', 'GB'), // Force dd/mm/yyyy format
+    );
+    if (picked != null) {
+      setState(() => _selectedDob = picked);
+    }
   }
 
   /// Returns true if the given relation should have the same surname
@@ -606,6 +637,20 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
               ? null
               : _lastNameGuController.text.trim(),
           gender: _selectedGender,
+          dob: _selectedDob,
+          isAlive: _isAlive,
+          villageOrigin: _villageController.text.trim().isEmpty
+              ? null
+              : _villageController.text.trim(),
+          currentCity: _cityController.text.trim().isEmpty
+              ? null
+              : _cityController.text.trim(),
+          deepDetails: {
+            if (_educationController.text.trim().isNotEmpty)
+              'education': _educationController.text.trim(),
+            if (_occupationController.text.trim().isNotEmpty)
+              'occupation': _occupationController.text.trim(),
+          },
           // Set parent links based on relation
           fatherId:
               _selectedRelation == 'child' && effectiveMember.gender == 'Male'
@@ -1230,6 +1275,87 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                         : (value) {
                             setState(() => _selectedGender = value);
                           },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Optional details (dob, living status). All optional — a
+              // quick add only needs a name; these mirror the profile form so
+              // a relative can be created fully in one step. ──
+              SectionCard(
+                title: l10n.basicInformation,
+                children: [
+                  InkWell(
+                    onTap: _selectDate,
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.dateOfBirth,
+                        prefixIcon: const Icon(Icons.cake_outlined),
+                        suffixIcon: const Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        _selectedDob != null
+                            ? '${_selectedDob!.day.toString().padLeft(2, '0')}/${_selectedDob!.month.toString().padLeft(2, '0')}/${_selectedDob!.year}'
+                            : l10n.selectDate,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    title: Text(_isAlive ? l10n.isAlive : l10n.deceased),
+                    value: _isAlive,
+                    onChanged: (value) => setState(() => _isAlive = value),
+                    secondary: Icon(
+                      _isAlive ? Icons.favorite : Icons.favorite_border,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Location ──
+              SectionCard(
+                title: l10n.location,
+                children: [
+                  VillagePickerField(
+                    value: _villageController.text,
+                    onChanged: (v) =>
+                        setState(() => _villageController.text = v ?? ''),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _cityController,
+                    decoration: InputDecoration(
+                      labelText: l10n.currentCity,
+                      prefixIcon: const Icon(Icons.location_city),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Additional details (stored in deep_details) ──
+              SectionCard(
+                title: l10n.additionalDetails,
+                children: [
+                  TextFormField(
+                    controller: _educationController,
+                    decoration: InputDecoration(
+                      labelText: l10n.education,
+                      prefixIcon: const Icon(Icons.school_outlined),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _occupationController,
+                    decoration: InputDecoration(
+                      labelText: l10n.occupation,
+                      prefixIcon: const Icon(Icons.work_outline),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
                   ),
                 ],
               ),
