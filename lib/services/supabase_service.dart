@@ -41,6 +41,20 @@ class SupabaseService {
     );
   }
 
+  /// Completes a magic-link / password-recovery sign-in by exchanging the auth
+  /// code carried on the incoming deep-link [uri] for a real session.
+  ///
+  /// We do this explicitly instead of relying on supabase_flutter's automatic
+  /// deep-link handler, which is unreliable on a COLD start (app was killed and
+  /// launched by tapping the email link) — the exact "the link opens the app
+  /// but I'm still not logged in" symptom. On success the SDK emits a
+  /// `signedIn` event that AuthProvider already listens for. Safe to call even
+  /// if the SDK also handled it: the single-use code just fails the second
+  /// exchange, which the caller treats as already-signed-in.
+  static Future<void> completeSignInFromUrl(Uri uri) async {
+    await client.auth.getSessionFromUrl(uri);
+  }
+
   /// Sign up with email and password.
   ///
   /// Supabase's `signUp()` does not cleanly error when the email already has

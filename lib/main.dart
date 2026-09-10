@@ -152,12 +152,36 @@ class _AppNavigatorState extends State<AppNavigator> {
         return;
       }
 
-      // Handle auth callbacks — Supabase handles these automatically.
+      // Auth callback (magic link / password recovery): explicitly exchange the
+      // code for a session rather than relying on the SDK's cold-start-unreliable
+      // auto-handler — otherwise the link opens the app but never signs the user
+      // in.
       if (DeepLinkService.isAuthCallback(uri)) {
-        debugPrint('deeplink: auth callback (handled by Supabase)');
+        debugPrint('deeplink: auth callback — completing sign-in');
+        _completeAuthFromUrl(uri);
+        return;
       }
     } catch (e, st) {
       ErrorReportingService.reportCaught(e, st, context: 'deeplink.handle');
+    }
+  }
+
+  /// Exchanges the auth code on [uri] for a session. On success the SDK's
+  /// `signedIn` event (which AuthProvider listens for) routes the user to Home.
+  Future<void> _completeAuthFromUrl(Uri uri) async {
+    try {
+      await SupabaseService.completeSignInFromUrl(uri);
+      debugPrint('deeplink: signed in from magic link');
+    } catch (e, st) {
+      // The SDK may have already consumed the single-use code — if we ARE now
+      // authenticated, that's success; otherwise the exchange genuinely failed.
+      if (SupabaseService.currentUser != null) {
+        debugPrint('deeplink: already signed in (SDK handled the callback)');
+      } else {
+        debugPrint('deeplink: magic-link sign-in failed: $e');
+        ErrorReportingService.reportCaught(e, st,
+            context: 'deeplink.auth_exchange');
+      }
     }
   }
 
