@@ -325,6 +325,24 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in signUpWithEmail: $e');
+      final low = e.toString().toLowerCase();
+      // The account already exists — commonly because a PRIOR attempt today
+      // created the auth user but the app never completed the login (e.g. the
+      // session was lost right after), leaving a first-time user stuck in an
+      // "already registered" loop. If it was created with THIS password, just
+      // sign in: seamless recovery instead of a dead end.
+      if (low.contains('user already registered') ||
+          low.contains('user_already_exists')) {
+        try {
+          if (await signInWithEmail(email, password)) return true;
+        } catch (_) {
+          // fall through to the friendly "already registered" message
+        }
+        _error = 'vanshavali_email_already_registered';
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
       _error = e.toString();
       _status = AuthStatus.unauthenticated;
       notifyListeners();
