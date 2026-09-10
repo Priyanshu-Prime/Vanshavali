@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/family_member.dart';
 import '../services/supabase_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/error_reporting_service.dart';
 
 enum AuthStatus {
   initial,
@@ -325,6 +326,8 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in signUpWithEmail: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.signup');
       final low = e.toString().toLowerCase();
       // The account already exists — commonly because a PRIOR attempt today
       // created the auth user but the app never completed the login (e.g. the
@@ -383,6 +386,8 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in signInWithEmail: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.login');
       _error = e.toString();
       _status = AuthStatus.unauthenticated;
       notifyListeners();
