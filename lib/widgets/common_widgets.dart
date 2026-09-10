@@ -37,6 +37,16 @@ String friendlyErrorMessage(BuildContext context, Object error) {
     return l10n.errorEmailAlreadyRegistered;
   }
 
+  // GoTrue's own response when signing UP with an email that already has an
+  // account (HTTP 422, code user_already_exists). Without this, the AuthApi
+  // exception falls through to the generic isServiceFailure bucket below and a
+  // returning user who tapped "Create Account" instead of "Log In" gets an
+  // unhelpful "something went wrong" — see the signup incident.
+  if (text.contains('user already registered') ||
+      text.contains('user_already_exists')) {
+    return l10n.errorEmailAlreadyRegistered;
+  }
+
   if (text.contains('vanshavali_email_confirmation_required')) {
     return l10n.errorEmailConfirmationRequired;
   }
