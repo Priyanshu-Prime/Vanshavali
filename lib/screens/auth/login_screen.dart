@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import 'signup_screen.dart';
+import 'phone_auth_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _showPasswordLogin = false;
   bool _isLoading = false;
   bool _magicLinkSent = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -235,8 +237,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: l10n.password,
                         prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -316,6 +328,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? l10n.sendMagicLink
                           : l10n.emailPassword,
                     ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Phone (SMS OTP) — no email needed, for users without one.
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PhoneAuthScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.smartphone),
+                    label: Text(l10n.continueWithPhone),
                   ),
                 ],
 

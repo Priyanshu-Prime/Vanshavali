@@ -835,4 +835,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorPasswordSameAsOld =>
       'Please choose a different password than the one you already have.';
+
+  @override
+  String get continueWithPhone => 'Continue with Phone';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get enterPhoneNumber =>
+      'Enter your phone number and we\'ll text you a code';
+
+  @override
+  String get sendCode => 'Send Code';
+
+  @override
+  String get otpSentSms => 'We sent a 6-digit code by SMS. Enter it below.';
+
+  @override
+  String get enterCode => 'Enter Code';
+
+  @override
+  String get verifyCode => 'Verify';
+
+  @override
+  String get resendCode => 'Resend Code';
+
+  @override
+  String get invalidPhone => 'Please enter a valid phone number';
+
+  @override
+  String get invalidCode => 'Please enter the 6-digit code';
+
+  @override
+  String get changeNumber => 'Change number';
 }

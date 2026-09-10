@@ -834,4 +834,39 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get errorPasswordSameAsOld =>
       'કૃપા કરીને તમારી પાસે પહેલેથી છે તેનાથી અલગ પાસવર્ડ પસંદ કરો.';
+
+  @override
+  String get continueWithPhone => 'ફોન નંબરથી આગળ વધો';
+
+  @override
+  String get phoneNumber => 'ફોન નંબર';
+
+  @override
+  String get enterPhoneNumber =>
+      'તમારો ફોન નંબર દાખલ કરો, અમે તમને SMS દ્વારા કોડ મોકલીશું';
+
+  @override
+  String get sendCode => 'કોડ મોકલો';
+
+  @override
+  String get otpSentSms =>
+      'અમે SMS દ્વારા 6-અંકનો કોડ મોકલ્યો છે. તેને નીચે દાખલ કરો.';
+
+  @override
+  String get enterCode => 'કોડ દાખલ કરો';
+
+  @override
+  String get verifyCode => 'ચકાસો';
+
+  @override
+  String get resendCode => 'કોડ ફરીથી મોકલો';
+
+  @override
+  String get invalidPhone => 'કૃપા કરીને માન્ય ફોન નંબર દાખલ કરો';
+
+  @override
+  String get invalidCode => 'કૃપા કરીને 6-અંકનો કોડ દાખલ કરો';
+
+  @override
+  String get changeNumber => 'નંબર બદલો';
 }

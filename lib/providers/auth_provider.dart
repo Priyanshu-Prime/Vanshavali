@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/family_member.dart';
 import '../services/supabase_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/error_reporting_service.dart';
 
 enum AuthStatus {
   initial,
@@ -48,6 +49,13 @@ class AuthProvider extends ChangeNotifier {
   bool get hasProfile => _currentMember != null;
   String? get pendingInviteMemberId => _pendingInviteMemberId;
   bool get hasPendingMergeConflict => _hasPendingMergeConflict;
+
+  /// True after a password-recovery ("forgot password") link is opened — the
+  /// user is in a recovery session and must choose a new password. The root
+  /// navigator routes to SetPasswordScreen while this is set; cleared once
+  /// [setPassword] succeeds.
+  bool _passwordRecovery = false;
+  bool get needsPasswordReset => _passwordRecovery;
 
   /// True once a password has been established for this session (a fresh
   /// signUpWithEmail/signInWithEmail just proved one exists). Used only to
@@ -102,10 +110,20 @@ class AuthProvider extends ChangeNotifier {
         _user = event.session?.user;
         await _loadCurrentMemberProfile();
         _status = AuthStatus.authenticated;
+      } else if (event.event == AuthChangeEvent.passwordRecovery) {
+        // A "forgot password" recovery link was opened (exchanged by
+        // main._completeAuthFromUrl). The user is now in a recovery session —
+        // load their profile and flag that they must choose a new password, so
+        // the root navigator routes them to SetPasswordScreen.
+        _user = event.session?.user;
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+        _passwordRecovery = true;
       } else if (event.event == AuthChangeEvent.signedOut) {
         _user = null;
         _currentMember = null;
         _status = AuthStatus.unauthenticated;
+        _passwordRecovery = false;
       }
       if (_disposed) return;
       notifyListeners();
@@ -198,6 +216,56 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Sends an SMS login code to [phone] (E.164). Stays on the entry screen
+  /// (no loading status) — same rationale as [signInWithMagicLink].
+  Future<bool> sendPhoneOtp(String phone) async {
+    try {
+      _error = null;
+      await SupabaseService.signInWithPhoneOtp(phone);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in sendPhoneOtp: $e');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Verifies the SMS [token] for [phone]. On success establishes the session,
+  /// loads the profile, and claims a pending invite if this is a new account —
+  /// mirrors [signInWithEmail].
+  Future<bool> verifyPhoneOtp(String phone, String token) async {
+    try {
+      _status = AuthStatus.loading;
+      _error = null;
+      notifyListeners();
+
+      final response = await SupabaseService.verifyPhoneOtp(phone, token);
+      _user = response.user;
+
+      if (_user != null) {
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+
+        if (_pendingInviteMemberId != null && _currentMember == null) {
+          await claimProfile(_pendingInviteMemberId!);
+        }
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
+
+      notifyListeners();
+      return _user != null;
+    } catch (e) {
+      debugPrint('Error in verifyPhoneOtp: $e');
+      _error = e.toString();
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> signUpWithEmail(String email, String password) async {
     try {
       _status = AuthStatus.loading;
@@ -258,6 +326,26 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in signUpWithEmail: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.signup');
+      final low = e.toString().toLowerCase();
+      // The account already exists — commonly because a PRIOR attempt today
+      // created the auth user but the app never completed the login (e.g. the
+      // session was lost right after), leaving a first-time user stuck in an
+      // "already registered" loop. If it was created with THIS password, just
+      // sign in: seamless recovery instead of a dead end.
+      if (low.contains('user already registered') ||
+          low.contains('user_already_exists')) {
+        try {
+          if (await signInWithEmail(email, password)) return true;
+        } catch (_) {
+          // fall through to the friendly "already registered" message
+        }
+        _error = 'vanshavali_email_already_registered';
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return false;
+      }
       _error = e.toString();
       _status = AuthStatus.unauthenticated;
       notifyListeners();
@@ -298,6 +386,8 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in signInWithEmail: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.login');
       _error = e.toString();
       _status = AuthStatus.unauthenticated;
       notifyListeners();
@@ -315,6 +405,7 @@ class AuthProvider extends ChangeNotifier {
       _error = null;
       await SupabaseService.updatePassword(password);
       _authenticatedWithPassword = true;
+      _passwordRecovery = false; // recovery (if any) is complete
 
       if (_currentMember != null) {
         final success = await updateProfile(_currentMember!.copyWith(

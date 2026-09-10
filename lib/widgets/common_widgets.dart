@@ -37,6 +37,16 @@ String friendlyErrorMessage(BuildContext context, Object error) {
     return l10n.errorEmailAlreadyRegistered;
   }
 
+  // GoTrue's own response when signing UP with an email that already has an
+  // account (HTTP 422, code user_already_exists). Without this, the AuthApi
+  // exception falls through to the generic isServiceFailure bucket below and a
+  // returning user who tapped "Create Account" instead of "Log In" gets an
+  // unhelpful "something went wrong" — see the signup incident.
+  if (text.contains('user already registered') ||
+      text.contains('user_already_exists')) {
+    return l10n.errorEmailAlreadyRegistered;
+  }
+
   if (text.contains('vanshavali_email_confirmation_required')) {
     return l10n.errorEmailConfirmationRequired;
   }
@@ -74,9 +84,19 @@ String friendlyErrorMessage(BuildContext context, Object error) {
       text.contains('authapiexception') ||
       text.contains('authretryablefetchexception') ||
       text.contains('storageexception');
-  if (isServiceFailure) return l10n.errorServiceFailure;
+  // ALPHA DIAGNOSTIC: for the two "we don't actually know what this is" buckets,
+  // append a short technical detail so a tester's screenshot reveals the real
+  // error instead of only a generic message. Remove once auth is stable.
+  if (isServiceFailure) return '${l10n.errorServiceFailure}\n\n[${_diag(error)}]';
+  return '${l10n.errorGeneric}\n\n[${_diag(error)}]';
+}
 
-  return l10n.errorGeneric;
+/// A short, single-line technical rendering of [error] for the alpha diagnostic
+/// suffix above — the exception type plus a truncated message.
+String _diag(Object error) {
+  final s = error.toString().replaceAll('\n', ' ').trim();
+  const max = 160;
+  return s.length > max ? '${s.substring(0, max)}…' : s;
 }
 
 /// Common UI widgets

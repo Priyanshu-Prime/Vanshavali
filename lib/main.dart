@@ -281,6 +281,12 @@ class _AppNavigatorState extends State<AppNavigator> {
       return const ProfileFormScreen(isCreatingProfile: true);
     }
 
+    // Forgot-password recovery: a reset link was opened, so force choosing a
+    // new password before anything else (even if one was already set).
+    if (authProvider.needsPasswordReset) {
+      return const SetPasswordScreen();
+    }
+
     // Mandatory, non-dismissible: a magic-link-only account has no password
     // yet. See AuthProvider.hasPasswordSet and SetPasswordScreen.
     if (!authProvider.hasPasswordSet) {

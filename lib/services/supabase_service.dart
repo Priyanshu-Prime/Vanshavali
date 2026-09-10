@@ -41,6 +41,25 @@ class SupabaseService {
     );
   }
 
+  /// Send a one-time login code by SMS to [phone] (E.164, e.g. +9198…).
+  /// Supabase dispatches it through the configured Twilio provider. Auto-creates
+  /// the auth user on first verify (shouldCreateUser defaults true), so this is
+  /// both sign-up and sign-in — the app then routes to profile creation/claim
+  /// for a brand-new number, or straight to the tree for an existing one.
+  static Future<void> signInWithPhoneOtp(String phone) async {
+    await client.auth.signInWithOtp(phone: phone);
+  }
+
+  /// Verify the SMS [token] for [phone] and establish a session. On success the
+  /// SDK emits a `signedIn` event that AuthProvider listens for.
+  static Future<AuthResponse> verifyPhoneOtp(String phone, String token) async {
+    return await client.auth.verifyOTP(
+      phone: phone,
+      token: token,
+      type: OtpType.sms,
+    );
+  }
+
   /// Completes a magic-link / password-recovery sign-in by exchanging the auth
   /// code carried on the incoming deep-link [uri] for a real session.
   ///

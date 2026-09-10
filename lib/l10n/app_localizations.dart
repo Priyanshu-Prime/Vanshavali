@@ -1597,6 +1597,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please choose a different password than the one you already have.'**
   String get errorPasswordSameAsOld;
+
+  /// No description provided for @continueWithPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Phone'**
+  String get continueWithPhone;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @enterPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number and we\'ll text you a code'**
+  String get enterPhoneNumber;
+
+  /// No description provided for @sendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Code'**
+  String get sendCode;
+
+  /// No description provided for @otpSentSms.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code by SMS. Enter it below.'**
+  String get otpSentSms;
+
+  /// No description provided for @enterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Code'**
+  String get enterCode;
+
+  /// No description provided for @verifyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get verifyCode;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend Code'**
+  String get resendCode;
+
+  /// No description provided for @invalidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid phone number'**
+  String get invalidPhone;
+
+  /// No description provided for @invalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the 6-digit code'**
+  String get invalidCode;
+
+  /// No description provided for @changeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get changeNumber;
 }
 
 class _AppLocalizationsDelegate
