@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import 'signup_screen.dart';
+import 'phone_auth_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -316,6 +317,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? l10n.sendMagicLink
                           : l10n.emailPassword,
                     ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Phone (SMS OTP) — no email needed, for users without one.
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PhoneAuthScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.smartphone),
+                    label: Text(l10n.continueWithPhone),
                   ),
                 ],
 
