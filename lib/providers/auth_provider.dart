@@ -49,6 +49,13 @@ class AuthProvider extends ChangeNotifier {
   String? get pendingInviteMemberId => _pendingInviteMemberId;
   bool get hasPendingMergeConflict => _hasPendingMergeConflict;
 
+  /// True after a password-recovery ("forgot password") link is opened — the
+  /// user is in a recovery session and must choose a new password. The root
+  /// navigator routes to SetPasswordScreen while this is set; cleared once
+  /// [setPassword] succeeds.
+  bool _passwordRecovery = false;
+  bool get needsPasswordReset => _passwordRecovery;
+
   /// True once a password has been established for this session (a fresh
   /// signUpWithEmail/signInWithEmail just proved one exists). Used only to
   /// tag a brand-new profile with `has_password: true` at creation time in
@@ -102,10 +109,20 @@ class AuthProvider extends ChangeNotifier {
         _user = event.session?.user;
         await _loadCurrentMemberProfile();
         _status = AuthStatus.authenticated;
+      } else if (event.event == AuthChangeEvent.passwordRecovery) {
+        // A "forgot password" recovery link was opened (exchanged by
+        // main._completeAuthFromUrl). The user is now in a recovery session —
+        // load their profile and flag that they must choose a new password, so
+        // the root navigator routes them to SetPasswordScreen.
+        _user = event.session?.user;
+        await _loadCurrentMemberProfile();
+        _status = AuthStatus.authenticated;
+        _passwordRecovery = true;
       } else if (event.event == AuthChangeEvent.signedOut) {
         _user = null;
         _currentMember = null;
         _status = AuthStatus.unauthenticated;
+        _passwordRecovery = false;
       }
       if (_disposed) return;
       notifyListeners();
@@ -365,6 +382,7 @@ class AuthProvider extends ChangeNotifier {
       _error = null;
       await SupabaseService.updatePassword(password);
       _authenticatedWithPassword = true;
+      _passwordRecovery = false; // recovery (if any) is complete
 
       if (_currentMember != null) {
         final success = await updateProfile(_currentMember!.copyWith(

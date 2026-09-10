@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _showPasswordLogin = false;
   bool _isLoading = false;
   bool _magicLinkSent = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -236,8 +237,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: l10n.password,
                         prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
