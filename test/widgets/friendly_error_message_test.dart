@@ -55,4 +55,14 @@ void main() {
     final msg = await _map(tester, 'SocketException: Failed host lookup');
     expect(msg.toLowerCase(), contains('internet'));
   });
+
+  testWidgets('a retryable auth fetch (server unreachable) maps to the '
+      'no-internet message, not the generic one', (tester) async {
+    final msg = await _map(
+      tester,
+      'AuthRetryableFetchException(message: Failed to fetch, statusCode: null)',
+    );
+    expect(msg.toLowerCase(), contains('internet'));
+    expect(msg.toLowerCase(), isNot(contains('went wrong')));
+  });
 }

@@ -210,6 +210,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in signInWithMagicLink: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.magic_link');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -226,6 +228,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in sendPhoneOtp: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.phone_send');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -259,6 +263,8 @@ class AuthProvider extends ChangeNotifier {
       return _user != null;
     } catch (e) {
       debugPrint('Error in verifyPhoneOtp: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.phone_verify');
       _error = e.toString();
       _status = AuthStatus.unauthenticated;
       notifyListeners();
@@ -418,6 +424,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in setPassword: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.set_password');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -467,6 +475,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in resetPassword: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.reset');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -561,11 +571,15 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
       debugPrint('Error in claimProfile: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.claim');
       _error = e.message;
       notifyListeners();
       return false;
     } catch (e) {
       debugPrint('Error in claimProfile: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.claim');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -625,12 +639,16 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
       debugPrint('Error in claimProfileByCode: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'auth.claim_code');
       _error = e.message;
       notifyListeners();
       return false;
     } catch (e, stackTrace) {
       debugPrint('Error in claimProfileByCode: $e');
       debugPrintStack(stackTrace: stackTrace, label: 'claimProfileByCode');
+      ErrorReportingService.reportCaught(e, stackTrace,
+          context: 'auth.claim_code');
       _error = e.toString();
       notifyListeners();
       return false;

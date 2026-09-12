@@ -49,7 +49,12 @@ class ErrorReportingService {
     String context = 'caught',
   }) {
     _report(
-      message: error.toString(),
+      // Prefix the runtime type so error_logs always shows WHAT kind of failure
+      // it was (e.g. AuthRetryableFetchException vs AuthApiException vs
+      // PostgrestException) even when the message alone is ambiguous — this is
+      // what lets an auth issue be diagnosed from the dashboard without
+      // reproducing the whole flow.
+      message: '${error.runtimeType}: $error',
       stackTrace: stackTrace?.toString(),
       context: context,
     );

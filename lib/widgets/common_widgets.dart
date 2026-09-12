@@ -78,25 +78,24 @@ String friendlyErrorMessage(BuildContext context, Object error) {
     return l10n.errorEditNotPermitted;
   }
 
+  // A retryable fetch failure means the auth request never actually reached
+  // Supabase — effectively a reachability problem (flaky mobile network, DNS,
+  // or the auth server briefly unreachable). This is the most likely cause of a
+  // signup/login that "just fails" on a weak rural connection, so tell the user
+  // to check their connection instead of a vague "our end" message. The exact
+  // exception is still recorded to error_logs (ErrorReportingService) so it can
+  // be diagnosed later without reproducing the flow.
+  if (text.contains('authretryablefetchexception')) {
+    return l10n.errorNoInternet;
+  }
+
   final isServiceFailure =
       text.contains('postgrestexception') ||
       text.contains('authexception') ||
       text.contains('authapiexception') ||
-      text.contains('authretryablefetchexception') ||
       text.contains('storageexception');
-  // ALPHA DIAGNOSTIC: for the two "we don't actually know what this is" buckets,
-  // append a short technical detail so a tester's screenshot reveals the real
-  // error instead of only a generic message. Remove once auth is stable.
-  if (isServiceFailure) return '${l10n.errorServiceFailure}\n\n[${_diag(error)}]';
-  return '${l10n.errorGeneric}\n\n[${_diag(error)}]';
-}
-
-/// A short, single-line technical rendering of [error] for the alpha diagnostic
-/// suffix above — the exception type plus a truncated message.
-String _diag(Object error) {
-  final s = error.toString().replaceAll('\n', ' ').trim();
-  const max = 160;
-  return s.length > max ? '${s.substring(0, max)}…' : s;
+  if (isServiceFailure) return l10n.errorServiceFailure;
+  return l10n.errorGeneric;
 }
 
 /// Common UI widgets
