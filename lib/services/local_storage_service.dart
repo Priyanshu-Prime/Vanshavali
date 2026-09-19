@@ -4,7 +4,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../config/app_config.dart';
 import '../models/family_member.dart';
-import '../models/user_preferences.dart';
 import 'supabase_service.dart';
 
 class LocalStorageService {
@@ -249,21 +248,6 @@ class LocalStorageService {
   }
 
   // ==================== USER PREFERENCES ====================
-
-  static Future<void> saveUserPreferences(UserPreferences prefs) async {
-    await _userPrefsBox.putAll(prefs.toJson());
-  }
-
-  static UserPreferences getUserPreferences() {
-    return UserPreferences(
-      locale: _userPrefsBox.get('locale'),
-      isDarkMode: _userPrefsBox.get('is_dark_mode', defaultValue: false),
-      lastSyncTime: _userPrefsBox.get('last_sync_time'),
-      hasCompletedOnboarding: _userPrefsBox.get('has_completed_onboarding', defaultValue: false),
-      currentUserId: _userPrefsBox.get('current_user_id'),
-      currentMemberId: _userPrefsBox.get('current_member_id'),
-    );
-  }
 
   static Future<void> setLocale(String locale) async {
     await _userPrefsBox.put('locale', locale);
