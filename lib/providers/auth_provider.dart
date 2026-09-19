@@ -218,60 +218,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sends an SMS login code to [phone] (E.164). Stays on the entry screen
-  /// (no loading status) — same rationale as [signInWithMagicLink].
-  Future<bool> sendPhoneOtp(String phone) async {
-    try {
-      _error = null;
-      await SupabaseService.signInWithPhoneOtp(phone);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error in sendPhoneOtp: $e');
-      ErrorReportingService.reportCaught(e, StackTrace.current,
-          context: 'auth.phone_send');
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Verifies the SMS [token] for [phone]. On success establishes the session,
-  /// loads the profile, and claims a pending invite if this is a new account —
-  /// mirrors [signInWithEmail].
-  Future<bool> verifyPhoneOtp(String phone, String token) async {
-    try {
-      _status = AuthStatus.loading;
-      _error = null;
-      notifyListeners();
-
-      final response = await SupabaseService.verifyPhoneOtp(phone, token);
-      _user = response.user;
-
-      if (_user != null) {
-        await _loadCurrentMemberProfile();
-        _status = AuthStatus.authenticated;
-
-        if (_pendingInviteMemberId != null && _currentMember == null) {
-          await claimProfile(_pendingInviteMemberId!);
-        }
-      } else {
-        _status = AuthStatus.unauthenticated;
-      }
-
-      notifyListeners();
-      return _user != null;
-    } catch (e) {
-      debugPrint('Error in verifyPhoneOtp: $e');
-      ErrorReportingService.reportCaught(e, StackTrace.current,
-          context: 'auth.phone_verify');
-      _error = e.toString();
-      _status = AuthStatus.unauthenticated;
-      notifyListeners();
-      return false;
-    }
-  }
-
   Future<bool> signUpWithEmail(String email, String password) async {
     try {
       _status = AuthStatus.loading;
