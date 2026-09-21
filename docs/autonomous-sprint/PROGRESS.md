@@ -25,7 +25,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Rate limiting | RESEARCHED | Client gap: searchMembers (family_provider.dart:337) has NO debounce. Add 300-400ms debounce (reuse existing Timer pattern) → sprint/db-foundation. Prod auth limits=OWNER. |
+| 1 | Rate limiting | PR | searchMembers debounce (350ms + stale-drop) DONE on sprint/db-foundation (c152c39). Prod auth limits=OWNER. |
 | 2 | API limits | TODO | Supabase free-tier caps + `max_rows` (config has 1000). Verify + document. Mostly OWNER. |
 | 3 | Spending caps | OWNER | Supabase free plan = no billing; ensure "spend cap" stays ON so it can never auto-upgrade to paid. Dashboard verify. NOT payments. |
 | 4 | Error handling | TODO | Audit all await calls in providers/services; ensure try/catch + friendlyErrorMessage everywhere. Partly done in auth. |
@@ -35,13 +35,13 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | 8 | Handle API timeouts | TODO | Add `.timeout()` to network calls (SupabaseService); surface reachability message. |
 | 9 | Prevent duplicate submissions | TODO | Disable submit while in-flight: add-member, profile save, claim, invite. |
 | 10 | Prevent duplicate payments | N/A | **No payment system exists in this app.** Nothing to do. Recorded for completeness. |
-| 11 | Optimise DB queries | RESEARCHED | FKs already indexed; only real gap = search. See research/infra.md. Foldes into mig 015. |
-| 12 | DB indexes | RESEARCHED | mig 015 = pg_trgm + 6 GIN + DROP dead idx_family_members_names. Agent → sprint/db-foundation. |
+| 11 | Optimise DB queries | PR | mig 015 (6248b20) adds pg_trgm; owner must apply. FKs already covered. |
+| 12 | DB indexes | PR | mig 015 DONE on sprint/db-foundation (6248b20): pg_trgm + 6 GIN + dropped dead index. OWNER applies SQL. |
 | 13 | Paginate large results | RESEARCHED | YAGNI at 500, BUT F-E "All" tab (entire DB) needs new keyset RPC get_all_members_page. Tie to F-E. |
 | 14 | Compress files | TODO | Tie to profile-pic (F-A): compress image client-side before upload. |
 | 15 | Limit upload sizes | TODO | Tie to profile-pic: client cap + Supabase Storage bucket policy. |
 | 16 | Cache repeat requests | TODO | Hive cache exists; extend to search/directory + add TTL where useful. |
-| 17 | Uptime monitoring | RESEARCHED | URGENT: 7-day auto-pause. Add ping() RPC (→015) + OWNER: 1 UptimeRobot 5-min monitor (keep-alive+alert). |
+| 17 | Uptime monitoring | PR | ping() RPC DONE in mig 015 (sprint/db-foundation). OWNER: apply 015 + point UptimeRobot at rpc/ping (URGENT vs 7-day auto-pause). |
 | 18 | Error logging + Slack forward | RESEARCHED | error_logs EXISTS (008). Non-admin usually can't make Slack webhook → OWNER (personal workspace/Discord). Build pg_net trigger AFTER owner has webhook. |
 | 19 | Simultaneous-user test | TODO | Write a load-test script (k6/dart) hitting read RPCs; run vs local Supabase. |
 | 20 | Backup / restore test | RESEARCHED | No PITR on free. `supabase db dump`/pg_dump via SESSION POOLER (IPv4). Script+doc TODO. Creds=OWNER. |
@@ -76,7 +76,8 @@ All migrations are applied by OWNER in the Supabase SQL editor — the loop writ
 ## Feature branches (integrate near the end onto a release branch, then main → release)
 - `sprint/coordination` — this tracker + research/ docs.
 - `sprint/quick-ui-wins` (in worktree agent-a624a8e17be93efff): F-B, F-H committed. F-A must build on top (shared _PersonBox).
-- `sprint/db-foundation` — next: mig 015 + searchMembers debounce.
+- `sprint/db-foundation` (off main) — DONE: mig 015 (6248b20) + searchMembers debounce (c152c39). Ready to integrate.
+- `sprint/profile-pic` (off quick-ui-wins) — F-A in progress (mig 016 + upload + render).
 
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.
