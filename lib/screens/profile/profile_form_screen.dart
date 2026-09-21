@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/family_member.dart';
@@ -48,9 +50,17 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   Timer? _lastNameDebounce;
   String? _invitePreviewName;
 
+  // Member id is fixed up-front (reused for an edit, freshly minted for a new
+  // profile) so an avatar can be uploaded to '<id>/avatar.jpg' BEFORE the row
+  // is saved — the same id then builds the FamilyMember in _saveProfile.
+  late final String _memberId;
+  String? _pendingAvatarUrl;
+  bool _isUploadingPhoto = false;
+
   @override
   void initState() {
     super.initState();
+    _memberId = widget.existingMember?.id ?? const Uuid().v4();
     if (widget.existingMember != null) {
       _populateFields(widget.existingMember!);
     }
@@ -69,6 +79,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     _selectedGender = member.gender;
     _selectedDob = member.dob;
     _isAlive = member.isAlive;
+    _pendingAvatarUrl = member.avatarUrl;
 
     if (member.deepDetails.isNotEmpty) {
       _educationController.text = member.deepDetails['education'] ?? '';
@@ -163,6 +174,81 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     }
   }
 
+  /// Bottom sheet: Camera / Gallery / (Remove if a photo exists). Large
+  /// tappable rows, no icon-only controls — matches the low-tech UI rules.
+  Future<void> _showPhotoOptions() async {
+    final l10n = context.l10n;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: Text(l10n.takePhoto),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickAndUpload(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(l10n.chooseFromGallery),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickAndUpload(ImageSource.gallery);
+              },
+            ),
+            if (_pendingAvatarUrl != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: Text(l10n.removePhoto),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  setState(() => _pendingAvatarUrl = null);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 70,
+    );
+    if (picked == null || !mounted) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    // 300 KB is the bucket's server-side limit (migration 016) — reject here
+    // with a clear message rather than letting the upload fail opaquely.
+    if (bytes.length > 300 * 1024) {
+      showAppSnackBar(context, context.l10n.photoTooLarge, isError: true);
+      return;
+    }
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final url = await SupabaseService.uploadAvatar(_memberId, bytes);
+      if (!mounted) return;
+      setState(() => _pendingAvatarUrl = url);
+    } catch (_) {
+      // Photo is optional: keep any prior avatar and let the rest of the
+      // profile still save — surface a non-fatal message only.
+      if (mounted) {
+        showAppSnackBar(context, context.l10n.photoUploadFailed, isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -202,8 +288,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     }
 
     final member = FamilyMember(
-      id: widget.existingMember?.id ?? const Uuid().v4(),
+      id: _memberId,
       createdAt: widget.existingMember?.createdAt ?? DateTime.now(),
+      avatarUrl: _pendingAvatarUrl,
       authUserId: widget.existingMember?.authUserId,
       fatherId: widget.existingMember?.fatherId,
       motherId: widget.existingMember?.motherId,
@@ -325,6 +412,60 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
+            // ── Profile photo (optional) ──
+            Center(
+              child: GestureDetector(
+                onTap: _isUploadingPhoto ? null : _showPhotoOptions,
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 48,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          backgroundImage: _pendingAvatarUrl != null
+                              ? CachedNetworkImageProvider(_pendingAvatarUrl!)
+                              : null,
+                          child: _isUploadingPhoto
+                              ? const CircularProgressIndicator()
+                              : (_pendingAvatarUrl == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 48,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    )
+                                  : null),
+                        ),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          child: Icon(
+                            Icons.photo_camera,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _pendingAvatarUrl == null
+                          ? l10n.addPhoto
+                          : l10n.changePhoto,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             // ── Invite Code (optional, new profiles only) ──
             if (widget.isCreatingProfile) ...[
               Card(
@@ -576,7 +717,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
             // Save Button
             ElevatedButton(
-              onPressed: _isLoading ? null : _saveProfile,
+              onPressed: (_isLoading || _isUploadingPhoto) ? null : _saveProfile,
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
