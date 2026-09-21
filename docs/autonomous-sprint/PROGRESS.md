@@ -50,7 +50,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| F-A | Node profile-pic upload | RESEARCHED | See research/profile-pic.md. mig 016 (avatar_url+bucket, reuses can_edit_family_member). image_picker+cached_network_image. Sequence AFTER quick-ui-wins (both touch _PersonBox). |
+| F-A | Node profile-pic upload | IN-PROGRESS | Agent → sprint/profile-pic (branched off sprint/quick-ui-wins). mig 016 per research/profile-pic.md. |
 | F-B | Village field mandatory | PR | DONE on sprint/quick-ui-wins (c08630c). Shared village_picker_field validator; both forms. Needs on-device eyeball. |
 | F-C | Make everything searchable | TODO | Search names(en/gu)/village/city, not just village. Local + RPC (search_family_members). |
 | F-D | Any-level village selectable | TODO | village_picker: allow district/taluka/village as origin; don't force deepest leaf. |
@@ -58,7 +58,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
 | F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
-| F-I | Duplicate-detection → claim recommendation | RESEARCHING | Agent R-claim. On create, detect existing match (self+parents+params) → send claim request to existing node's tree. merge_requests (migration 009) may be reusable. Heavy research first. |
+| F-I | Duplicate-detection → claim recommendation | RESEARCHED | See research/claim-system.md. mig 017 (find_duplicate_candidates + merge_requests ext + claim RPCs). Build LAST (auth-sensitive). Owner decision: reuse merge_requests vs new table. |
 
 ---
 
