@@ -52,8 +52,8 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 |---|------|--------|-------|
 | F-A | Node profile-pic upload | MERGED | DONE + merged into sprint/integration (green). mig 016 (OWNER applies), model avatarUrl, image_picker+cached_network_image, upload flow+states, tree/detail render, iOS Info.plist perms. Needs on-device e2e. |
 | F-B | Village field mandatory | PR | DONE on sprint/quick-ui-wins (c08630c). Shared village_picker_field validator; both forms. Needs on-device eyeball. |
-| F-C | Make everything searchable | IN-PROGRESS | Agent → sprint/village-picker-levels. Village picker: search ACROSS all levels (district/taluka/village), not just leaf villages. (Member search already ILIKEs name/village/city in search_family_members — backend covered.) |
-| F-D | Any-level village selectable | IN-PROGRESS | Agent → sprint/village-picker-levels. Allow selecting a district/taluka/village itself as origin (e.g. "Patan" as a village of origin); don't force drilling to a leaf. |
+| F-C | Make everything searchable | MERGED | searchPlaces() matches district/taluka/village; picker hint updated. MERGED into integration (146 tests). |
+| F-D | Any-level village selectable | MERGED | "Use this place" at district/taluka rows; any level stored as village_origin name. MERGED into integration. |
 | F-E | Directory All / My-family tabs | TODO | Replace flat list. "All"=entire DB (paginated, needs #13). "My family"=connected component to me. |
 | F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
@@ -79,7 +79,8 @@ All migrations are applied by OWNER in the Supabase SQL editor — the loop writ
 - `sprint/quick-ui-wins` (in worktree agent-a624a8e17be93efff): F-B, F-H committed. F-A must build on top (shared _PersonBox).
 - `sprint/db-foundation` (off main) — DONE: mig 015 (6248b20) + searchMembers debounce (c152c39). Ready to integrate.
 - `sprint/profile-pic` (off quick-ui-wins) — F-A DONE, MERGED into integration. mig 016.
-- `sprint/village-picker-levels` (off integration) — F-C/F-D in progress (search+select any place level).
+- `sprint/village-picker-levels` (off integration) — F-C/F-D DONE, MERGED into integration.
+- `sprint/directory-tabs` (off integration) — F-E in progress (All/My-family tabs + pagination + #5/#6).
 
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.
