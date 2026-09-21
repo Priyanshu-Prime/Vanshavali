@@ -344,6 +344,19 @@ class AppLocalizationsGu extends AppLocalizations {
   String get you => 'તમે';
 
   @override
+  String get directoryMyFamily => 'મારો પરિવાર';
+
+  @override
+  String get directoryAll => 'બધા';
+
+  @override
+  String get noMembersYet => 'હજી કોઈ સભ્ય નથી';
+
+  @override
+  String get showingSavedMembers =>
+      'તાજી યાદી લોડ ન થઈ — સાચવેલ સભ્યો બતાવી રહ્યા છીએ';
+
+  @override
   String get notifications => 'સૂચનાઓ';
 
   @override
