@@ -72,6 +72,11 @@ class FamilyMember extends HiveObject {
   @HiveField(19)
   DateTime? updatedAt;
 
+  // Optional profile picture URL (public storage bucket 'avatars', migration
+  // 016). NULL is the normal case — UI falls back to the gender symbol.
+  @HiveField(20)
+  String? avatarUrl;
+
   FamilyMember({
     required this.id,
     required this.createdAt,
@@ -92,6 +97,7 @@ class FamilyMember extends HiveObject {
     this.lastModified,
     this.inviteCode,
     this.updatedAt,
+    this.avatarUrl,
   });
 
   String get fullNameEn => '$firstNameEn $lastNameEn';
@@ -133,6 +139,7 @@ class FamilyMember extends HiveObject {
       'current_city': currentCity,
       'deep_details': deepDetails,
       'invite_code': inviteCode,
+      'avatar_url': avatarUrl,
     };
   }
 
@@ -164,6 +171,7 @@ class FamilyMember extends HiveObject {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -187,6 +195,7 @@ class FamilyMember extends HiveObject {
     DateTime? lastModified,
     String? inviteCode,
     DateTime? updatedAt,
+    String? avatarUrl,
   }) {
     return FamilyMember(
       id: id ?? this.id,
@@ -208,6 +217,7 @@ class FamilyMember extends HiveObject {
       lastModified: lastModified ?? this.lastModified,
       inviteCode: inviteCode ?? this.inviteCode,
       updatedAt: updatedAt ?? this.updatedAt,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
     );
   }
 }

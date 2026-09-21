@@ -36,13 +36,14 @@ class FamilyMemberAdapter extends TypeAdapter<FamilyMember> {
       lastModified: fields[17] as DateTime?,
       inviteCode: fields[18] as String?,
       updatedAt: fields[19] as DateTime?,
+      avatarUrl: fields[20] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, FamilyMember obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -80,7 +81,9 @@ class FamilyMemberAdapter extends TypeAdapter<FamilyMember> {
       ..writeByte(18)
       ..write(obj.inviteCode)
       ..writeByte(19)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(20)
+      ..write(obj.avatarUrl);
   }
 
   @override
