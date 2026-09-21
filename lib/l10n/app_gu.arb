@@ -34,6 +34,7 @@
   "isAlive": "જીવિત",
   "deceased": "મૃત",
   "villageOrigin": "મૂળ ગામ",
+  "villageRequired": "કૃપા કરીને ગામ પસંદ કરો",
   "selectVillage": "ગામ પસંદ કરો",
   "searchVillage": "નામથી ગામ શોધો",
   "currentCity": "વર્તમાન શહેર",

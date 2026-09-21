@@ -111,6 +111,9 @@ class AppLocalizationsGu extends AppLocalizations {
   String get villageOrigin => 'મૂળ ગામ';
 
   @override
+  String get villageRequired => 'કૃપા કરીને ગામ પસંદ કરો';
+
+  @override
   String get selectVillage => 'ગામ પસંદ કરો';
 
   @override

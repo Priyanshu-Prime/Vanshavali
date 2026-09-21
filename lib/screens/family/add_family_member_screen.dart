@@ -1322,6 +1322,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                     value: _villageController.text,
                     onChanged: (v) =>
                         setState(() => _villageController.text = v ?? ''),
+                    validator: (value) =>
+                        value == null || value.trim().isEmpty
+                        ? l10n.villageRequired
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
