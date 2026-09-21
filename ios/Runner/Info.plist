@@ -42,7 +42,9 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>The camera is used only to scan a family member's invite-code QR so you can join the family tree. You can also type the code by hand instead.</string>
+	<string>The camera is used to scan a family member's invite-code QR and, optionally, to take a profile photo. You can also type the code by hand or skip the photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Access to your photos lets you optionally choose a profile picture for a family member. This is optional — you can skip it.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
