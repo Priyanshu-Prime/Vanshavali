@@ -838,4 +838,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorPasswordSameAsOld =>
       'Please choose a different password than the one you already have.';
+
+  @override
+  String get addPhoto => 'Add Photo';
+
+  @override
+  String get changePhoto => 'Change Photo';
+
+  @override
+  String get removePhoto => 'Remove Photo';
+
+  @override
+  String get takePhoto => 'Take Photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from Gallery';
+
+  @override
+  String get photoUploadFailed =>
+      'Couldn\'t upload the photo. Your other details were saved.';
+
+  @override
+  String get photoTooLarge =>
+      'That photo is too large. Please choose a smaller one.';
 }
