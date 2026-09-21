@@ -15,6 +15,7 @@ import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 import '../profile/profile_form_screen.dart';
 import 'add_family_member_screen.dart';
+import 'family_tree_screen.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final FamilyMember member;
@@ -206,6 +207,26 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // View this member's family tree, centered on them (works for
+            // unclaimed placeholder members too).
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FamilyTreeScreen(focusMember: member),
+                  ),
+                ),
+                icon: const Icon(Icons.account_tree),
+                label: Text(l10n.viewFamilyTree),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),

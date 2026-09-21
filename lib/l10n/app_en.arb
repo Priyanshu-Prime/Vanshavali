@@ -287,6 +287,7 @@
   "familyRelations": "Family Relations",
   "centerOnMe": "Center on me",
   "centerOnMember": "Center on this member",
+  "viewFamilyTree": "View family tree",
   "addRelativeForYourself": "Add a relative for yourself",
   "addRelativeFor": "Add a relative for {name}",
   "@addRelativeFor": {
