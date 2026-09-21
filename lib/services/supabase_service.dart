@@ -150,6 +150,24 @@ class SupabaseService {
     return FamilyMember.fromJson(response);
   }
 
+  /// Upload (or replace) a member's avatar and return its public URL.
+  ///
+  /// Path is `memberId/avatar.jpg` — the storage RLS (migration 016) gates
+  /// writes by can_edit_family_member on that first path segment. upsert:true
+  /// overwrites any prior photo. A cache-busting ?v= query param is appended
+  /// so CachedNetworkImage doesn't keep showing the stale previous image after
+  /// a replace (the URL is otherwise identical across uploads).
+  static Future<String> uploadAvatar(String memberId, Uint8List bytes) async {
+    final path = '$memberId/avatar.jpg';
+    await client.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+        );
+    final url = client.storage.from('avatars').getPublicUrl(path);
+    return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
   /// Get family member by ID
   static Future<FamilyMember?> getFamilyMemberById(String id) async {
     final response = await client
