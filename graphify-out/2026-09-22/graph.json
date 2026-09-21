@@ -24528,7 +24528,7 @@
       "node_kind": "heading",
       "norm_label": "iteration log",
       "source_file": "docs/autonomous-sprint/PROGRESS.md",
-      "source_location": "L83"
+      "source_location": "L84"
     },
     {
       "id": "docs_autonomous_sprint_progress_migration_numbering_plan_locked_avoids_collisions",
@@ -31580,7 +31580,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/PROGRESS.md",
-      "source_location": "L83",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -57464,5 +57464,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9f390d17ee8b8525cffe57e2e8ddfc016d0c583a"
+  "built_at_commit": "6c2eafa8a32fe7c8b6121ef865a88c77f91e6bcf"
 }
