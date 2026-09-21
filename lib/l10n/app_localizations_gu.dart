@@ -117,7 +117,16 @@ class AppLocalizationsGu extends AppLocalizations {
   String get selectVillage => 'ગામ પસંદ કરો';
 
   @override
-  String get searchVillage => 'નામથી ગામ શોધો';
+  String get searchVillage => 'જિલ્લો, તાલુકો કે ગામ શોધો';
+
+  @override
+  String get useThisPlace => 'આ સ્થળ પસંદ કરો';
+
+  @override
+  String get levelDistrict => 'જિલ્લો';
+
+  @override
+  String get levelTaluka => 'તાલુકો';
 
   @override
   String get currentCity => 'વર્તમાન શહેર';

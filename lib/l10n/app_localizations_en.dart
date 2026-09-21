@@ -118,7 +118,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectVillage => 'Select village';
 
   @override
-  String get searchVillage => 'Search village by name';
+  String get searchVillage => 'Search district, taluka or village';
+
+  @override
+  String get useThisPlace => 'Use this place';
+
+  @override
+  String get levelDistrict => 'District';
+
+  @override
+  String get levelTaluka => 'Taluka';
 
   @override
   String get currentCity => 'Current City';

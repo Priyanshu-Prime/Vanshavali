@@ -21,6 +21,21 @@ class GjVillageHit {
   const GjVillageHit(this.name, this.code, this.taluka, this.district);
 }
 
+/// Which tier of the directory a place sits at. Any tier is a valid
+/// village_origin — a district or taluka can be picked directly.
+enum GjLevel { district, taluka, village }
+
+/// A place search hit at any level. [context] is the parent chain used to tell
+/// same-named places apart and to render a readable label: '' for a district,
+/// the district name for a taluka, and 'taluka, district' for a village.
+class GjPlaceHit {
+  final String name;
+  final String code;
+  final GjLevel level;
+  final String context;
+  const GjPlaceHit(this.name, this.code, this.level, this.context);
+}
+
 /// Loads and queries the bundled Gujarat district -> taluka -> village
 /// directory (assets/data/gujarat_places.json). Village entry in the app is a
 /// strict pick from this list — never free text — so village_origin stays
@@ -105,6 +120,44 @@ class GujaratPlacesService {
           } else if (n.contains(q)) {
             contains.add(hit);
           }
+        }
+      }
+    }
+    return [...exact, ...prefix, ...contains].take(limit).toList();
+  }
+
+  /// Case/space-insensitive search across ALL levels (district, taluka,
+  /// village) so the user can type a name at any tier and pick it directly.
+  /// Ranked exact -> prefix -> contains; within a rank a place is emitted
+  /// before its own children (depth-first), so a bare "Patan" surfaces the
+  /// Patan district/taluka above villages buried under it.
+  static List<GjPlaceHit> searchPlaces(String query, {int limit = 40}) {
+    final q = _norm(query);
+    if (q.isEmpty || _byDistrict == null) return const [];
+    final exact = <GjPlaceHit>[];
+    final prefix = <GjPlaceHit>[];
+    final contains = <GjPlaceHit>[];
+    void add(String name, String code, GjLevel level, String context) {
+      final n = _norm(name);
+      final hit = GjPlaceHit(name, code, level, context);
+      if (n == q) {
+        exact.add(hit);
+      } else if (n.startsWith(q)) {
+        prefix.add(hit);
+      } else if (n.contains(q)) {
+        contains.add(hit);
+      }
+    }
+
+    for (final d in _byDistrict!.values.cast<Map<String, dynamic>>()) {
+      final district = d['name'] as String;
+      add(district, d['code'] as String, GjLevel.district, '');
+      for (final t in (d['talukas'] as List).cast<Map<String, dynamic>>()) {
+        final taluka = t['name'] as String;
+        add(taluka, t['code'] as String, GjLevel.taluka, district);
+        for (final v in (t['villages'] as List).cast<Map<String, dynamic>>()) {
+          add(v['name'] as String, v['code'] as String, GjLevel.village,
+              '$taluka, $district');
         }
       }
     }

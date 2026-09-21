@@ -317,8 +317,26 @@ abstract class AppLocalizations {
   /// No description provided for @searchVillage.
   ///
   /// In en, this message translates to:
-  /// **'Search village by name'**
+  /// **'Search district, taluka or village'**
   String get searchVillage;
+
+  /// No description provided for @useThisPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this place'**
+  String get useThisPlace;
+
+  /// No description provided for @levelDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get levelDistrict;
+
+  /// No description provided for @levelTaluka.
+  ///
+  /// In en, this message translates to:
+  /// **'Taluka'**
+  String get levelTaluka;
 
   /// No description provided for @currentCity.
   ///

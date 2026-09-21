@@ -89,7 +89,7 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
   GjPlace? _district;
   GjPlace? _taluka;
   final _searchController = TextEditingController();
-  List<GjVillageHit> _searchResults = const [];
+  List<GjPlaceHit> _searchResults = const [];
 
   @override
   void initState() {
@@ -107,7 +107,20 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
 
   void _onSearch(String q) {
     setState(() => _searchResults =
-        q.trim().length < 2 ? const [] : GujaratPlacesService.searchVillages(q));
+        q.trim().length < 2 ? const [] : GujaratPlacesService.searchPlaces(q));
+  }
+
+  /// Readable parent/level label, e.g. "District", "Taluka · Patan",
+  /// "Sidhpur, Patan".
+  String _hitSubtitle(GjPlaceHit h, l10n) {
+    switch (h.level) {
+      case GjLevel.district:
+        return l10n.levelDistrict;
+      case GjLevel.taluka:
+        return '${l10n.levelTaluka} · ${h.context}';
+      case GjLevel.village:
+        return h.context;
+    }
   }
 
   @override
@@ -122,7 +135,7 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
         child: Center(child: CircularProgressIndicator()),
       );
     } else if (_searchController.text.trim().length >= 2) {
-      // State-wide search results (village — Taluka handled by caller display).
+      // State-wide search across every level; tapping any hit selects it.
       body = _searchResults.isEmpty
           ? Padding(
               padding: const EdgeInsets.all(16),
@@ -136,17 +149,20 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
                 return ListTile(
                   dense: true,
                   title: Text(h.name),
-                  subtitle: Text('${h.taluka}, ${h.district}'),
+                  subtitle: Text(_hitSubtitle(h, l10n)),
                   onTap: () => Navigator.pop(context, h.name),
                 );
               },
             );
     } else if (_district == null) {
+      // Tap a district to drill in, or "Use this place" to pick it directly.
       body = _list(GujaratPlacesService.districts(),
-          (d) => setState(() => _district = d));
+          (d) => setState(() => _district = d),
+          onSelect: (d) => Navigator.pop(context, d.name));
     } else if (_taluka == null) {
       body = _list(GujaratPlacesService.talukas(_district!.code),
-          (t) => setState(() => _taluka = t));
+          (t) => setState(() => _taluka = t),
+          onSelect: (t) => Navigator.pop(context, t.name));
     } else {
       body = _list(
         GujaratPlacesService.villages(_district!.code, _taluka!.code),
@@ -220,20 +236,30 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
     );
   }
 
+  /// A drill-down list. [onTap] descends a level. When [onSelect] is given
+  /// (district/taluka rows), a "Use this place" button lets the user pick this
+  /// level itself as the village_origin instead of drilling to a leaf.
   Widget _list(List<GjPlace> items, ValueChanged<GjPlace> onTap,
-      {String? emptyText}) {
+      {ValueChanged<GjPlace>? onSelect, String? emptyText}) {
     if (items.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(emptyText ?? '', textAlign: TextAlign.center),
       );
     }
+    final l10n = context.l10n;
     return ListView.builder(
       shrinkWrap: true,
       itemCount: items.length,
       itemBuilder: (_, i) => ListTile(
         dense: true,
         title: Text(items[i].name),
+        trailing: onSelect == null
+            ? null
+            : TextButton(
+                onPressed: () => onSelect(items[i]),
+                child: Text(l10n.useThisPlace),
+              ),
         onTap: () => onTap(items[i]),
       ),
     );
