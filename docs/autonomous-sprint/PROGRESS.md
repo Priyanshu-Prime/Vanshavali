@@ -25,7 +25,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Rate limiting | TODO | Supabase auth rate limits (config.toml [auth.rate_limit] exists) + client-side debounce/in-flight guards. Split: dashboard=OWNER, client=code. |
+| 1 | Rate limiting | RESEARCHED | Client gap: searchMembers (family_provider.dart:337) has NO debounce. Add 300-400ms debounce (reuse existing Timer pattern) → sprint/db-foundation. Prod auth limits=OWNER. |
 | 2 | API limits | TODO | Supabase free-tier caps + `max_rows` (config has 1000). Verify + document. Mostly OWNER. |
 | 3 | Spending caps | OWNER | Supabase free plan = no billing; ensure "spend cap" stays ON so it can never auto-upgrade to paid. Dashboard verify. NOT payments. |
 | 4 | Error handling | TODO | Audit all await calls in providers/services; ensure try/catch + friendlyErrorMessage everywhere. Partly done in auth. |
@@ -35,29 +35,29 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | 8 | Handle API timeouts | TODO | Add `.timeout()` to network calls (SupabaseService); surface reachability message. |
 | 9 | Prevent duplicate submissions | TODO | Disable submit while in-flight: add-member, profile save, claim, invite. |
 | 10 | Prevent duplicate payments | N/A | **No payment system exists in this app.** Nothing to do. Recorded for completeness. |
-| 11 | Optimise DB queries | RESEARCHING | Agent R-infra. EXPLAIN the RPCs (get_ego_network, ancestor_chain, search). |
-| 12 | DB indexes | RESEARCHING | Agent R-infra. father_id/mother_id/auth_user_id/village_origin + pg_trgm for search. |
-| 13 | Paginate large results | TODO | Directory "All" tab (whole DB) MUST paginate. RPC + infinite scroll. |
+| 11 | Optimise DB queries | RESEARCHED | FKs already indexed; only real gap = search. See research/infra.md. Foldes into mig 015. |
+| 12 | DB indexes | RESEARCHED | mig 015 = pg_trgm + 6 GIN + DROP dead idx_family_members_names. Agent → sprint/db-foundation. |
+| 13 | Paginate large results | RESEARCHED | YAGNI at 500, BUT F-E "All" tab (entire DB) needs new keyset RPC get_all_members_page. Tie to F-E. |
 | 14 | Compress files | TODO | Tie to profile-pic (F-A): compress image client-side before upload. |
 | 15 | Limit upload sizes | TODO | Tie to profile-pic: client cap + Supabase Storage bucket policy. |
 | 16 | Cache repeat requests | TODO | Hive cache exists; extend to search/directory + add TTL where useful. |
-| 17 | Uptime monitoring | RESEARCHING | Agent R-infra. Free options (UptimeRobot/cron-job.org) + free-tier keep-alive ping. Signup=OWNER. |
-| 18 | Error logging + Slack forward | RESEARCHING | error_logs table ALREADY EXISTS (migration 008). Research: can an individual contributor forward to Slack (incoming webhook feasibility). Agent R-infra. |
+| 17 | Uptime monitoring | RESEARCHED | URGENT: 7-day auto-pause. Add ping() RPC (→015) + OWNER: 1 UptimeRobot 5-min monitor (keep-alive+alert). |
+| 18 | Error logging + Slack forward | RESEARCHED | error_logs EXISTS (008). Non-admin usually can't make Slack webhook → OWNER (personal workspace/Discord). Build pg_net trigger AFTER owner has webhook. |
 | 19 | Simultaneous-user test | TODO | Write a load-test script (k6/dart) hitting read RPCs; run vs local Supabase. |
-| 20 | Backup / restore test | RESEARCHING | Free tier has no PITR. pg_dump/restore script + doc. Agent R-infra. Creds=OWNER. |
+| 20 | Backup / restore test | RESEARCHED | No PITR on free. `supabase db dump`/pg_dump via SESSION POOLER (IPv4). Script+doc TODO. Creds=OWNER. |
 
 ## B. App-specific features
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| F-A | Node profile-pic upload | RESEARCHING | Agent R-media: Supabase Storage free tier (1GB), image_picker + compression, size cap, render on node + profile. |
-| F-B | Village field mandatory | IN-PROGRESS | Agent → sprint/quick-ui-wins. Validation in profile_form + add_family_member + l10n. |
+| F-A | Node profile-pic upload | RESEARCHED | See research/profile-pic.md. mig 016 (avatar_url+bucket, reuses can_edit_family_member). image_picker+cached_network_image. Sequence AFTER quick-ui-wins (both touch _PersonBox). |
+| F-B | Village field mandatory | PR | DONE on sprint/quick-ui-wins (c08630c). Shared village_picker_field validator; both forms. Needs on-device eyeball. |
 | F-C | Make everything searchable | TODO | Search names(en/gu)/village/city, not just village. Local + RPC (search_family_members). |
 | F-D | Any-level village selectable | TODO | village_picker: allow district/taluka/village as origin; don't force deepest leaf. |
 | F-E | Directory All / My-family tabs | TODO | Replace flat list. "All"=entire DB (paginated, needs #13). "My family"=connected component to me. |
 | F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
-| F-G | Tapping relatives opens profile | IN-PROGRESS | Agent → sprint/quick-ui-wins. BUG: tiles route to add-new; must open that member's profile. |
-| F-H | Village subtext under node names | IN-PROGRESS | Agent → sprint/quick-ui-wins. Small village_origin line under name; watch overflow tests. |
+| F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
+| F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
 | F-I | Duplicate-detection → claim recommendation | RESEARCHING | Agent R-claim. On create, detect existing match (self+parents+params) → send claim request to existing node's tree. merge_requests (migration 009) may be reusable. Heavy research first. |
 
 ---
@@ -67,5 +67,17 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 - **R-media** → F-A + 14,15: profile-pic upload architecture on free tier.
 - **R-claim** → F-I: duplicate-detection + claim/merge recommendation system design.
 
+## Migration numbering plan (locked, avoids collisions)
+- **015** = pg_trgm + 6 GIN indexes + DROP idx_family_members_names + `ping()` RPC (db-foundation)
+- **016** = `avatar_url` + `avatars` bucket + 4 storage policies (profile-pic; reuses can_edit_family_member)
+- **017** = `find_duplicate_candidates` + merge_requests extension + claim RPCs (claim system; reuses 015 indexes)
+All migrations are applied by OWNER in the Supabase SQL editor — the loop writes the files, owner runs them.
+
+## Feature branches (integrate near the end onto a release branch, then main → release)
+- `sprint/coordination` — this tracker + research/ docs.
+- `sprint/quick-ui-wins` (in worktree agent-a624a8e17be93efff): F-B, F-H committed. F-A must build on top (shared _PersonBox).
+- `sprint/db-foundation` — next: mig 015 + searchMembers debounce.
+
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.
+- **2026-09-22 i1b:** ALL 3 research reports in → research/{infra,profile-pic,claim-system}.md. Locked migration numbering (015/016/017). quick-ui-wins done: F-B + F-H committed, F-G already correct. Owner-action items appended. Next: spawn sprint/db-foundation (015 + searchMembers debounce), then F-A on top of quick-ui-wins, then F-C/D/E/F search+directory+tree-nav, then F-I claim.

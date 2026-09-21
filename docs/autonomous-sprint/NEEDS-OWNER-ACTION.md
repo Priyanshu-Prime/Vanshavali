@@ -37,4 +37,41 @@ sprint is done and tested — for you to test then. No feature-branch releases.
       feature stays on `fix/phone-otp` until this is done.
 
 ## Research findings appended by agents
-_(agents append feasibility notes + exact steps here)_
+
+### 🔴 URGENT — free-tier 7-day auto-pause (do this first)
+A low-traffic project auto-pauses after 7 days idle. Create **one free UptimeRobot** HTTP
+monitor, 5-min interval, that doubles as keep-alive + downtime alert:
+1. uptimerobot.com → sign up (free).
+2. Add Monitor → HTTP(s) → URL: `https://<PROJECT_REF>.supabase.co/rest/v1/family_members?select=id&limit=1`
+3. Under Custom HTTP Headers add: `apikey: <ANON_KEY>` (anon key is already public in the APK).
+4. Interval 5 min; add your email as alert contact. Save.
+(The loop will also add a tiny `ping()` RPC as an even cleaner target — either works.)
+
+### Migrations to apply in the SQL editor (loop writes the files; you run them)
+- **015** (search + keep-alive): pg_trgm + GIN indexes + drop dead name index + `ping()`.
+- **016** (profile pics): `avatar_url` column + `avatars` storage bucket + policies. If the
+  `storage.buckets` insert errors on `file_size_limit`/`allowed_mime_types`, create the bucket
+  `avatars` (Public, 300KB, image/jpeg,png,webp) + its 4 policies in Dashboard → Storage instead.
+- **017** (duplicate/claim): matching RPC + merge_requests extension + claim RPCs.
+  ⚠ **Your decision:** the claim queue reuses `merge_requests` (a `kind` column). If you'd rather it
+  be a separate `claim_requests` table, say so before 017 is built.
+
+### Slack log forwarding
+Non-admins usually **cannot** create a Slack incoming webhook (needs workspace app-install approval).
+Easiest fix: make a **personal free Slack workspace** (you're admin) and create the webhook there, OR
+use a **Discord/Telegram** webhook (no admin gate). Give me the `hooks.slack.com/...` (or Discord) URL;
+I'll insert it into a private secrets row and wire the pg_net trigger. Until then the error_logs table
+still captures everything (readable via SQL) — Slack is just the push channel.
+
+### Backups (no PITR on free tier)
+From Dashboard → Settings → Database copy the **Session pooler** connection string (IPv4 — the direct
+5432 host is IPv6-only on free) + DB password. Then a weekly `pg_dump -Fc "<pooler-string>" -f v.dump`
+(loop will drop a script in scripts/). Store dumps off-Supabase.
+
+### Load test params (when you want it run)
+Supply `SUPABASE_REF`, `ANON_KEY`, and a known `ROOT_MEMBER_ID`; the k6 script runs at ~50 virtual
+users (realistic village peak). `get_connected_tree` needs a signed-in JWT or the local e2e stack.
+
+### Prod auth rate limits
+config.toml limits are LOCAL only. If magic-link testers get "too many requests", raise `email_sent`
+(currently 2/hr) in Dashboard → Authentication → Rate Limits.
