@@ -55,7 +55,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | F-C | Make everything searchable | MERGED | searchPlaces() matches district/taluka/village; picker hint updated. MERGED into integration (146 tests). |
 | F-D | Any-level village selectable | MERGED | "Use this place" at district/taluka rows; any level stored as village_origin name. MERGED into integration. |
 | F-E | Directory All / My-family tabs | TODO | Replace flat list. "All"=entire DB (paginated, needs #13). "My family"=connected component to me. |
-| F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
+| F-F | "View tree" from each profile | IN-PROGRESS | Agent → sprint/view-tree (off integration). member_detail → family_tree_screen centered on that member. |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
 | F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
 | F-I | Duplicate-detection → claim recommendation | RESEARCHED | See research/claim-system.md. mig 017 (find_duplicate_candidates + merge_requests ext + claim RPCs). Build LAST (auth-sensitive). Owner decision: reuse merge_requests vs new table. |
