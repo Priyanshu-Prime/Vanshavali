@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:graphview/GraphView.dart';
@@ -1536,6 +1537,47 @@ class _MarriageConnector extends StatelessWidget {
 //  the app). Larger text/icons than before, and the "unclaimed" state is
 //  now a labeled chip instead of a bare icon.
 // ─────────────────────────────────────────────────────────
+// 36px node avatar: the gender-colored circle with a gender symbol is the
+// fallback whenever there's no photo, or while one is loading/errored. No
+// spinner here on purpose — a progress indicator at 36px in a dense tree
+// would just be visual noise; the symbol is a fine placeholder.
+class _NodeAvatar extends StatelessWidget {
+  final FamilyMember member;
+  final Color color;
+
+  const _NodeAvatar({required this.member, required this.color});
+
+  Widget _fallback() => Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(
+          member.gender == 'Male'
+              ? Icons.man
+              : member.gender == 'Female'
+                  ? Icons.woman
+                  : Icons.person,
+          color: Colors.white,
+          size: 20,
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (member.avatarUrl == null) return _fallback();
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: member.avatarUrl!,
+        width: 36,
+        height: 36,
+        fit: BoxFit.cover,
+        placeholder: (_, _) => _fallback(),
+        errorWidget: (_, _, _) => _fallback(),
+      ),
+    );
+  }
+}
+
 class _PersonBox extends StatelessWidget {
   final FamilyMember member;
   final bool isFocus;
@@ -1605,21 +1647,7 @@ class _PersonBox extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration:
-                    BoxDecoration(color: color, shape: BoxShape.circle),
-                child: Icon(
-                  member.gender == 'Male'
-                      ? Icons.man
-                      : member.gender == 'Female'
-                          ? Icons.woman
-                          : Icons.person,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+              _NodeAvatar(member: member, color: color),
               const SizedBox(height: 6),
               Text(
                 member.getFullName(locale),

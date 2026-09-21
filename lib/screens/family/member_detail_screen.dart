@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -146,12 +147,20 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     CircleAvatar(
                       radius: 48,
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        member.initial,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.displaySmall?.copyWith(color: Colors.white),
-                      ),
+                      backgroundImage: member.avatarUrl != null
+                          ? CachedNetworkImageProvider(member.avatarUrl!)
+                          : null,
+                      // Initial stays as the fallback child — shown until/unless
+                      // an avatar image is present and loads over it.
+                      child: member.avatarUrl != null
+                          ? null
+                          : Text(
+                              member.initial,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .displaySmall
+                                  ?.copyWith(color: Colors.white),
+                            ),
                     ),
                     const SizedBox(width: 20),
                     Expanded(

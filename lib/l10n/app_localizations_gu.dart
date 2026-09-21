@@ -837,4 +837,27 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get errorPasswordSameAsOld =>
       'કૃપા કરીને તમારી પાસે પહેલેથી છે તેનાથી અલગ પાસવર્ડ પસંદ કરો.';
+
+  @override
+  String get addPhoto => 'ફોટો ઉમેરો';
+
+  @override
+  String get changePhoto => 'ફોટો બદલો';
+
+  @override
+  String get removePhoto => 'ફોટો દૂર કરો';
+
+  @override
+  String get takePhoto => 'ફોટો પાડો';
+
+  @override
+  String get chooseFromGallery => 'ગેલેરીમાંથી પસંદ કરો';
+
+  @override
+  String get photoUploadFailed =>
+      'ફોટો અપલોડ કરી શકાયો નથી. તમારી બાકીની વિગતો સાચવાઈ ગઈ છે.';
+
+  @override
+  String get photoTooLarge =>
+      'આ ફોટો ઘણો મોટો છે. કૃપા કરીને નાનો ફોટો પસંદ કરો.';
 }

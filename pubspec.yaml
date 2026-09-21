@@ -51,6 +51,10 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.0
 
+  # Optional profile pictures (avatars)
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
