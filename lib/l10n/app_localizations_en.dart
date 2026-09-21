@@ -354,6 +354,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get you => 'You';
 
   @override
+  String get directoryMyFamily => 'My family';
+
+  @override
+  String get directoryAll => 'All';
+
+  @override
+  String get noMembersYet => 'No members yet';
+
+  @override
+  String get showingSavedMembers =>
+      'Couldn\'t load the latest list — showing saved members';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

@@ -137,6 +137,10 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "you": "You",
+  "directoryMyFamily": "My family",
+  "directoryAll": "All",
+  "noMembersYet": "No members yet",
+  "showingSavedMembers": "Couldn't load the latest list — showing saved members",
   "notifications": "Notifications",
   "pendingInvites": "Pending Invites",
   "acceptInvite": "Accept",

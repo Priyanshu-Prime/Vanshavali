@@ -271,6 +271,27 @@ class SupabaseService {
         .toList();
   }
 
+  /// Fetches one page of the whole-database member list, ordered stably by
+  /// last name then id (so [range] windows don't overlap or skip rows across
+  /// pages). Backs the Directory "All" tab's infinite scroll. RLS (migration
+  /// 006) already lets any authenticated user SELECT every row, so this needs
+  /// no new policy. Keep [limit] under Supabase's max_rows cap.
+  static Future<List<FamilyMember>> getMembersPage({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await client
+        .from('family_members')
+        .select()
+        .order('last_name_en')
+        .order('id')
+        .range(offset, offset + limit - 1);
+
+    return (response as List)
+        .map((json) => FamilyMember.fromJson(json))
+        .toList();
+  }
+
   /// Get all spouses (current or former) of a given member, plus any
   /// co-parent implied by a shared child even if never explicitly linked.
   static Future<List<FamilyMember>> getSpousesOf(String memberId) async {

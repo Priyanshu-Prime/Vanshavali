@@ -764,6 +764,30 @@ abstract class AppLocalizations {
   /// **'You'**
   String get you;
 
+  /// No description provided for @directoryMyFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'My family'**
+  String get directoryMyFamily;
+
+  /// No description provided for @directoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get directoryAll;
+
+  /// No description provided for @noMembersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet'**
+  String get noMembersYet;
+
+  /// No description provided for @showingSavedMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the latest list — showing saved members'**
+  String get showingSavedMembers;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
