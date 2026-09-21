@@ -52,8 +52,8 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 |---|------|--------|-------|
 | F-A | Node profile-pic upload | IN-PROGRESS | Agent → sprint/profile-pic (branched off sprint/quick-ui-wins). mig 016 per research/profile-pic.md. |
 | F-B | Village field mandatory | PR | DONE on sprint/quick-ui-wins (c08630c). Shared village_picker_field validator; both forms. Needs on-device eyeball. |
-| F-C | Make everything searchable | TODO | Search names(en/gu)/village/city, not just village. Local + RPC (search_family_members). |
-| F-D | Any-level village selectable | TODO | village_picker: allow district/taluka/village as origin; don't force deepest leaf. |
+| F-C | Make everything searchable | IN-PROGRESS | Agent → sprint/village-picker-levels. Village picker: search ACROSS all levels (district/taluka/village), not just leaf villages. (Member search already ILIKEs name/village/city in search_family_members — backend covered.) |
+| F-D | Any-level village selectable | IN-PROGRESS | Agent → sprint/village-picker-levels. Allow selecting a district/taluka/village itself as origin (e.g. "Patan" as a village of origin); don't force drilling to a leaf. |
 | F-E | Directory All / My-family tabs | TODO | Replace flat list. "All"=entire DB (paginated, needs #13). "My family"=connected component to me. |
 | F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
@@ -74,7 +74,8 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 All migrations are applied by OWNER in the Supabase SQL editor — the loop writes the files, owner runs them.
 
 ## Feature branches (integrate near the end onto a release branch, then main → release)
-- `sprint/coordination` — this tracker + research/ docs.
+- **`sprint/integration`** ← HOME/base. = main + quick-ui-wins + db-foundation + tracker docs. analyze+145 tests green. All NEW feature branches fork from here; completed branches merge back in.
+- `sprint/coordination` — original tracker branch (superseded by integration).
 - `sprint/quick-ui-wins` (in worktree agent-a624a8e17be93efff): F-B, F-H committed. F-A must build on top (shared _PersonBox).
 - `sprint/db-foundation` (off main) — DONE: mig 015 (6248b20) + searchMembers debounce (c152c39). Ready to integrate.
 - `sprint/profile-pic` (off quick-ui-wins) — F-A in progress (mig 016 + upload + render).
