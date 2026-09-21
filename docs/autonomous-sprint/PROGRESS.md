@@ -51,13 +51,13 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | F-A | Node profile-pic upload | RESEARCHING | Agent R-media: Supabase Storage free tier (1GB), image_picker + compression, size cap, render on node + profile. |
-| F-B | Village field mandatory | TODO | Validation in profile_form + add_family_member. Small. l10n error string. |
+| F-B | Village field mandatory | IN-PROGRESS | Agent → sprint/quick-ui-wins. Validation in profile_form + add_family_member + l10n. |
 | F-C | Make everything searchable | TODO | Search names(en/gu)/village/city, not just village. Local + RPC (search_family_members). |
 | F-D | Any-level village selectable | TODO | village_picker: allow district/taluka/village as origin; don't force deepest leaf. |
 | F-E | Directory All / My-family tabs | TODO | Replace flat list. "All"=entire DB (paginated, needs #13). "My family"=connected component to me. |
 | F-F | "View tree" from each profile | TODO | member_detail → family_tree_screen centered on that member. |
-| F-G | Tapping relatives opens profile | TODO | BUG: father/mother/sibling tiles currently route to add-new; must open that member's profile. |
-| F-H | Village subtext under node names | TODO | family_tree_screen node widget: small village_origin line under name. |
+| F-G | Tapping relatives opens profile | IN-PROGRESS | Agent → sprint/quick-ui-wins. BUG: tiles route to add-new; must open that member's profile. |
+| F-H | Village subtext under node names | IN-PROGRESS | Agent → sprint/quick-ui-wins. Small village_origin line under name; watch overflow tests. |
 | F-I | Duplicate-detection → claim recommendation | RESEARCHING | Agent R-claim. On create, detect existing match (self+parents+params) → send claim request to existing node's tree. merge_requests (migration 009) may be reusable. Heavy research first. |
 
 ---
