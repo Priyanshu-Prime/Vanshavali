@@ -38,8 +38,8 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | 11 | Optimise DB queries | PR | mig 015 (6248b20) adds pg_trgm; owner must apply. FKs already covered. |
 | 12 | DB indexes | PR | mig 015 DONE on sprint/db-foundation (6248b20): pg_trgm + 6 GIN + dropped dead index. OWNER applies SQL. |
 | 13 | Paginate large results | RESEARCHED | YAGNI at 500, BUT F-E "All" tab (entire DB) needs new keyset RPC get_all_members_page. Tie to F-E. |
-| 14 | Compress files | TODO | Tie to profile-pic (F-A): compress image client-side before upload. |
-| 15 | Limit upload sizes | TODO | Tie to profile-pic: client cap + Supabase Storage bucket policy. |
+| 14 | Compress files | PR | DONE via F-A: image_picker native resize 512px/q70 → ~30-80KB. In integration. |
+| 15 | Limit upload sizes | PR | DONE via F-A: 300KB client cap + server file_size_limit on bucket (mig 016). In integration. |
 | 16 | Cache repeat requests | TODO | Hive cache exists; extend to search/directory + add TTL where useful. |
 | 17 | Uptime monitoring | PR | ping() RPC DONE in mig 015 (sprint/db-foundation). OWNER: apply 015 + point UptimeRobot at rpc/ping (URGENT vs 7-day auto-pause). |
 | 18 | Error logging + Slack forward | RESEARCHED | error_logs EXISTS (008). Non-admin usually can't make Slack webhook → OWNER (personal workspace/Discord). Build pg_net trigger AFTER owner has webhook. |
@@ -50,7 +50,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| F-A | Node profile-pic upload | IN-PROGRESS | Agent → sprint/profile-pic (branched off sprint/quick-ui-wins). mig 016 per research/profile-pic.md. |
+| F-A | Node profile-pic upload | MERGED | DONE + merged into sprint/integration (green). mig 016 (OWNER applies), model avatarUrl, image_picker+cached_network_image, upload flow+states, tree/detail render, iOS Info.plist perms. Needs on-device e2e. |
 | F-B | Village field mandatory | PR | DONE on sprint/quick-ui-wins (c08630c). Shared village_picker_field validator; both forms. Needs on-device eyeball. |
 | F-C | Make everything searchable | IN-PROGRESS | Agent → sprint/village-picker-levels. Village picker: search ACROSS all levels (district/taluka/village), not just leaf villages. (Member search already ILIKEs name/village/city in search_family_members — backend covered.) |
 | F-D | Any-level village selectable | IN-PROGRESS | Agent → sprint/village-picker-levels. Allow selecting a district/taluka/village itself as origin (e.g. "Patan" as a village of origin); don't force drilling to a leaf. |
@@ -78,7 +78,8 @@ All migrations are applied by OWNER in the Supabase SQL editor — the loop writ
 - `sprint/coordination` — original tracker branch (superseded by integration).
 - `sprint/quick-ui-wins` (in worktree agent-a624a8e17be93efff): F-B, F-H committed. F-A must build on top (shared _PersonBox).
 - `sprint/db-foundation` (off main) — DONE: mig 015 (6248b20) + searchMembers debounce (c152c39). Ready to integrate.
-- `sprint/profile-pic` (off quick-ui-wins) — F-A in progress (mig 016 + upload + render).
+- `sprint/profile-pic` (off quick-ui-wins) — F-A DONE, MERGED into integration. mig 016.
+- `sprint/village-picker-levels` (off integration) — F-C/F-D in progress (search+select any place level).
 
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.
