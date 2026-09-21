@@ -618,6 +618,9 @@ class AppLocalizationsGu extends AppLocalizations {
   String get centerOnMember => 'આ સભ્ય પર કેન્દ્ર કરો';
 
   @override
+  String get viewFamilyTree => 'વંશવૃક્ષ જુઓ';
+
+  @override
   String get addRelativeForYourself => 'તમારા માટે સંબંધી ઉમેરો';
 
   @override

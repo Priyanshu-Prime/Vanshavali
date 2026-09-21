@@ -1214,6 +1214,12 @@ abstract class AppLocalizations {
   /// **'Center on this member'**
   String get centerOnMember;
 
+  /// No description provided for @viewFamilyTree.
+  ///
+  /// In en, this message translates to:
+  /// **'View family tree'**
+  String get viewFamilyTree;
+
   /// No description provided for @addRelativeForYourself.
   ///
   /// In en, this message translates to:

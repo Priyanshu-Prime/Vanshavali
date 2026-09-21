@@ -618,6 +618,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get centerOnMember => 'Center on this member';
 
   @override
+  String get viewFamilyTree => 'View family tree';
+
+  @override
   String get addRelativeForYourself => 'Add a relative for yourself';
 
   @override

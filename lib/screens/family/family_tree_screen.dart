@@ -369,7 +369,14 @@ int pedigreeGeneration(int n) => n.bitLength - 1;
 int pedigreeSlot(int n) => n - (1 << pedigreeGeneration(n));
 
 class FamilyTreeScreen extends StatefulWidget {
-  const FamilyTreeScreen({super.key});
+  /// When set, the tree opens centered on this member (ego-centric default
+  /// view) instead of the logged-in user's full tree. Used by "View family
+  /// tree" on a member's profile. Reuses the same ego-network re-center path
+  /// (loadEgoNetwork) as the "Center on this member" node action. Works for
+  /// placeholder (unclaimed) members too — get_ego_network doesn't care.
+  final FamilyMember? focusMember;
+
+  const FamilyTreeScreen({super.key, this.focusMember});
 
   @override
   State<FamilyTreeScreen> createState() => _FamilyTreeScreenState();
@@ -466,6 +473,22 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
 
   // No initState() needed for the graph controller — _GraphViewHost creates
   // its own when it mounts (see below).
+
+  @override
+  void initState() {
+    super.initState();
+    // Opened from a member's profile via "View family tree": land on the
+    // ego-centric default view centered on that member, and re-center the
+    // fetch on them (same loadEgoNetwork path as the "Center on this member"
+    // node action). Post-frame so we don't notifyListeners mid-build.
+    final focus = widget.focusMember;
+    if (focus != null) {
+      _viewMode = _ViewMode.defaultView;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<FamilyProvider>().loadEgoNetwork(focus.id);
+      });
+    }
+  }
 
   @override
   void dispose() {
