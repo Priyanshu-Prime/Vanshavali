@@ -49,4 +49,21 @@ void main() {
     expect(GujaratPlacesService.searchVillages('DAY A par').first.name,
         'Dayapar');
   });
+
+  test('searchPlaces matches districts, talukas and villages', () {
+    // "Anand" is both a district and a taluka in the fixture.
+    final r = GujaratPlacesService.searchPlaces('Anand');
+    final levels = r.map((h) => h.level).toSet();
+    expect(levels, containsAll([GjLevel.district, GjLevel.taluka]));
+    // District hit comes before the taluka hit (depth-first within exact rank).
+    final district = r.firstWhere((h) => h.level == GjLevel.district);
+    final taluka = r.firstWhere((h) => h.level == GjLevel.taluka);
+    expect(r.indexOf(district), lessThan(r.indexOf(taluka)));
+    // Context disambiguates: taluka carries its district, village its parents.
+    expect(taluka.context, 'Anand');
+    final village =
+        GujaratPlacesService.searchPlaces('Napad').single;
+    expect(village.level, GjLevel.village);
+    expect(village.context, 'Anand, Anand');
+  });
 }
