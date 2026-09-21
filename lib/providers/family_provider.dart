@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/family_member.dart';
@@ -18,6 +20,14 @@ class FamilyProvider extends ChangeNotifier {
   FamilyMember? _centerMember;
   bool _isLoading = false;
   String? _error;
+
+  // Search debounce + stale-response guard. Rapid typing schedules at most one
+  // request (debounce collapses the burst) and only the latest query's result is
+  // applied (the seq guard drops any older in-flight response). Mirrors the
+  // Timer-debounce pattern used for name transliteration in the add-member/
+  // profile-form screens.
+  Timer? _searchDebounce;
+  int _searchSeq = 0;
 
   List<FamilyMember> get egoNetwork => _egoNetwork;
   List<SpouseLink> get spouseLinks => _spouseLinks;
@@ -334,35 +344,59 @@ class FamilyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> searchMembers(String query) async {
+  void searchMembers(String query) {
+    _searchDebounce?.cancel();
+
     if (query.trim().isEmpty) {
+      _searchSeq++; // invalidate any in-flight response
       _searchResults = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
 
+    _searchDebounce =
+        Timer(const Duration(milliseconds: 350), () => _runSearch(query));
+  }
+
+  Future<void> _runSearch(String query) async {
+    final int seq = ++_searchSeq;
+
     _isLoading = true;
     notifyListeners();
 
+    List<FamilyMember> results;
     try {
       if (await SyncService.isOnline()) {
-        _searchResults = await SupabaseService.searchFamilyMembers(query);
+        results = await SupabaseService.searchFamilyMembers(query);
       } else {
-        _searchResults = LocalStorageService.searchFamilyMembers(query);
+        results = LocalStorageService.searchFamilyMembers(query);
       }
     } catch (e) {
       debugPrint('Error in searchMembers: $e');
       _error = e.toString();
-      _searchResults = LocalStorageService.searchFamilyMembers(query);
+      results = LocalStorageService.searchFamilyMembers(query);
     }
 
+    // Drop stale response: a newer query (or a clear) started while we awaited.
+    if (seq != _searchSeq) return;
+
+    _searchResults = results;
     _isLoading = false;
     notifyListeners();
   }
 
   void clearSearch() {
+    _searchDebounce?.cancel();
+    _searchSeq++; // invalidate any in-flight response
     _searchResults = [];
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   /// Returns all spouses / co-parents of [memberId] (supports remarriage —
