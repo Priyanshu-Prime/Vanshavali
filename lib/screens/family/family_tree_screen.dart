@@ -1631,6 +1631,20 @@ class _PersonBox extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (member.villageOrigin != null &&
+                  member.villageOrigin!.trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  member.villageOrigin!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 11,
+                    color: theme.colorScheme.outline,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               if (!member.isClaimed) ...[
                 const SizedBox(height: 6),
                 Row(

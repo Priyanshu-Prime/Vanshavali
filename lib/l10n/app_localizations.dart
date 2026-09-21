@@ -302,6 +302,12 @@ abstract class AppLocalizations {
   /// **'Village of Origin'**
   String get villageOrigin;
 
+  /// No description provided for @villageRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a village'**
+  String get villageRequired;
+
   /// No description provided for @selectVillage.
   ///
   /// In en, this message translates to:

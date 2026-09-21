@@ -10,10 +10,16 @@ class VillagePickerField extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
 
+  /// When set, the field participates in Form validation (wrapped in a
+  /// FormField) exactly like the name TextFormFields do — so a required
+  /// village blocks submit and shows an inline error. Null keeps it optional.
+  final FormFieldValidator<String>? validator;
+
   const VillagePickerField({
     super.key,
     required this.value,
     required this.onChanged,
+    this.validator,
   });
 
   @override
@@ -21,36 +27,50 @@ class VillagePickerField extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final has = value != null && value!.trim().isNotEmpty;
-    return InkWell(
-      borderRadius: BorderRadius.circular(4),
-      onTap: () async {
-        final picked = await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    return FormField<String>(
+      initialValue: value,
+      validator: validator,
+      builder: (state) => InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: () async {
+          final picked = await showModalBottomSheet<String>(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            builder: (_) => const _VillagePickerSheet(),
+          );
+          if (picked != null) {
+            final v = picked.isEmpty ? null : picked;
+            onChanged(v);
+            state.didChange(v);
+          }
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: validator != null
+                ? '${l10n.villageOrigin} *'
+                : l10n.villageOrigin,
+            prefixIcon: const Icon(Icons.home_outlined),
+            errorText: state.errorText,
+            suffixIcon: has
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      onChanged(null);
+                      state.didChange(null);
+                    },
+                  )
+                : const Icon(Icons.arrow_drop_down),
           ),
-          builder: (_) => const _VillagePickerSheet(),
-        );
-        if (picked != null) onChanged(picked.isEmpty ? null : picked);
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.villageOrigin,
-          prefixIcon: const Icon(Icons.home_outlined),
-          suffixIcon: has
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => onChanged(null),
-                )
-              : const Icon(Icons.arrow_drop_down),
-        ),
-        child: Text(
-          has ? value! : l10n.selectVillage,
-          style: has
-              ? theme.textTheme.bodyLarge
-              : theme.textTheme.bodyLarge
-                  ?.copyWith(color: theme.colorScheme.outline),
+          child: Text(
+            has ? value! : l10n.selectVillage,
+            style: has
+                ? theme.textTheme.bodyLarge
+                : theme.textTheme.bodyLarge
+                    ?.copyWith(color: theme.colorScheme.outline),
+          ),
         ),
       ),
     );

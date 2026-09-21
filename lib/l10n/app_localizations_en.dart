@@ -112,6 +112,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get villageOrigin => 'Village of Origin';
 
   @override
+  String get villageRequired => 'Please select a village';
+
+  @override
   String get selectVillage => 'Select village';
 
   @override
