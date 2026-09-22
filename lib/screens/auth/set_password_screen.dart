@@ -39,6 +39,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   }
 
   Future<void> _submit() async {
+    // Guard the keyboard "done" action (onFieldSubmitted) too — it can fire
+    // even while the button is disabled mid-request, which would double-submit.
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);

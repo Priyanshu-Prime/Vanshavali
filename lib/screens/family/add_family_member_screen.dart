@@ -150,6 +150,12 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   DateTime? _selectedDob;
   bool _isAlive = true;
   bool _isLoading = false;
+  // Synchronous re-entry latch for _saveMember. The Save button only disables
+  // once _isLoading flips true, which happens AFTER the pre-flight re-fetch /
+  // duplicate-detection network awaits — so on a slow connection a second tap
+  // in that window would launch a second concurrent add. Set the instant
+  // _saveMember starts, released in its finally.
+  bool _submitting = false;
   bool _linkExisting = false;
   Timer? _firstNameDebounce;
   Timer? _lastNameDebounce;
@@ -474,6 +480,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   }
 
   Future<void> _saveMember() async {
+    if (_submitting) return;
+    _submitting = true;
+    try {
     if (!_formKey.currentState!.validate()) return;
     final l10n = context.l10n;
     if (_selectedRelation == null) {
@@ -841,6 +850,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
+    }
+    } finally {
+      _submitting = false;
     }
   }
 
