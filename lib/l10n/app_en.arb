@@ -400,5 +400,28 @@
   "takePhoto": "Take Photo",
   "chooseFromGallery": "Choose from Gallery",
   "photoUploadFailed": "Couldn't upload the photo. Your other details were saved.",
-  "photoTooLarge": "That photo is too large. Please choose a smaller one."
+  "photoTooLarge": "That photo is too large. Please choose a smaller one.",
+  "duplicateSheetTitle": "Is this the same person?",
+  "duplicateSheetSubtitle": "We found people already in the tree who look similar. Tap one if it's the same person, or create a new entry.",
+  "duplicateCreateNewButton": "No — create new",
+  "duplicateBornYear": "Born {year}",
+  "@duplicateBornYear": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "claimRequestSent": "Request sent. A relative can approve it to link you to this profile.",
+  "requestsTitle": "Requests",
+  "claimRequestPrompt": "wants to be linked to this profile.",
+  "approve": "Approve",
+  "reject": "Reject",
+  "noPendingRequests": "No pending requests",
+  "claimApproved": "Claim approved",
+  "claimRejected": "Claim rejected",
+  "approveClaimConfirm": "Link this account to {name}? This gives them ownership of the profile.",
+  "@approveClaimConfirm": {
+    "placeholders": {
+      "name": {}
+    }
+  }
 }

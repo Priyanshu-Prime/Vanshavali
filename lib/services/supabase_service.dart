@@ -659,4 +659,134 @@ class SupabaseService {
     );
     return response == true;
   }
+
+  // ==================== DUPLICATE DETECTION / CLAIM REQUESTS ====================
+
+  /// Finds existing rows that look like the same real person as the details a
+  /// user just entered, via the `find_duplicate_candidates` RPC (migration
+  /// 017). Read-only heuristic used to catch "someone already added a
+  /// placeholder for me / this relative" BEFORE a duplicate row is created.
+  ///
+  /// [fatherName]/[motherName] come from the add-relative context (a child's
+  /// anchor is a parent; a sibling shares the anchor's parents) and sharpen
+  /// the score — omit them for a self-profile lookup. [excludeId] skips a row
+  /// that shouldn't self-match (e.g. the member being edited).
+  static Future<List<DuplicateCandidate>> findDuplicateCandidates({
+    required String firstNameEn,
+    required String lastNameEn,
+    String? firstNameGu,
+    String? lastNameGu,
+    String? gender,
+    DateTime? dob,
+    String? village,
+    String? fatherName,
+    String? motherName,
+    String? excludeId,
+    int limit = 10,
+  }) async {
+    final response = await client.rpc(
+      'find_duplicate_candidates',
+      params: {
+        'p_first_name_en': firstNameEn,
+        'p_last_name_en': lastNameEn,
+        'p_first_name_gu': firstNameGu,
+        'p_last_name_gu': lastNameGu,
+        'p_gender': gender,
+        'p_dob': dob?.toIso8601String().split('T').first,
+        'p_village': village,
+        'p_father_name': fatherName,
+        'p_mother_name': motherName,
+        'p_exclude_id': excludeId,
+        'p_limit': limit,
+      },
+    );
+    if (response == null) return [];
+    return (response as List)
+        .map((row) => DuplicateCandidate.fromJson(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Opens a claim request for an unclaimed placeholder found by matching, via
+  /// the `request_claim` RPC (migration 017). The caller must have no profile
+  /// yet; an eligible relative approves it later. Idempotent server-side.
+  static Future<void> requestClaim(String targetProfileId) async {
+    await client.rpc('request_claim', params: {'target': targetProfileId});
+  }
+
+  /// Approves a pending claim request (sets the target's auth_user_id to the
+  /// requester), via the `approve_claim_request` RPC (migration 017).
+  static Future<void> approveClaimRequest(String requestId) async {
+    await client.rpc(
+      'approve_claim_request',
+      params: {'request_id': requestId},
+    );
+  }
+
+  /// Rejects (dismisses) a pending claim request, via the
+  /// `reject_claim_request` RPC (migration 017).
+  static Future<void> rejectClaimRequest(String requestId) async {
+    await client.rpc(
+      'reject_claim_request',
+      params: {'request_id': requestId},
+    );
+  }
+
+  /// The approver inbox: pending claim requests the current user is eligible
+  /// to approve, via the `pending_claim_requests` RPC (migration 017).
+  static Future<List<ClaimRequest>> pendingClaimRequests() async {
+    if (currentUser == null) return [];
+    final response = await client.rpc('pending_claim_requests');
+    if (response == null) return [];
+    return (response as List)
+        .map((row) => ClaimRequest.fromJson(row as Map<String, dynamic>))
+        .toList();
+  }
+}
+
+/// A possible-duplicate match from `find_duplicate_candidates` — the existing
+/// member plus the weighted [score] (0..1) and per-field [subScores].
+class DuplicateCandidate {
+  final FamilyMember member;
+  final double score;
+  final Map<String, dynamic> subScores;
+
+  const DuplicateCandidate({
+    required this.member,
+    required this.score,
+    required this.subScores,
+  });
+
+  factory DuplicateCandidate.fromJson(Map<String, dynamic> json) {
+    return DuplicateCandidate(
+      member: FamilyMember.fromJson(json['member'] as Map<String, dynamic>),
+      score: (json['score'] as num).toDouble(),
+      subScores: (json['sub_scores'] as Map<String, dynamic>?) ?? const {},
+    );
+  }
+}
+
+/// A pending claim request in the approver inbox (`pending_claim_requests`).
+class ClaimRequest {
+  final String requestId;
+  final DateTime createdAt;
+  final String requesterAuthUserId;
+
+  /// The unclaimed placeholder the requester wants to claim.
+  final FamilyMember target;
+
+  const ClaimRequest({
+    required this.requestId,
+    required this.createdAt,
+    required this.requesterAuthUserId,
+    required this.target,
+  });
+
+  factory ClaimRequest.fromJson(Map<String, dynamic> json) {
+    return ClaimRequest(
+      requestId: json['request_id'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      requesterAuthUserId: json['requester'] as String,
+      target: FamilyMember.fromJson(json['target'] as Map<String, dynamic>),
+    );
+  }
 }

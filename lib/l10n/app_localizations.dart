@@ -1693,6 +1693,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That photo is too large. Please choose a smaller one.'**
   String get photoTooLarge;
+
+  /// No description provided for @duplicateSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Is this the same person?'**
+  String get duplicateSheetTitle;
+
+  /// No description provided for @duplicateSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We found people already in the tree who look similar. Tap one if it\'s the same person, or create a new entry.'**
+  String get duplicateSheetSubtitle;
+
+  /// No description provided for @duplicateCreateNewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'No — create new'**
+  String get duplicateCreateNewButton;
+
+  /// No description provided for @duplicateBornYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Born {year}'**
+  String duplicateBornYear(Object year);
+
+  /// No description provided for @claimRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent. A relative can approve it to link you to this profile.'**
+  String get claimRequestSent;
+
+  /// No description provided for @requestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get requestsTitle;
+
+  /// No description provided for @claimRequestPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'wants to be linked to this profile.'**
+  String get claimRequestPrompt;
+
+  /// No description provided for @approve.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approve;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
+  /// No description provided for @noPendingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending requests'**
+  String get noPendingRequests;
+
+  /// No description provided for @claimApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim approved'**
+  String get claimApproved;
+
+  /// No description provided for @claimRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim rejected'**
+  String get claimRejected;
+
+  /// No description provided for @approveClaimConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Link this account to {name}? This gives them ownership of the profile.'**
+  String approveClaimConfirm(Object name);
 }
 
 class _AppLocalizationsDelegate

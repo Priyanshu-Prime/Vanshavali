@@ -10,6 +10,7 @@ import '../../services/supabase_service.dart';
 import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/duplicate_match_sheet.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
 import '../../widgets/village_picker_field.dart';
 
@@ -394,6 +395,84 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     }
   }
 
+  /// Runs duplicate detection for a brand-new relative and, if the user
+  /// confirms a match, routes into the link-existing path (sets [_linkExisting]
+  /// + [_selectedExistingMember]) so no duplicate row is created. Returns what
+  /// the caller should do next. Best-effort — a detection failure never blocks
+  /// the add. Parent-name context (a child's anchor parent, a sibling's shared
+  /// parents) is passed to sharpen the score. See find_duplicate_candidates
+  /// (migration 017).
+  Future<_DupOutcome> _maybeRouteToExistingDuplicate(
+    FamilyMember anchor,
+  ) async {
+    final familyProvider = context.read<FamilyProvider>();
+
+    String? fatherName;
+    String? motherName;
+    if (_selectedRelation == 'child') {
+      if (anchor.gender == 'Male') {
+        fatherName = anchor.fullNameEn;
+      } else if (anchor.gender == 'Female') {
+        motherName = anchor.fullNameEn;
+      }
+    } else if (_selectedRelation == 'sibling') {
+      if (anchor.fatherId != null) {
+        fatherName =
+            (await familyProvider.getMemberById(anchor.fatherId!))?.fullNameEn;
+      }
+      if (anchor.motherId != null) {
+        motherName =
+            (await familyProvider.getMemberById(anchor.motherId!))?.fullNameEn;
+      }
+      if (!mounted) return _DupOutcome.cancel;
+    }
+
+    List<DuplicateCandidate> candidates;
+    try {
+      candidates = await SupabaseService.findDuplicateCandidates(
+        firstNameEn: _firstNameEnController.text.trim(),
+        lastNameEn: _lastNameEnController.text.trim(),
+        firstNameGu: _firstNameGuController.text.trim().isEmpty
+            ? null
+            : _firstNameGuController.text.trim(),
+        lastNameGu: _lastNameGuController.text.trim().isEmpty
+            ? null
+            : _lastNameGuController.text.trim(),
+        gender: _selectedGender,
+        dob: _selectedDob,
+        village: _villageController.text.trim().isEmpty
+            ? null
+            : _villageController.text.trim(),
+        fatherName: fatherName,
+        motherName: motherName,
+        excludeId: anchor.id,
+      );
+    } catch (_) {
+      return _DupOutcome.createNew; // never block the add on a detection error
+    }
+    if (!mounted) return _DupOutcome.cancel;
+    if (candidates.isEmpty) return _DupOutcome.createNew;
+
+    final choice = await showDuplicateMatchSheet(
+      context: context,
+      candidates: candidates,
+    );
+    if (!mounted) return _DupOutcome.cancel;
+    if (choice == null) return _DupOutcome.cancel;
+    if (choice.createNew || choice.selected == null) {
+      return _DupOutcome.createNew;
+    }
+
+    // "Same person" → link the existing row as this relation instead of
+    // creating a duplicate (works for claimed and unclaimed alike; linking a
+    // relation edits the anchor/child side, not the matched person's profile).
+    setState(() {
+      _linkExisting = true;
+      _selectedExistingMember = choice.selected!.member;
+    });
+    return _DupOutcome.linkedExisting;
+  }
+
   Future<void> _saveMember() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = context.l10n;
@@ -445,6 +524,20 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (blockedRelation == 'mother') {
       showAppSnackBar(context, l10n.alreadyExists(l10n.mother), isError: true);
       return;
+    }
+
+    // ── Duplicate detection (create-new only): the person being added may
+    // already exist as a placeholder someone else created. If the user
+    // confirms it's the same person, flip into the link-existing path so the
+    // SAME relation guards + linking below run against the existing row
+    // instead of creating a duplicate. Runs before the cycle/spouse guards so
+    // those still apply to a routed link-existing selection. ──
+    if (!_linkExisting) {
+      final outcome = await _maybeRouteToExistingDuplicate(effectiveMember);
+      if (!mounted) return;
+      if (outcome == _DupOutcome.cancel) return;
+      // linkedExisting → _linkExisting/_selectedExistingMember now set;
+      // createNew → continue unchanged.
     }
 
     // ── Guard: linking an EXISTING member as father/mother must not create
@@ -1405,6 +1498,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
 // Which parents a newly-added sibling shares with the member: both (full
 // sibling) or just one side (half-sibling / step-sibling).
 enum _SiblingShare { both, fatherOnly, motherOnly }
+
+// Result of the duplicate-detection routing in _saveMember: proceed to create
+// a new row, route into link-existing against a confirmed match, or abort.
+enum _DupOutcome { createNew, linkedExisting, cancel }
 
 // ─────────────────────────────────────────────────────────
 //  Data class for the other-parent selection result

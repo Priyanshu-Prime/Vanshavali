@@ -885,4 +885,49 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get photoTooLarge =>
       'આ ફોટો ઘણો મોટો છે. કૃપા કરીને નાનો ફોટો પસંદ કરો.';
+
+  @override
+  String get duplicateSheetTitle => 'શું આ એ જ વ્યક્તિ છે?';
+
+  @override
+  String get duplicateSheetSubtitle =>
+      'વૃક્ષમાં પહેલેથી જ મળતી આવતી વ્યક્તિઓ મળી છે. જો એ જ વ્યક્તિ હોય તો તેના પર ટેપ કરો, અથવા નવી નોંધ બનાવો.';
+
+  @override
+  String get duplicateCreateNewButton => 'ના — નવી બનાવો';
+
+  @override
+  String duplicateBornYear(Object year) {
+    return 'જન્મ $year';
+  }
+
+  @override
+  String get claimRequestSent =>
+      'વિનંતી મોકલાઈ. કોઈ સંબંધી તેને મંજૂર કરીને તમને આ પ્રોફાઇલ સાથે જોડી શકે છે.';
+
+  @override
+  String get requestsTitle => 'વિનંતીઓ';
+
+  @override
+  String get claimRequestPrompt => 'આ પ્રોફાઇલ સાથે જોડાવા માંગે છે.';
+
+  @override
+  String get approve => 'મંજૂર કરો';
+
+  @override
+  String get reject => 'નકારો';
+
+  @override
+  String get noPendingRequests => 'કોઈ બાકી વિનંતી નથી';
+
+  @override
+  String get claimApproved => 'દાવો મંજૂર થયો';
+
+  @override
+  String get claimRejected => 'દાવો નકારાયો';
+
+  @override
+  String approveClaimConfirm(Object name) {
+    return 'આ ખાતાને $name સાથે જોડવું છે? આનાથી તેમને પ્રોફાઇલની માલિકી મળશે.';
+  }
 }

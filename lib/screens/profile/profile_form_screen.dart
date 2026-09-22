@@ -12,6 +12,7 @@ import '../../services/supabase_service.dart';
 import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/duplicate_match_sheet.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
 import '../../widgets/village_picker_field.dart';
 import '../scan/scan_invite_code_screen.dart';
@@ -284,6 +285,80 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         }
         // Invalid/unmatched code: fall through silently to manual profile
         // creation below, same forgiving behavior as the signup screen.
+      }
+    }
+
+    // ── Duplicate detection: a relative may already have created a placeholder
+    // for this same person. Offer to link to it (via an approvable claim
+    // request) instead of silently creating a second row. Only for a brand-new
+    // profile — an edit isn't a new person. Best-effort: a detection failure
+    // must never block a legitimate signup. ──
+    if (widget.isCreatingProfile) {
+      List<DuplicateCandidate> candidates;
+      try {
+        candidates = await SupabaseService.findDuplicateCandidates(
+          firstNameEn: _firstNameEnController.text.trim(),
+          lastNameEn: _lastNameEnController.text.trim(),
+          firstNameGu: _firstNameGuController.text.trim().isEmpty
+              ? null
+              : _firstNameGuController.text.trim(),
+          lastNameGu: _lastNameGuController.text.trim().isEmpty
+              ? null
+              : _lastNameGuController.text.trim(),
+          gender: _selectedGender,
+          dob: _selectedDob,
+          village: _villageController.text.trim().isEmpty
+              ? null
+              : _villageController.text.trim(),
+        );
+      } catch (_) {
+        candidates = [];
+      }
+      if (!mounted) return;
+      if (candidates.isNotEmpty) {
+        final choice = await showDuplicateMatchSheet(
+          context: context,
+          candidates: candidates,
+        );
+        if (!mounted) return;
+        if (choice == null) {
+          // Dismissed — don't create a possible duplicate behind their back.
+          setState(() => _isLoading = false);
+          return;
+        }
+        if (!choice.createNew && choice.selected != null) {
+          final match = choice.selected!.member;
+          if (match.isClaimed) {
+            // Already a real account (likely themselves on another device) —
+            // can't claim it; flag for review rather than duplicate.
+            setState(() => _isLoading = false);
+            showAppSnackBar(
+              context,
+              context.l10n.duplicateProfileFlaggedForReview,
+            );
+            return;
+          }
+          try {
+            await SupabaseService.requestClaim(match.id);
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+            showAppSnackBar(context, context.l10n.claimRequestSent);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.pop(context, true);
+            });
+            return;
+          } catch (e) {
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+            showAppSnackBar(
+              context,
+              friendlyErrorMessage(context, e),
+              isError: true,
+            );
+            return;
+          }
+        }
+        // choice.createNew — fall through to normal creation below.
       }
     }
 
