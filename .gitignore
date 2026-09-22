@@ -76,3 +76,6 @@ Vanshavali-alpha2.apk
 # Firebase service-account keys — NEVER commit (secret credentials)
 *firebase-adminsdk*.json
 vanshavali-*.json
+
+# Generated knowledge graph (regenerated locally by graphify hooks)
+graphify-out/
