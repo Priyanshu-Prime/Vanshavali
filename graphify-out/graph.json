@@ -24079,7 +24079,7 @@
       "node_kind": "heading",
       "norm_label": "backups (no pitr on free tier)",
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L66"
+      "source_location": "L71"
     },
     {
       "id": "docs_autonomous_sprint_needs_owner_action_carried_over_from_earlier_not_part_of_this_sprint_but_still_open",
@@ -24103,17 +24103,17 @@
       "node_kind": "heading",
       "norm_label": "load test params (when you want it run)",
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L71"
+      "source_location": "L76"
     },
     {
-      "id": "docs_autonomous_sprint_needs_owner_action_migrations_to_apply_in_the_sql_editor_loop_writes_the_files_you_run_them",
-      "label": "Migrations to apply in the SQL editor (loop writes the files; you run them)",
+      "id": "docs_autonomous_sprint_needs_owner_action_migrations_to_apply_in_the_sql_editor_loop_writes_the_files_you_run_them_apply_in_order_015_016_017",
+      "label": "Migrations to apply in the SQL editor (loop writes the files; you run them) \u2014 apply IN ORDER 015\u2192016\u2192017",
       "_origin": "ast",
       "community": 88,
       "community_name": "Research findings appended by agents",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "migrations to apply in the sql editor (loop writes the files; you run them)",
+      "norm_label": "migrations to apply in the sql editor (loop writes the files; you run them) \u2014 apply in order 015\u2192016\u2192017",
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
       "source_location": "L50"
     },
@@ -24151,7 +24151,7 @@
       "node_kind": "heading",
       "norm_label": "prod auth rate limits",
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L75"
+      "source_location": "L80"
     },
     {
       "id": "docs_autonomous_sprint_needs_owner_action_research_findings_appended_by_agents",
@@ -24175,7 +24175,7 @@
       "node_kind": "heading",
       "norm_label": "slack log forwarding",
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L59"
+      "source_location": "L64"
     },
     {
       "id": "docs_autonomous_sprint_needs_owner_action_supabase_dashboard",
@@ -24274,14 +24274,14 @@
       "source_location": "L6"
     },
     {
-      "id": "docs_autonomous_sprint_progress_integration_state_2026_09_22_i4_all_green_149_tests",
-      "label": "Integration state (2026-09-22 i4): all green, 149 tests",
+      "id": "docs_autonomous_sprint_progress_integration_state_2026_09_22_i9_all_green_151_tests",
+      "label": "Integration state (2026-09-22 i9): all green, 151 tests",
       "_origin": "ast",
       "community": 89,
       "community_name": "Vanshavali Autonomous Improvement Sprint \u2014 Progress Tracker",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "integration state (2026-09-22 i4): all green, 149 tests",
+      "norm_label": "integration state (2026-09-22 i9): all green, 151 tests",
       "source_file": "docs/autonomous-sprint/PROGRESS.md",
       "source_location": "L86"
     },
@@ -24295,7 +24295,7 @@
       "node_kind": "heading",
       "norm_label": "iteration log",
       "source_file": "docs/autonomous-sprint/PROGRESS.md",
-      "source_location": "L93"
+      "source_location": "L95"
     },
     {
       "id": "docs_autonomous_sprint_progress_migration_numbering_plan_locked_avoids_collisions",
@@ -25921,6 +25921,7 @@
     {
       "id": "ref_k6",
       "label": "ref_k6",
+      "_origin": "semantic",
       "community": 98,
       "community_name": "load.js",
       "external": true,
@@ -31636,7 +31637,7 @@
     },
     {
       "source": "docs_autonomous_sprint_needs_owner_action_research_findings_appended_by_agents",
-      "target": "docs_autonomous_sprint_needs_owner_action_migrations_to_apply_in_the_sql_editor_loop_writes_the_files_you_run_them",
+      "target": "docs_autonomous_sprint_needs_owner_action_migrations_to_apply_in_the_sql_editor_loop_writes_the_files_you_run_them_apply_in_order_015_016_017",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -31653,7 +31654,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L59",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -31664,7 +31665,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L66",
+      "source_location": "L71",
       "weight": 1.0
     },
     {
@@ -31675,7 +31676,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L71",
+      "source_location": "L76",
       "weight": 1.0
     },
     {
@@ -31686,7 +31687,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md",
-      "source_location": "L75",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -31779,7 +31780,7 @@
     },
     {
       "source": "docs_autonomous_sprint_progress_vanshavali_autonomous_improvement_sprint_progress_tracker",
-      "target": "docs_autonomous_sprint_progress_integration_state_2026_09_22_i4_all_green_149_tests",
+      "target": "docs_autonomous_sprint_progress_integration_state_2026_09_22_i9_all_green_151_tests",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -31796,7 +31797,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/autonomous-sprint/PROGRESS.md",
-      "source_location": "L93",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -57779,5 +57780,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "434ff5f2ae86e7e77ef04dfe8d58a0283eebce02"
+  "built_at_commit": "339b4f4acdbad95bc5e2c8b6ff3341e71423e789"
 }

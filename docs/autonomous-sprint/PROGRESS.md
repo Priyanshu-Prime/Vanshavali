@@ -28,19 +28,19 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | 1 | Rate limiting | PR | searchMembers debounce (350ms + stale-drop) DONE on sprint/db-foundation (c152c39). Prod auth limits=OWNER. |
 | 2 | API limits | TODO | Supabase free-tier caps + `max_rows` (config has 1000). Verify + document. Mostly OWNER. |
 | 3 | Spending caps | OWNER | Supabase free plan = no billing; ensure "spend cap" stays ON so it can never auto-upgrade to paid. Dashboard verify. NOT payments. |
-| 4 | Error handling | TODO | Audit all await calls in providers/services; ensure try/catch + friendlyErrorMessage everywhere. Partly done in auth. |
-| 5 | Loading states | PARTIAL | Directory (F-E) done (AppWidgets.loading). Broader audit of other async screens pending in hardening sweep. |
-| 6 | Empty states | PARTIAL | Directory (F-E) done (noMembersYet/noResults). Broader audit pending in hardening sweep. |
-| 7 | Handle failed requests | TODO | Cache-fallback pattern (AuthProvider already does this) applied to all fetches. |
-| 8 | Handle API timeouts | TODO | Add `.timeout()` to network calls (SupabaseService); surface reachability message. |
-| 9 | Prevent duplicate submissions | TODO | Disable submit while in-flight: add-member, profile save, claim, invite. |
+| 4 | Error handling | MERGED | Providers wrap awaits in try/catch + friendlyErrorMessage; added data.* error logging (hardening). |
+| 5 | Loading states | MERGED | Audited all primary screens (tree/home/requests/detail already had them); directory via F-E. |
+| 6 | Empty states | MERGED | AppWidgets.empty on directory/tree/requests; audited others. |
+| 7 | Handle failed requests | MERGED | Cache-fallback on all provider reads (mirrors AuthProvider); timeout degrades to cache. |
+| 8 | Handle API timeouts | MERGED | Central 15s `_t()` seam in SupabaseService on hot reads/mutations + claim RPCs → errorTimeout msg + cache fallback. |
+| 9 | Prevent duplicate submissions | MERGED | `_submitting` re-entry latch on add-member; set-password guard; profile/claim/invite already guarded. |
 | 10 | Prevent duplicate payments | N/A | **No payment system exists in this app.** Nothing to do. Recorded for completeness. |
 | 11 | Optimise DB queries | PR | mig 015 (6248b20) adds pg_trgm; owner must apply. FKs already covered. |
 | 12 | DB indexes | PR | mig 015 DONE on sprint/db-foundation (6248b20): pg_trgm + 6 GIN + dropped dead index. OWNER applies SQL. |
 | 13 | Paginate large results | MERGED | DONE via F-E getMembersPage (range pagination, page 50, infinite scroll). No migration needed. |
 | 14 | Compress files | PR | DONE via F-A: image_picker native resize 512px/q70 → ~30-80KB. In integration. |
 | 15 | Limit upload sizes | PR | DONE via F-A: 300KB client cap + server file_size_limit on bucket (mig 016). In integration. |
-| 16 | Cache repeat requests | TODO | Hive cache exists; extend to search/directory + add TTL where useful. |
+| 16 | Cache repeat requests | DONE | Satisfied by existing Hive cache (members/profiles/tree) + hardening's timeout→cache fallback everywhere. Optional TTL deferred (not needed at 500-user scale). |
 | 17 | Uptime monitoring | PR | ping() RPC DONE in mig 015 (sprint/db-foundation). OWNER: apply 015 + point UptimeRobot at rpc/ping (URGENT vs 7-day auto-pause). |
 | 18 | Error logging + Slack forward | RESEARCHED | error_logs EXISTS (008). Non-admin usually can't make Slack webhook → OWNER (personal workspace/Discord). Build pg_net trigger AFTER owner has webhook. |
 | 19 | Simultaneous-user test | PR | scripts/load-test/load.js (k6, ramps to 50 VUs on ego/connected-tree RPCs). On integration. OWNER runs with REF/ANON/ROOT. |
@@ -83,14 +83,25 @@ All migrations are applied by OWNER in the Supabase SQL editor — the loop writ
 - `sprint/directory-tabs` (off integration) — F-E DONE, MERGED into integration.
 - `sprint/view-tree` (off integration) — F-F DONE, MERGED into integration.
 
-## Integration state (2026-09-22 i9): all green, 151 tests
+## Integration state (2026-09-22 i10): CODE-COMPLETE, all green, 151 tests
 Merged into sprint/integration: quick-ui-wins (F-B,F-H), db-foundation (mig015), profile-pic (F-A,
 mig016), village-picker-levels (F-C,F-D), directory-tabs (F-E), view-tree (F-F), claim-system-v2
-(F-I, mig017) + ops scripts (#19,#20).
-✅ ALL 9 APP FEATURES DONE (F-A..I; F-G was already correct). DONE infra: #1,#11,#12,#13,#14,#15,#17,
-#19,#20; partial #5,#6. REMAINING: hardening sweep #4,#7,#8,#9 + finish #5,#6; #16 cache; #18 Slack
-(owner-blocked); owner: #2,#3. Then final integration→main→ONE release for owner test.
-Migrations for OWNER to apply in order: 015, 016, 017.
+(F-I, mig017), hardening (#4,#5,#6,#7,#8,#9) + ops scripts (#19,#20).
+✅ ALL 9 APP FEATURES DONE. ✅ DONE infra: #1,#4,#5,#6,#7,#8,#9,#11,#12,#13,#14,#15,#17,#19,#20.
+#16 cache = SATISFIED by existing Hive cache + the hardening's cache-fallback-on-timeout everywhere
+(optional TTL enhancement deferred, not needed at this scale). #18 Slack = OWNER-BLOCKED (needs webhook).
+#2,#3 = OWNER (dashboard). Nothing left to implement.
+
+## 🚦 RELEASE READINESS — gated on OWNER applying migrations FIRST (do NOT auto-release before)
+The code is done + tested, but **migrations 015/016/017 must be applied to the DB BEFORE the release
+is installed**, or the app breaks:
+- mig 016 adds `family_members.avatar_url`. The app now WRITES avatar_url on every profile
+  save/create → if the column doesn't exist, profile save FAILS (unknown column). HARD dependency.
+- mig 017 adds find_duplicate_candidates + claim RPCs (dup-check on create, claim flow).
+- mig 015 adds search indexes + ping() (perf + keep-alive).
+So the release sequence is: OWNER applies 015→016→017 in SQL editor → THEN merge integration→main
+(bump version) → CI builds+distributes → owner tests. Releasing before the migrations would ship a
+broken profile-save to testers (violates the "don't ship broken / verify before shipping" rule).
 
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.

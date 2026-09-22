@@ -168,21 +168,21 @@
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations.dart": {
-    "mtime": 1790022988.8229048,
-    "seen": 1790023045.9854124,
-    "ast_hash": "ab1e888c8ea111d1b662390649e69f5e",
+    "mtime": 1790041064.3151093,
+    "seen": 1790041169.3637958,
+    "ast_hash": "15fbe6c3e075bd56fef9b811da8abb04",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_en.dart": {
-    "mtime": 1790022988.7965436,
-    "seen": 1790023045.985414,
-    "ast_hash": "d7ca774412e274e2a327dafabb4c4898",
+    "mtime": 1790041064.297437,
+    "seen": 1790041169.3637974,
+    "ast_hash": "300048bc5332d11c46207ae6ce4aae36",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_gu.dart": {
-    "mtime": 1790022988.8107169,
-    "seen": 1790023045.9854155,
-    "ast_hash": "99cd56dd48b7330bcf85039570e51b23",
+    "mtime": 1790041064.304857,
+    "seen": 1790041169.3637986,
+    "ast_hash": "5556a4f1b69c4d7c0082e94a2c3c9dcb",
     "semantic_hash": ""
   },
   "lib/main.dart": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "lib/screens/family/add_family_member_screen.dart": {
-    "mtime": 1790022096.8576052,
-    "seen": 1790022167.2200553,
-    "ast_hash": "2fdb6779b6433c2bc64d15a3fb326aad",
+    "mtime": 1790041054.5150957,
+    "seen": 1790041169.3638139,
+    "ast_hash": "b9af7c7d1db40b37dd5617f9d2d5ac33",
     "semantic_hash": ""
   },
   "lib/screens/family/family_tree_screen.dart": {
@@ -270,9 +270,9 @@
     "semantic_hash": ""
   },
   "lib/screens/home/home_screen.dart": {
-    "mtime": 1789808605.363729,
-    "seen": 1789925991.8833163,
-    "ast_hash": "52c67ab688b889fb74af665534060d4d",
+    "mtime": 1790041054.5203457,
+    "seen": 1790041169.3638198,
+    "ast_hash": "9172c231038fa2ef99020aead782c4eb",
     "semantic_hash": ""
   },
   "lib/screens/onboarding/onboarding_screen.dart": {
@@ -282,9 +282,9 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_form_screen.dart": {
-    "mtime": 1790022220.2103405,
-    "seen": 1790022295.839307,
-    "ast_hash": "15b51f1c90db14bad62a8ce15fd98ffd",
+    "mtime": 1790041054.5222514,
+    "seen": 1790041169.3638222,
+    "ast_hash": "1ae4ee49219e199fa2ebd958e501e8da",
     "semantic_hash": ""
   },
   "lib/screens/scan/scan_invite_code_screen.dart": {
@@ -324,9 +324,9 @@
     "semantic_hash": ""
   },
   "lib/services/supabase_service.dart": {
-    "mtime": 1790022891.493062,
-    "seen": 1790023045.9854465,
-    "ast_hash": "b5095dbcf299d0a9550cb30bf39c4837",
+    "mtime": 1790041054.5242784,
+    "seen": 1790041169.3638318,
+    "ast_hash": "ef517a92db0885fb77cd655cda9bf20c",
     "semantic_hash": ""
   },
   "lib/services/translation_service.dart": {
@@ -408,9 +408,9 @@
     "semantic_hash": ""
   },
   "macos/Flutter/GeneratedPluginRegistrant.swift": {
-    "mtime": 1790023040.8132203,
-    "seen": 1790023045.985466,
-    "ast_hash": "37e5c76d03f88718af5df82952f20162",
+    "mtime": 1790041164.0224056,
+    "seen": 1790041169.3638513,
+    "ast_hash": "333a5b6973c4e62f84c1fa7252795d9a",
     "semantic_hash": ""
   },
   "macos/RunnerTests/RunnerTests.swift": {
@@ -1158,15 +1158,15 @@
     "semantic_hash": ""
   },
   "docs/autonomous-sprint/NEEDS-OWNER-ACTION.md": {
-    "mtime": 1790021443.3686147,
-    "seen": 1790021458.420359,
-    "ast_hash": "8b0d2ca440df5fa6ed0cd45a4783a58d",
+    "mtime": 1790041146.7378895,
+    "seen": 1790041169.3639805,
+    "ast_hash": "f507a312bcc43e2631c1d9b03d9fc1ac",
     "semantic_hash": ""
   },
   "docs/autonomous-sprint/PROGRESS.md": {
-    "mtime": 1790040154.363511,
-    "seen": 1790040165.2064922,
-    "ast_hash": "260035c7052ef26c642345bef13ced82",
+    "mtime": 1790041158.7642574,
+    "seen": 1790041169.3639817,
+    "ast_hash": "c9a87b23ec29e212778524a5425476d6",
     "semantic_hash": ""
   },
   "docs/autonomous-sprint/research/claim-system.md": {
@@ -1221,6 +1221,30 @@
     "mtime": 1790023297.3181503,
     "seen": 1790037689.5679605,
     "ast_hash": "8b39d15aeeeed093486509b1421d1195",
+    "semantic_hash": ""
+  },
+  "lib/screens/family/requests_screen.dart": {
+    "mtime": 1790041054.5150957,
+    "seen": 1790041169.3638184,
+    "ast_hash": "b3faa30d179d6853e89fc0507955e6fe",
+    "semantic_hash": ""
+  },
+  "lib/widgets/duplicate_match_sheet.dart": {
+    "mtime": 1790041054.5258691,
+    "seen": 1790041169.363841,
+    "ast_hash": "2ec158724ed00d231437f6255a7d5f4a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/017_duplicate_claim.sql": {
+    "mtime": 1790041054.5304382,
+    "seen": 1790041169.3639255,
+    "ast_hash": "a88957ab51f985f4559150e468203e1b",
+    "semantic_hash": ""
+  },
+  "test/widgets/duplicate_match_sheet_test.dart": {
+    "mtime": 1790041054.5324936,
+    "seen": 1790041169.3639522,
+    "ast_hash": "f971894c42c72aefd2ced9c50d944569",
     "semantic_hash": ""
   }
 }

@@ -1164,9 +1164,9 @@
     "semantic_hash": ""
   },
   "docs/autonomous-sprint/PROGRESS.md": {
-    "mtime": 1790023077.8915899,
-    "seen": 1790023085.9042287,
-    "ast_hash": "f0e37c8b5c0db94fc4029b2ce4e2393b",
+    "mtime": 1790040154.363511,
+    "seen": 1790040165.2064922,
+    "ast_hash": "260035c7052ef26c642345bef13ced82",
     "semantic_hash": ""
   },
   "docs/autonomous-sprint/research/claim-system.md": {
@@ -1203,6 +1203,24 @@
     "mtime": 1790022891.4972687,
     "seen": 1790023045.9855237,
     "ast_hash": "b61a5f0d63e97a6847b04c148ddf8ff0",
+    "semantic_hash": ""
+  },
+  "scripts/backup/backup.sh": {
+    "mtime": 1790023287.5622623,
+    "seen": 1790037689.5678341,
+    "ast_hash": "5d67e13ef5d4ab4b1a866be29aa4183d",
+    "semantic_hash": ""
+  },
+  "scripts/load-test/load.js": {
+    "mtime": 1790023273.2329905,
+    "seen": 1790037689.567848,
+    "ast_hash": "41b08bbffcd82d3b7774f5933cecb164",
+    "semantic_hash": ""
+  },
+  "scripts/backup/README.md": {
+    "mtime": 1790023297.3181503,
+    "seen": 1790037689.5679605,
+    "ast_hash": "8b39d15aeeeed093486509b1421d1195",
     "semantic_hash": ""
   }
 }

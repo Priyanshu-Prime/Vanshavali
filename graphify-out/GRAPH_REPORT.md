@@ -1,7 +1,7 @@
 # Graph Report - vanshavali  (2026-09-22)
 
 ## Corpus Check
-- 150 files · ~115,964 words
+- 154 files · ~120,819 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 59 file(s) not represented in the graph (top: (none) 10, .xcconfig 8, .xml 7)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `434ff5f2`
+- Built from commit: `339b4f4a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -431,11 +431,11 @@ Nodes (18): AppConfig, appName, appVersion, cacheDuration, deepLinkHost, deepLin
 
 ### Community 88 - "Research findings appended by agents"
 Cohesion: 0.14
-Nodes (13): Backups, Backups (no PITR on free tier), Carried over from earlier (not part of this sprint but still open), Load test params (when you want it run), Migrations to apply in the SQL editor (loop writes the files; you run them), Owner-Action Items — Vanshavali Sprint, Pending (fill in / do when convenient), Prod auth rate limits (+5 more)
+Nodes (13): Backups, Backups (no PITR on free tier), Carried over from earlier (not part of this sprint but still open), Load test params (when you want it run), Migrations to apply in the SQL editor (loop writes the files; you run them) — apply IN ORDER 015→016→017, Owner-Action Items — Vanshavali Sprint, Pending (fill in / do when convenient), Prod auth rate limits (+5 more)
 
 ### Community 89 - "Vanshavali Autonomous Improvement Sprint — Progress Tracker"
 Cohesion: 0.18
-Nodes (10): A. Infra / hardening requirements, B. App-specific features, Feature branches (integrate near the end onto a release branch, then main → release), Ground rules (do not violate), Integration state (2026-09-22 i4): all green, 149 tests, Iteration log, Migration numbering plan (locked, avoids collisions), Research agents dispatched (iteration 1, 2026-09-22) (+2 more)
+Nodes (10): A. Infra / hardening requirements, B. App-specific features, Feature branches (integrate near the end onto a release branch, then main → release), Ground rules (do not violate), Integration state (2026-09-22 i9): all green, 151 tests, Iteration log, Migration numbering plan (locked, avoids collisions), Research agents dispatched (iteration 1, 2026-09-22) (+2 more)
 
 ### Community 90 - "edit_authorization_test.dart"
 Cohesion: 0.33
@@ -470,7 +470,7 @@ Cohesion: 0.50
 Nodes (3): Size, height, width
 
 ## Knowledge Gaps
-- **1716 isolated node(s):** `Ground rules (do not violate)`, `Status legend`, `A. Infra / hardening requirements`, `B. App-specific features`, `Research agents dispatched (iteration 1, 2026-09-22)` (+1711 more)
+- **1716 isolated node(s):** `Supabase dashboard`, `Third-party signups (all have free tiers)`, `Backups`, `Carried over from earlier (not part of this sprint but still open)`, `🔴 URGENT — free-tier 7-day auto-pause (do this first)` (+1711 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1899 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -478,12 +478,12 @@ Nodes (3): Size, height, width
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `FamilyMember` connect `FamilyMember` to `family_tree_screen.dart`, `add_family_member_screen.dart`, `local_storage_service.dart`, `family_provider.dart`, `family_member.dart`, `auth_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Why does `AuthProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `login_screen.dart`, `add_family_member_screen.dart`, `family_tree_screen.dart`, `set_password_screen.dart`, `auth_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `main.dart`, `signup_screen.dart`, `directory_screen.dart`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
 - **Why does `FamilyProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `family_tree_screen.dart`, `add_family_member_screen.dart`, `family_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `directory_screen.dart`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **What connects `Ground rules (do not violate)`, `Status legend`, `A. Infra / hardening requirements` to the rest of the system?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **What connects `Supabase dashboard`, `Third-party signups (all have free tiers)`, `Backups` to the rest of the system?**
   _1716 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `app_localizations.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.007547169811320755 - nodes in this community are weakly interconnected._

@@ -8,6 +8,14 @@ do them whenever you have time. Nothing here blocks other implementation.
 branches; a single release with everything is cut from `main` only once the whole
 sprint is done and tested — for you to test then. No feature-branch releases.
 
+## 🚦 RELEASE IS READY — but do these 3 migrations FIRST (hard dependency)
+The sprint is code-complete and tested (151 tests green on `sprint/integration`). Before I cut the
+release, **apply migrations in the SQL editor in order: 015 → 016 → 017.** This is not optional:
+the app now writes `avatar_url` on every profile save, so without **mig 016** profile-save will FAIL
+for testers. Once applied, tell me "cut the release" and I'll merge integration→main → CI builds a
+signed APK and distributes to testers for you to test. (I'm deliberately NOT auto-releasing before the
+migrations, to avoid shipping a broken profile-save.)
+
 ## Pending (fill in / do when convenient)
 
 ### Supabase dashboard
