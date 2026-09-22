@@ -10,6 +10,7 @@ import '../family/family_tree_screen.dart';
 import '../family/add_family_member_screen.dart';
 import '../settings/settings_screen.dart';
 import '../directory/directory_screen.dart';
+import '../family/requests_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,7 @@ class _DashboardTab extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          const RequestsAction(),
           if (settingsProvider.hasPendingSyncs)
             IconButton(
               icon: const Icon(Icons.sync),

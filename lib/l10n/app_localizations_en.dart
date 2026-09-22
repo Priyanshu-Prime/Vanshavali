@@ -886,4 +886,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoTooLarge =>
       'That photo is too large. Please choose a smaller one.';
+
+  @override
+  String get duplicateSheetTitle => 'Is this the same person?';
+
+  @override
+  String get duplicateSheetSubtitle =>
+      'We found people already in the tree who look similar. Tap one if it\'s the same person, or create a new entry.';
+
+  @override
+  String get duplicateCreateNewButton => 'No — create new';
+
+  @override
+  String duplicateBornYear(Object year) {
+    return 'Born $year';
+  }
+
+  @override
+  String get claimRequestSent =>
+      'Request sent. A relative can approve it to link you to this profile.';
+
+  @override
+  String get requestsTitle => 'Requests';
+
+  @override
+  String get claimRequestPrompt => 'wants to be linked to this profile.';
+
+  @override
+  String get approve => 'Approve';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get noPendingRequests => 'No pending requests';
+
+  @override
+  String get claimApproved => 'Claim approved';
+
+  @override
+  String get claimRejected => 'Claim rejected';
+
+  @override
+  String approveClaimConfirm(Object name) {
+    return 'Link this account to $name? This gives them ownership of the profile.';
+  }
 }

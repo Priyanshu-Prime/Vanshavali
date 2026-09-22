@@ -265,5 +265,28 @@
   "takePhoto": "ફોટો પાડો",
   "chooseFromGallery": "ગેલેરીમાંથી પસંદ કરો",
   "photoUploadFailed": "ફોટો અપલોડ કરી શકાયો નથી. તમારી બાકીની વિગતો સાચવાઈ ગઈ છે.",
-  "photoTooLarge": "આ ફોટો ઘણો મોટો છે. કૃપા કરીને નાનો ફોટો પસંદ કરો."
+  "photoTooLarge": "આ ફોટો ઘણો મોટો છે. કૃપા કરીને નાનો ફોટો પસંદ કરો.",
+  "duplicateSheetTitle": "શું આ એ જ વ્યક્તિ છે?",
+  "duplicateSheetSubtitle": "વૃક્ષમાં પહેલેથી જ મળતી આવતી વ્યક્તિઓ મળી છે. જો એ જ વ્યક્તિ હોય તો તેના પર ટેપ કરો, અથવા નવી નોંધ બનાવો.",
+  "duplicateCreateNewButton": "ના — નવી બનાવો",
+  "duplicateBornYear": "જન્મ {year}",
+  "@duplicateBornYear": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "claimRequestSent": "વિનંતી મોકલાઈ. કોઈ સંબંધી તેને મંજૂર કરીને તમને આ પ્રોફાઇલ સાથે જોડી શકે છે.",
+  "requestsTitle": "વિનંતીઓ",
+  "claimRequestPrompt": "આ પ્રોફાઇલ સાથે જોડાવા માંગે છે.",
+  "approve": "મંજૂર કરો",
+  "reject": "નકારો",
+  "noPendingRequests": "કોઈ બાકી વિનંતી નથી",
+  "claimApproved": "દાવો મંજૂર થયો",
+  "claimRejected": "દાવો નકારાયો",
+  "approveClaimConfirm": "આ ખાતાને {name} સાથે જોડવું છે? આનાથી તેમને પ્રોફાઇલની માલિકી મળશે.",
+  "@approveClaimConfirm": {
+    "placeholders": {
+      "name": {}
+    }
+  }
 }
