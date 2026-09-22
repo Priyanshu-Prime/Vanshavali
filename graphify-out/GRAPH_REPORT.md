@@ -1,17 +1,17 @@
 # Graph Report - vanshavali  (2026-09-22)
 
 ## Corpus Check
-- 146 files · ~113,767 words
+- 150 files · ~115,964 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 59 file(s) not represented in the graph (top: (none) 10, .xcconfig 8, .xml 7)
 
 ## Summary
-- 2306 nodes · 2839 edges · 103 communities (77 shown, 26 thin omitted)
+- 2320 nodes · 2850 edges · 108 communities (79 shown, 29 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5290963c`
+- Built from commit: `434ff5f2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -47,7 +47,7 @@
 - family_tree_screen_rebuild_test.dart
 - WhatsApp Invite Deep-Link Flow — Shared Contract (v1)
 - Win32Window
-- package:flutter/material.dart
+- directory_screen.dart
 - home_screen.dart
 - win32_window.cpp
 - Research: infra / hardening (tasks 1-3, 11-13, 17-20)
@@ -60,7 +60,7 @@
 - package.json
 - rls_behavior_test.mjs
 - utils.cpp
-- package:provider/provider.dart
+- package:flutter/material.dart
 - supabase_service_auth_test.dart
 - invite_code_parser.dart
 - _fix_env_mixup.mjs
@@ -105,18 +105,23 @@
 - Research findings appended by agents
 - Vanshavali Autonomous Improvement Sprint — Progress Tracker
 - edit_authorization_test.dart
-- @visibleForTesting
+- Backup & restore (Vanshavali, Supabase free tier)
 - Research: node profile-pic upload (F-A, #14 compress, #15 limit)
 - _GraphViewHost
 - _InviteSheet
 - village_picker_field.dart
 - State
-- invite_code_parser_test.dart
-- LocalizationsExt
-- BilingualTextField
+- @visibleForTesting
+- load.js
+- deep_link_service_test.dart
 - Size
 - _OtherParentPicker
 - plugin_registry
+- transliteration_service_test.dart
+- invite_code_parser_test.dart
+- LocalizationsExt
+- BilingualTextField
+- backup.sh
 
 ## God Nodes (most connected - your core abstractions)
 1. `AuthProvider` - 51 edges
@@ -125,27 +130,27 @@
 4. `Win32Window` - 24 edges
 5. `MessageHandler` - 12 edges
 6. `FamilyMember` - 11 edges
-7. `FlutterWindow` - 10 edges
-8. `WhatsApp Invite Deep-Link Flow — Shared Contract (v1)` - 10 edges
-9. `Create` - 10 edges
-10. `Research: infra / hardening (tasks 1-3, 11-13, 17-20)` - 10 edges
+7. `Vanshavali Autonomous Improvement Sprint — Progress Tracker` - 10 edges
+8. `FlutterWindow` - 10 edges
+9. `WhatsApp Invite Deep-Link Flow — Shared Contract (v1)` - 10 edges
+10. `Create` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `OnCreate` --calls--> `RegisterPlugins()`  [INFERRED]
-  windows/runner/flutter_window.h → windows/flutter/generated_plugin_registrant.cc
 - `Win32Window::Win32Window()` --calls--> `Destroy`  [INFERRED]
   windows/runner/win32_window.cpp → windows/runner/win32_window.h
 - `wWinMain()` --calls--> `CreateAndAttachConsole()`  [INFERRED]
   windows/runner/main.cpp → windows/runner/utils.cpp
+- `OnCreate` --calls--> `RegisterPlugins()`  [INFERRED]
+  windows/runner/flutter_window.h → windows/flutter/generated_plugin_registrant.cc
+- `build` --references--> `AuthProvider`  [EXTRACTED]
+  lib/main.dart → lib/providers/auth_provider.dart
 - `_sendMagicLink` --references--> `AuthProvider`  [EXTRACTED]
-  lib/screens/auth/login_screen.dart → lib/providers/auth_provider.dart
-- `_showForgotPasswordDialog` --references--> `AuthProvider`  [EXTRACTED]
   lib/screens/auth/login_screen.dart → lib/providers/auth_provider.dart
 
 ## Import Cycles
 - None detected.
 
-## Communities (103 total, 26 thin omitted)
+## Communities (108 total, 29 thin omitted)
 
 ### Community 0 - "app_localizations.dart"
 Cohesion: 0.01
@@ -180,12 +185,12 @@ Cohesion: 0.04
 Nodes (46): dart:math, addSpouseLink, authStateChanges, canEditMember, claimProfile, claimProfileByCode, client, completeSignInFromUrl (+38 more)
 
 ### Community 8 - "onboarding_screen.dart"
-Cohesion: 0.09
-Nodes (22): Color?, build, _buildPage, color, _completeOnboarding, createState, currentCode, _currentPage (+14 more)
+Cohesion: 0.08
+Nodes (24): Color?, build, _buildPage, color, _completeOnboarding, createState, currentCode, _currentPage (+16 more)
 
 ### Community 9 - "family_provider.dart"
 Cohesion: 0.05
-Nodes (37): FamilyMember get, _ancestorChain, _ancestorChainForId, _centerMember, clearError, clearSearch, createFamilyMember, deleteFamilyMember (+29 more)
+Nodes (37): _ancestorChain, _ancestorChainForId, _centerMember, clearError, clearSearch, createFamilyMember, deleteFamilyMember, _egoNetwork (+29 more)
 
 ### Community 10 - "gujarat_places_service.dart"
 Cohesion: 0.05
@@ -197,7 +202,7 @@ Nodes (40): hashCode, operator, read, typeId, write, int get, authUserId, copyWi
 
 ### Community 12 - "auth_provider.dart"
 Cohesion: 0.05
-Nodes (40): AuthStatus get, acknowledgeMergeConflict, _authenticatedWithPassword, AuthStatus, _authSubscription, claimProfile, claimProfileByCode, clearError (+32 more)
+Nodes (39): AuthStatus get, acknowledgeMergeConflict, _authenticatedWithPassword, AuthStatus, _authSubscription, claimProfile, claimProfileByCode, clearError (+31 more)
 
 ### Community 13 - "GeneratedPluginRegistrant.swift"
 Cohesion: 0.06
@@ -208,12 +213,12 @@ Cohesion: 0.11
 Nodes (18): dart:async, _appLinks, buildInviteUrl, DeepLinkService, dispose, generateInviteText, initialize, isAuthCallback (+10 more)
 
 ### Community 15 - "package:flutter_test/flutter_test.dart"
-Cohesion: 0.09
-Nodes (26): harness.dart, main, main, _father, main, _self, main, main (+18 more)
+Cohesion: 0.10
+Nodes (24): harness.dart, main, main, _father, main, _self, main, main (+16 more)
 
 ### Community 16 - "AuthProvider"
-Cohesion: 0.10
-Nodes (34): ChangeNotifier, build, _handleDeepLink, _routeToSignupWithCode, AuthProvider, FamilyProvider, SettingsProvider, build (+26 more)
+Cohesion: 0.11
+Nodes (33): ChangeNotifier, _handleDeepLink, _routeToSignupWithCode, AuthProvider, FamilyProvider, SettingsProvider, build, build (+25 more)
 
 ### Community 17 - "profile_form_screen.dart"
 Cohesion: 0.06
@@ -229,12 +234,12 @@ Nodes (28): app_spacing.dart, AppTheme, darkBackground, darkSurface, darkText, d
 
 ### Community 20 - "member_detail_screen.dart"
 Cohesion: 0.10
-Nodes (21): add_family_member_screen.dart, _canEdit, children, createState, _ensureInviteCode, icon, _inviteCode, label (+13 more)
+Nodes (20): add_family_member_screen.dart, FamilyMember get, _canEdit, children, createState, _ensureInviteCode, icon, _inviteCode (+12 more)
 
 ### Community 21 - "package:vanshavali/models/family_member.dart"
 Cohesion: 0.10
-Nodes (18): package:graphview/GraphView.dart, package:vanshavali/models/family_member.dart, package:vanshavali/screens/family/family_tree_screen.dart, String? motherId,
-  String, main, firstName, gender, main (+10 more)
+Nodes (19): package:graphview/GraphView.dart, package:vanshavali/models/family_member.dart, package:vanshavali/providers/family_provider.dart, package:vanshavali/screens/family/family_tree_screen.dart, String? motherId,
+  String, main, firstName, gender (+11 more)
 
 ### Community 22 - "harness.dart"
 Cohesion: 0.07
@@ -242,15 +247,15 @@ Nodes (26): Duration, bootApp, clearAll, end, ensureVisible, enterInField, enter
 
 ### Community 23 - "main.dart"
 Cohesion: 0.09
-Nodes (22): ../l10n/app_localizations.dart, _checkOnboarding, _completeAuthFromUrl, createState, dispose, _initDeepLinks, initState, main (+14 more)
+Nodes (23): ../l10n/app_localizations.dart, build, _checkOnboarding, _completeAuthFromUrl, createState, dispose, _initDeepLinks, initState (+15 more)
 
 ### Community 24 - "settings_provider.dart"
 Cohesion: 0.08
 Nodes (23): bool get, DateTime?, DateTime? get, fullSync, _hasPendingSyncs, isDarkMode, _isOffline, _lastSyncTime (+15 more)
 
 ### Community 25 - "gujarat_places_service_test.dart"
-Cohesion: 0.24
-Nodes (5): package:vanshavali/services/gujarat_places_service.dart, package:vanshavali/services/transliteration_service.dart, _fixture, main, main
+Cohesion: 0.50
+Nodes (3): package:vanshavali/services/gujarat_places_service.dart, _fixture, main
 
 ### Community 26 - "signup_screen.dart"
 Cohesion: 0.10
@@ -272,9 +277,9 @@ Nodes (18): App custom scheme (what the page's "Open in app" button fires), Auto
 Cohesion: 0.16
 Nodes (18): FlutterViewController, RECT, unique_ptr, FlutterWindow, flutter_controller_, OnCreate, OnDestroy, project_ (+10 more)
 
-### Community 31 - "package:flutter/material.dart"
-Cohesion: 0.11
-Nodes (18): ../config/app_config.dart, ../family/member_detail_screen.dart, main, createState, dispose, _ensureLoaded, _loadedForId, _query (+10 more)
+### Community 31 - "directory_screen.dart"
+Cohesion: 0.13
+Nodes (16): ../config/app_config.dart, ../family/member_detail_screen.dart, createState, dispose, _ensureLoaded, _loadedForId, _query, _searchController (+8 more)
 
 ### Community 32 - "home_screen.dart"
 Cohesion: 0.11
@@ -324,9 +329,9 @@ Nodes (12): RFC-2606, actorClientFor(), admin, createTestUser(), finding(), find
 Cohesion: 0.19
 Nodes (12): flutter_windows, _In_, _In_opt_, io, iostream, stdio, wWinMain(), string (+4 more)
 
-### Community 44 - "package:provider/provider.dart"
+### Community 44 - "package:flutter/material.dart"
 Cohesion: 0.10
-Nodes (21): package:flutter_localizations/flutter_localizations.dart, package:provider/provider.dart, package:vanshavali/l10n/app_localizations.dart, package:vanshavali/providers/auth_provider.dart, package:vanshavali/providers/family_provider.dart, package:vanshavali/providers/settings_provider.dart, package:vanshavali/screens/auth/signup_screen.dart, package:vanshavali/widgets/common_widgets.dart (+13 more)
+Nodes (22): main, package:flutter_localizations/flutter_localizations.dart, package:flutter/material.dart, package:provider/provider.dart, package:vanshavali/l10n/app_localizations.dart, package:vanshavali/providers/auth_provider.dart, package:vanshavali/providers/settings_provider.dart, package:vanshavali/screens/auth/signup_screen.dart (+14 more)
 
 ### Community 45 - "supabase_service_auth_test.dart"
 Cohesion: 0.18
@@ -429,16 +434,16 @@ Cohesion: 0.14
 Nodes (13): Backups, Backups (no PITR on free tier), Carried over from earlier (not part of this sprint but still open), Load test params (when you want it run), Migrations to apply in the SQL editor (loop writes the files; you run them), Owner-Action Items — Vanshavali Sprint, Pending (fill in / do when convenient), Prod auth rate limits (+5 more)
 
 ### Community 89 - "Vanshavali Autonomous Improvement Sprint — Progress Tracker"
-Cohesion: 0.20
-Nodes (9): A. Infra / hardening requirements, B. App-specific features, Feature branches (integrate near the end onto a release branch, then main → release), Ground rules (do not violate), Iteration log, Migration numbering plan (locked, avoids collisions), Research agents dispatched (iteration 1, 2026-09-22), Status legend (+1 more)
+Cohesion: 0.18
+Nodes (10): A. Infra / hardening requirements, B. App-specific features, Feature branches (integrate near the end onto a release branch, then main → release), Ground rules (do not violate), Integration state (2026-09-22 i4): all green, 149 tests, Iteration log, Migration numbering plan (locked, avoids collisions), Research agents dispatched (iteration 1, 2026-09-22) (+2 more)
 
 ### Community 90 - "edit_authorization_test.dart"
 Cohesion: 0.33
 Nodes (5): _father, _grandfather, main, _self, _unrelated
 
-### Community 91 - "@visibleForTesting"
-Cohesion: 0.40
-Nodes (5): @visibleForTesting, debugSetAncestorChainForTesting, debugSetFullTreeForTesting, debugSetNetworkForTesting, debugNotifyForTesting
+### Community 91 - "Backup & restore (Vanshavali, Supabase free tier)"
+Cohesion: 0.33
+Nodes (5): Backup, Backup & restore (Vanshavali, Supabase free tier), Owner action, Restore (into a fresh / recovery project), Restore-test drill (do once to prove backups work)
 
 ### Community 92 - "Research: node profile-pic upload (F-A, #14 compress, #15 limit)"
 Cohesion: 0.33
@@ -452,26 +457,34 @@ Nodes (20): common_widgets.dart, build, createState, dispose, _district, initSta
 Cohesion: 0.20
 Nodes (14): AppNavigator, _AppNavigatorState, DirectoryScreen, _DirectoryScreenState, AddFamilyMemberScreen, _AddFamilyMemberScreenState, FamilyTreeScreen, _FamilyTreeScreenState (+6 more)
 
+### Community 97 - "@visibleForTesting"
+Cohesion: 0.40
+Nodes (5): @visibleForTesting, debugSetAncestorChainForTesting, debugSetFullTreeForTesting, debugSetNetworkForTesting, debugNotifyForTesting
+
+### Community 98 - "load.js"
+Cohesion: 0.40
+Nodes (4): ref_k6, anonHeaders, authHeaders, options
+
 ### Community 100 - "Size"
 Cohesion: 0.50
 Nodes (3): Size, height, width
 
 ## Knowledge Gaps
-- **1707 isolated node(s):** `Ground rules (do not violate)`, `Status legend`, `A. Infra / hardening requirements`, `B. App-specific features`, `Research agents dispatched (iteration 1, 2026-09-22)` (+1702 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1887 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1716 isolated node(s):** `Ground rules (do not violate)`, `Status legend`, `A. Infra / hardening requirements`, `B. App-specific features`, `Research agents dispatched (iteration 1, 2026-09-22)` (+1711 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1899 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `FamilyMember` connect `FamilyMember` to `family_tree_screen.dart`, `add_family_member_screen.dart`, `local_storage_service.dart`, `family_provider.dart`, `family_member.dart`, `auth_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`?**
-  _High betweenness centrality (0.040) - this node is a cross-community bridge._
-- **Why does `AuthProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `login_screen.dart`, `add_family_member_screen.dart`, `family_tree_screen.dart`, `set_password_screen.dart`, `auth_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `main.dart`, `signup_screen.dart`, `package:flutter/material.dart`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **Why does `FamilyProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `family_tree_screen.dart`, `add_family_member_screen.dart`, `family_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `package:flutter/material.dart`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
+- **Why does `AuthProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `login_screen.dart`, `add_family_member_screen.dart`, `family_tree_screen.dart`, `set_password_screen.dart`, `auth_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `main.dart`, `signup_screen.dart`, `directory_screen.dart`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `FamilyProvider` connect `AuthProvider` to `State`, `home_screen.dart`, `family_tree_screen.dart`, `add_family_member_screen.dart`, `family_provider.dart`, `profile_form_screen.dart`, `member_detail_screen.dart`, `directory_screen.dart`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `Ground rules (do not violate)`, `Status legend`, `A. Infra / hardening requirements` to the rest of the system?**
-  _1707 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1716 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `app_localizations.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.007547169811320755 - nodes in this community are weakly interconnected._
 - **Should `app_localizations_gu.dart` be split into smaller, more focused modules?**

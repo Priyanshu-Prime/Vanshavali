@@ -47,14 +47,19 @@ monitor, 5-min interval, that doubles as keep-alive + downtime alert:
 4. Interval 5 min; add your email as alert contact. Save.
 (The loop will also add a tiny `ping()` RPC as an even cleaner target — either works.)
 
-### Migrations to apply in the SQL editor (loop writes the files; you run them)
+### Migrations to apply in the SQL editor (loop writes the files; you run them) — apply IN ORDER 015→016→017
 - **015** (search + keep-alive): pg_trgm + GIN indexes + drop dead name index + `ping()`.
 - **016** (profile pics): `avatar_url` column + `avatars` storage bucket + policies. If the
   `storage.buckets` insert errors on `file_size_limit`/`allowed_mime_types`, create the bucket
   `avatars` (Public, 300KB, image/jpeg,png,webp) + its 4 policies in Dashboard → Storage instead.
-- **017** (duplicate/claim): matching RPC + merge_requests extension + claim RPCs.
-  ⚠ **Your decision:** the claim queue reuses `merge_requests` (a `kind` column). If you'd rather it
-  be a separate `claim_requests` table, say so before 017 is built.
+- **017** (duplicate/claim): `find_duplicate_candidates` RPC + `merge_requests` extension + claim RPCs.
+  BUILT (reuses merge_requests via a `kind` column, the least-schema option). A SQL self-check query is
+  in the file's trailing comment (known dup scores ≥0.72; gender mismatch excluded).
+  ⚠ **Your decision (F-I approver rule):** approving a claim currently reuses `can_edit_family_member`,
+  which migration 012 loosened to "any registered member can edit/approve for an unclaimed target" —
+  so today ANY member can approve a claim request (matches the app-wide trust model). If you want
+  stricter "only a claimed ±1 relative approves", that needs a dedicated kinship check — say so and
+  I'll tighten it. `approve/reject` already block self-approval (approver ≠ requester).
 
 ### Slack log forwarding
 Non-admins usually **cannot** create a Slack incoming webhook (needs workspace app-install approval).

@@ -58,7 +58,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | F-F | "View tree" from each profile | MERGED | "View family tree" button → FamilyTreeScreen(focusMember) → loadEgoNetwork (reuses ego-center). MERGED (149 tests). |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
 | F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
-| F-I | Duplicate-detection → claim recommendation | IN-PROGRESS | Retry #2 → sprint/claim-system-v2. Design in research/claim-system.md. mig 017. LESSON: never give agents `git -B`/force/reset — trips a destructive-op permission prompt that HANGS a background agent (that's what stalled retry #1 for 29min, not rate limits). Use plain `-b` + new branch name. |
+| F-I | Duplicate-detection → claim recommendation | MERGED | DONE, MERGED into integration (151 tests). mig 017 (find_duplicate_candidates + merge_requests ext + claim RPCs), dup-match sheet, requests inbox+badge, both fire points. OWNER: apply mig 017 + approver-eligibility decision (see NEEDS-OWNER-ACTION). LESSON: never give agents `git -B`/force/reset — hangs a background agent on a permission prompt; use plain `-b`+new name. |
 
 ---
 
@@ -83,12 +83,14 @@ All migrations are applied by OWNER in the Supabase SQL editor — the loop writ
 - `sprint/directory-tabs` (off integration) — F-E DONE, MERGED into integration.
 - `sprint/view-tree` (off integration) — F-F DONE, MERGED into integration.
 
-## Integration state (2026-09-22 i4): all green, 149 tests
-Merged into sprint/integration: quick-ui-wins (F-B,F-H), db-foundation (mig015, ping, debounce),
-profile-pic (F-A, mig016), village-picker-levels (F-C,F-D), directory-tabs (F-E), view-tree (F-F).
-DONE app features: F-A,B,C,D,E,F,H (+ F-G already-correct). DONE infra: #1,#11,#12,#13,#14,#15,#17,
-partial #5,#6. REMAINING: F-I (claim, last); hardening sweep #4,#7,#8,#9; #16 cache; #19 k6; #20 backup
-script; #18 Slack (owner-blocked); owner: #2,#3. Then final integration→main→ONE release for owner test.
+## Integration state (2026-09-22 i9): all green, 151 tests
+Merged into sprint/integration: quick-ui-wins (F-B,F-H), db-foundation (mig015), profile-pic (F-A,
+mig016), village-picker-levels (F-C,F-D), directory-tabs (F-E), view-tree (F-F), claim-system-v2
+(F-I, mig017) + ops scripts (#19,#20).
+✅ ALL 9 APP FEATURES DONE (F-A..I; F-G was already correct). DONE infra: #1,#11,#12,#13,#14,#15,#17,
+#19,#20; partial #5,#6. REMAINING: hardening sweep #4,#7,#8,#9 + finish #5,#6; #16 cache; #18 Slack
+(owner-blocked); owner: #2,#3. Then final integration→main→ONE release for owner test.
+Migrations for OWNER to apply in order: 015, 016, 017.
 
 ## Iteration log
 - **2026-09-22 i1:** Set up loop (cron 1e6d184c), created tracker + owner-action doc, triaged all 30 items (marked payments N/A), dispatched 3 research agents (R-infra, R-media, R-claim). Next: collect research → begin implementation on the quickest wins (F-B, F-G, F-H) while research lands.
