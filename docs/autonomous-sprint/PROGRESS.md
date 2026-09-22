@@ -43,8 +43,8 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | 16 | Cache repeat requests | TODO | Hive cache exists; extend to search/directory + add TTL where useful. |
 | 17 | Uptime monitoring | PR | ping() RPC DONE in mig 015 (sprint/db-foundation). OWNER: apply 015 + point UptimeRobot at rpc/ping (URGENT vs 7-day auto-pause). |
 | 18 | Error logging + Slack forward | RESEARCHED | error_logs EXISTS (008). Non-admin usually can't make Slack webhook → OWNER (personal workspace/Discord). Build pg_net trigger AFTER owner has webhook. |
-| 19 | Simultaneous-user test | TODO | Write a load-test script (k6/dart) hitting read RPCs; run vs local Supabase. |
-| 20 | Backup / restore test | RESEARCHED | No PITR on free. `supabase db dump`/pg_dump via SESSION POOLER (IPv4). Script+doc TODO. Creds=OWNER. |
+| 19 | Simultaneous-user test | PR | scripts/load-test/load.js (k6, ramps to 50 VUs on ego/connected-tree RPCs). On integration. OWNER runs with REF/ANON/ROOT. |
+| 20 | Backup / restore test | PR | scripts/backup/{backup.sh,README.md} (pg_dump session-pooler + restore drill). On integration. Creds+run=OWNER. |
 
 ## B. App-specific features
 
@@ -58,7 +58,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | F-F | "View tree" from each profile | MERGED | "View family tree" button → FamilyTreeScreen(focusMember) → loadEgoNetwork (reuses ego-center). MERGED (149 tests). |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
 | F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
-| F-I | Duplicate-detection → claim recommendation | IN-PROGRESS | Agent → sprint/claim-system (off integration). Full design in research/claim-system.md. mig 017. |
+| F-I | Duplicate-detection → claim recommendation | RETRY | Agent FAILED on session rate-limit (429, resets ~6:10am IST) before committing. Design ready in research/claim-system.md. RETRY when limit resets (fewer parallel agents). mig 017. |
 
 ---
 
