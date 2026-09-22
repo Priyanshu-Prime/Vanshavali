@@ -58,7 +58,7 @@ next highest-value unchecked task, update status here. Started 2026-09-22.
 | F-F | "View tree" from each profile | MERGED | "View family tree" button → FamilyTreeScreen(focusMember) → loadEgoNetwork (reuses ego-center). MERGED (149 tests). |
 | F-G | Tapping relatives opens profile | VERIFY | ALREADY CORRECT in code (member_detail_screen: existing relatives tap→profile; add only when absent). User's bug likely an OLD build. Confirm on-device on new build. |
 | F-H | Village subtext under node names | PR | DONE on sprint/quick-ui-wins (182d3a2). Muted subtext in _PersonBox, guarded, overflow test passes. |
-| F-I | Duplicate-detection → claim recommendation | RETRY | Agent FAILED on session rate-limit (429, resets ~6:10am IST) before committing. Design ready in research/claim-system.md. RETRY when limit resets (fewer parallel agents). mig 017. |
+| F-I | Duplicate-detection → claim recommendation | IN-PROGRESS | Retry (single serial agent) → sprint/claim-system. Design in research/claim-system.md. mig 017. Commits per phase so nothing is lost. |
 
 ---
 
