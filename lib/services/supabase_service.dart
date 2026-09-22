@@ -19,6 +19,20 @@ class SupabaseService {
   static SupabaseClient get client =>
       debugClientOverride ?? Supabase.instance.client;
 
+  /// Hard ceiling on any single network round-trip. On this app's target
+  /// rural 2G connections the radio can be "up" while throughput stalls, so a
+  /// request otherwise hangs forever and the UI spins with no way out. Capping
+  /// it makes a stall surface as a TimeoutException instead — friendlyErrorMessage
+  /// already maps that to the "check your connection / took too long" message,
+  /// and every provider fetch path already falls back to the Hive cache on a
+  /// thrown error, so a timeout degrades to cached data exactly like offline.
+  static const Duration networkTimeout = Duration(seconds: 15);
+
+  /// Wraps a Supabase call with [networkTimeout]. Postgrest query builders
+  /// implement Future, so both `.rpc(...)` futures and `.from(...).select()`
+  /// builder chains can be passed straight in.
+  static Future<T> _t<T>(Future<T> op) => op.timeout(networkTimeout);
+
   static User? get currentUser => client.auth.currentUser;
   
   static bool get isAuthenticated => currentUser != null;
@@ -117,36 +131,36 @@ class SupabaseService {
   static Future<FamilyMember?> getCurrentUserProfile() async {
     if (currentUser == null) return null;
     
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .select()
         .eq('auth_user_id', currentUser!.id)
-        .maybeSingle();
-    
+        .maybeSingle());
+
     if (response == null) return null;
     return FamilyMember.fromJson(response);
   }
 
   /// Create a new family member
   static Future<FamilyMember> createFamilyMember(FamilyMember member) async {
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .insert(member.toJson())
         .select()
-        .single();
-    
+        .single());
+
     return FamilyMember.fromJson(response);
   }
 
   /// Update a family member
   static Future<FamilyMember> updateFamilyMember(FamilyMember member) async {
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .update(member.toJson())
         .eq('id', member.id)
         .select()
-        .single();
-    
+        .single());
+
     return FamilyMember.fromJson(response);
   }
 
@@ -170,12 +184,12 @@ class SupabaseService {
 
   /// Get family member by ID
   static Future<FamilyMember?> getFamilyMemberById(String id) async {
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .select()
         .eq('id', id)
-        .maybeSingle();
-    
+        .maybeSingle());
+
     if (response == null) return null;
     return FamilyMember.fromJson(response);
   }
@@ -185,10 +199,10 @@ class SupabaseService {
   /// logic (including multi-spouse traversal) lives in one place, server-side,
   /// instead of being duplicated/drifting between SQL and Dart.
   static Future<List<FamilyMember>> getEgoCentricNetwork(String memberId) async {
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'get_ego_network',
       params: {'center_member_id': memberId},
-    );
+    ));
 
     return (response as List)
         .map((json) => FamilyMember.fromJson(json as Map<String, dynamic>))
@@ -206,13 +220,13 @@ class SupabaseService {
     String memberId, {
     int maxGenerations = 6,
   }) async {
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'get_ancestor_chain',
       params: {
         'center_member_id': memberId,
         'max_generations': maxGenerations,
       },
-    );
+    ));
 
     return (response as List)
         .map((json) => FamilyMember.fromJson(json as Map<String, dynamic>))
@@ -260,11 +274,11 @@ class SupabaseService {
 
   /// Search family members
   static Future<List<FamilyMember>> searchFamilyMembers(String query) async {
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .select()
         .or('first_name_en.ilike.%$query%,last_name_en.ilike.%$query%,first_name_gu.ilike.%$query%,last_name_gu.ilike.%$query%')
-        .limit(AppConfig.pageSize);
+        .limit(AppConfig.pageSize));
 
     return (response as List)
         .map((json) => FamilyMember.fromJson(json))
@@ -280,12 +294,12 @@ class SupabaseService {
     int limit = 50,
     int offset = 0,
   }) async {
-    final response = await client
+    final response = await _t(client
         .from('family_members')
         .select()
         .order('last_name_en')
         .order('id')
-        .range(offset, offset + limit - 1);
+        .range(offset, offset + limit - 1));
 
     return (response as List)
         .map((json) => FamilyMember.fromJson(json))
@@ -336,10 +350,10 @@ class SupabaseService {
     if (memberIds.isEmpty) return [];
 
     final idList = memberIds.join(',');
-    final response = await client
+    final response = await _t(client
         .from('spouse_relationships')
         .select('member_id, spouse_id')
-        .or('member_id.in.($idList),spouse_id.in.($idList)');
+        .or('member_id.in.($idList),spouse_id.in.($idList)'));
 
     return (response as List)
         .map((json) => SpouseLink.fromJson(json as Map<String, dynamic>))
@@ -394,10 +408,10 @@ class SupabaseService {
   static Future<FamilyMember?> claimProfile(String memberId) async {
     if (currentUser == null) return null;
 
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'claim_profile',
       params: {'profile_id': memberId},
-    );
+    ));
 
     if (response == null) return null;
     return FamilyMember.fromJson(response as Map<String, dynamic>);
@@ -412,7 +426,7 @@ class SupabaseService {
   /// not the routine per-node navigation.
   static Future<List<FamilyMember>> getConnectedTree(String rootId) async {
     final response =
-        await client.rpc('get_connected_tree', params: {'root': rootId});
+        await _t(client.rpc('get_connected_tree', params: {'root': rootId}));
     return (response as List)
         .map((json) => FamilyMember.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -599,10 +613,10 @@ class SupabaseService {
   /// nothing for a logged-out viewer. The RPC bypasses RLS/grants like the
   /// claim RPCs do, and is explicitly granted to `anon` for this reason.
   static Future<FamilyMember?> getMemberByInviteCode(String code) async {
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'get_member_by_invite_code',
       params: {'code': code.toUpperCase()},
-    );
+    ));
 
     if (response == null) return null;
     return FamilyMember.fromJson(response as Map<String, dynamic>);
@@ -615,10 +629,10 @@ class SupabaseService {
   static Future<FamilyMember?> claimProfileByCode(String code) async {
     if (currentUser == null) return null;
 
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'claim_profile_by_code',
       params: {'code': code.toUpperCase()},
-    );
+    ));
 
     if (response == null) return null;
     return FamilyMember.fromJson(response as Map<String, dynamic>);
@@ -684,7 +698,7 @@ class SupabaseService {
     String? excludeId,
     int limit = 10,
   }) async {
-    final response = await client.rpc(
+    final response = await _t(client.rpc(
       'find_duplicate_candidates',
       params: {
         'p_first_name_en': firstNameEn,
@@ -699,7 +713,7 @@ class SupabaseService {
         'p_exclude_id': excludeId,
         'p_limit': limit,
       },
-    );
+    ));
     if (response == null) return [];
     return (response as List)
         .map((row) => DuplicateCandidate.fromJson(row as Map<String, dynamic>))
@@ -710,7 +724,7 @@ class SupabaseService {
   /// the `request_claim` RPC (migration 017). The caller must have no profile
   /// yet; an eligible relative approves it later. Idempotent server-side.
   static Future<void> requestClaim(String targetProfileId) async {
-    await client.rpc('request_claim', params: {'target': targetProfileId});
+    await _t(client.rpc('request_claim', params: {'target': targetProfileId}));
   }
 
   /// Approves a pending claim request (sets the target's auth_user_id to the
