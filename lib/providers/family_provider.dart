@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/family_member.dart';
 import '../services/supabase_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/error_reporting_service.dart';
 
 class FamilyProvider extends ChangeNotifier {
   List<FamilyMember> _egoNetwork = [];
@@ -138,6 +139,8 @@ class FamilyProvider extends ChangeNotifier {
       _centerMember = _egoNetwork.where((m) => m.id == memberId).firstOrNull;
     } catch (e) {
       debugPrint('Error in loadEgoNetwork: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.ego_network');
       _error = e.toString();
       // Local fallback — stays scoped to this neighborhood, same as above,
       // not a dump of the entire local cache.
@@ -190,6 +193,8 @@ class FamilyProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error in loadFullTree: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.full_tree');
       _error = e.toString();
       // The fallback itself can throw if local storage isn't available (e.g.
       // in a widget test with no Hive) — never let loadFullTree propagate.
@@ -457,6 +462,8 @@ class FamilyProvider extends ChangeNotifier {
       return newMember;
     } catch (e) {
       debugPrint('Error in createFamilyMember: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.create_member');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -492,6 +499,8 @@ class FamilyProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in updateFamilyMember: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.update_member');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -596,6 +605,8 @@ class FamilyProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in linkFamilyMember: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.link_member');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -627,6 +638,8 @@ class FamilyProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in deleteFamilyMember: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.delete_member');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -659,6 +672,8 @@ class FamilyProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in removeSpouse: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.remove_spouse');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();

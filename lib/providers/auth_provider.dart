@@ -453,6 +453,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in createProfile: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.create_profile');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -479,6 +481,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error in updateProfile: $e');
+      ErrorReportingService.reportCaught(e, StackTrace.current,
+          context: 'data.update_profile');
       _error = e.toString();
       notifyListeners();
       return false;
