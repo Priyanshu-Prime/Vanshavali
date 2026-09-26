@@ -3,6 +3,10 @@
 **This file is the loop's memory.** Each 10-minute iteration: read this, advance the
 next highest-value unchecked task, update status here. Started 2026-09-22.
 
+> Current-state handoff for a fresh session: `docs/claude_handoff/` (start at its README).
+> This file is the detailed per-task ledger behind that handoff. Shipped as
+> `0.1.0-alpha.2+17`; open owner items in `NEEDS-OWNER-ACTION.md`.
+
 ## Ground rules (do not violate)
 - **Release only from main; never from a feature branch.** Merge to main only when a
   feature is complete AND tested, then release. (See memory: release-only-from-main.)

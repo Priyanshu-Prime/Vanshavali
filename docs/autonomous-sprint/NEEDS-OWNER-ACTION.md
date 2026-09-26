@@ -4,6 +4,11 @@ Things the autonomous loop **cannot** do itself (need your dashboard access, an
 account signup, a credential, or a decision). The loop keeps going without these;
 do them whenever you have time. Nothing here blocks other implementation.
 
+> A future coding agent: these open items are also summarized in
+> `docs/claude_handoff/05_next_steps.md`. Current-state handoff: `docs/claude_handoff/`.
+> NOTE: the "release is ready — apply 015/016/017 first" banner below is now DONE — those
+> migrations are applied and `0.1.0-alpha.2+17` is released. The Pending/open items still stand.
+
 **Release plan (your instruction, 2026-09-22):** keep small commits landing on
 branches; a single release with everything is cut from `main` only once the whole
 sprint is done and tested — for you to test then. No feature-branch releases.
