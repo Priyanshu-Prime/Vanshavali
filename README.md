@@ -1,6 +1,13 @@
 # Vanshavali
 
-A new Flutter project.
+A zero-cost, bilingual (English/Gujarati) Flutter + Supabase app for a village community
+(~500 users) to build and explore a shared family tree — signup, profile, and linking to
+parents/children/spouses, with an invite-and-claim onboarding flow.
+
+## 📚 Documentation
+**[`docs/INDEX.md`](docs/INDEX.md) is the map of all docs** — current state, the handoff brief,
+feature designs, schema/data model, testing, and the process rules every contributor/agent
+should follow. Start there.
 
 ## Getting Started
 
