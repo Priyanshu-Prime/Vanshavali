@@ -931,4 +931,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String approveClaimConfirm(Object name) {
     return 'Link this account to $name? This gives them ownership of the profile.';
   }
+
+  @override
+  String get errorParentAlreadySet =>
+      'This person already has a different father or mother. Please check before linking.';
+
+  @override
+  String matchHasOtherParent(String name) {
+    return '$name already has a different parent in the tree, so they cannot be linked here.';
+  }
+
+  @override
+  String matchIsRegistered(String name) {
+    return '$name has their own account. Only they can change their family links.';
+  }
+
+  @override
+  String get addAsNewPerson => 'Add as new person';
+
+  @override
+  String get claimWaitingTitle => 'Waiting for approval';
+
+  @override
+  String get claimWaitingBody =>
+      'Your request was sent. A relative needs to approve it. You can check again later.';
+
+  @override
+  String get checkAgain => 'Check again';
+
+  @override
+  String get claimStillWaiting => 'Not approved yet. Please check again later.';
+
+  @override
+  String get createNewProfileInstead => 'Create a new profile instead';
+
+  @override
+  String claimRequestedBy(String email) {
+    return 'Requested by $email';
+  }
+
+  @override
+  String claimRequestedOn(String date) {
+    return 'Requested on $date';
+  }
+
+  @override
+  String get unknownRequester => 'Unknown person';
 }

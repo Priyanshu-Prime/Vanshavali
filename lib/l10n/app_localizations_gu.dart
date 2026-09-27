@@ -930,4 +930,51 @@ class AppLocalizationsGu extends AppLocalizations {
   String approveClaimConfirm(Object name) {
     return 'આ ખાતાને $name સાથે જોડવું છે? આનાથી તેમને પ્રોફાઇલની માલિકી મળશે.';
   }
+
+  @override
+  String get errorParentAlreadySet =>
+      'આ વ્યક્તિના પિતા અથવા માતા પહેલેથી અલગ નોંધાયેલા છે. જોડતા પહેલા તપાસો.';
+
+  @override
+  String matchHasOtherParent(String name) {
+    return '$name ના વૃક્ષમાં પહેલેથી અલગ માતા-પિતા છે, તેથી તેમને અહીં જોડી શકાતા નથી.';
+  }
+
+  @override
+  String matchIsRegistered(String name) {
+    return '$name નું પોતાનું ખાતું છે. ફક્ત તેઓ જ પોતાના કુટુંબ જોડાણ બદલી શકે છે.';
+  }
+
+  @override
+  String get addAsNewPerson => 'નવી વ્યક્તિ તરીકે ઉમેરો';
+
+  @override
+  String get claimWaitingTitle => 'મંજૂરીની રાહ જોવાઈ રહી છે';
+
+  @override
+  String get claimWaitingBody =>
+      'તમારી વિનંતી મોકલાઈ ગઈ છે. કોઈ સંબંધીએ તેને મંજૂર કરવી પડશે. તમે પછીથી ફરી તપાસી શકો છો.';
+
+  @override
+  String get checkAgain => 'ફરી તપાસો';
+
+  @override
+  String get claimStillWaiting =>
+      'હજી મંજૂર થયું નથી. કૃપા કરીને પછીથી ફરી તપાસો.';
+
+  @override
+  String get createNewProfileInstead => 'તેના બદલે નવી પ્રોફાઇલ બનાવો';
+
+  @override
+  String claimRequestedBy(String email) {
+    return '$email દ્વારા વિનંતી';
+  }
+
+  @override
+  String claimRequestedOn(String date) {
+    return '$date ના રોજ વિનંતી';
+  }
+
+  @override
+  String get unknownRequester => 'અજાણી વ્યક્તિ';
 }

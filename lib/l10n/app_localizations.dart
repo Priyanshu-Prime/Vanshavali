@@ -1771,6 +1771,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link this account to {name}? This gives them ownership of the profile.'**
   String approveClaimConfirm(Object name);
+
+  /// No description provided for @errorParentAlreadySet.
+  ///
+  /// In en, this message translates to:
+  /// **'This person already has a different father or mother. Please check before linking.'**
+  String get errorParentAlreadySet;
+
+  /// No description provided for @matchHasOtherParent.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} already has a different parent in the tree, so they cannot be linked here.'**
+  String matchHasOtherParent(String name);
+
+  /// No description provided for @matchIsRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has their own account. Only they can change their family links.'**
+  String matchIsRegistered(String name);
+
+  /// No description provided for @addAsNewPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Add as new person'**
+  String get addAsNewPerson;
+
+  /// No description provided for @claimWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get claimWaitingTitle;
+
+  /// No description provided for @claimWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request was sent. A relative needs to approve it. You can check again later.'**
+  String get claimWaitingBody;
+
+  /// No description provided for @checkAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get checkAgain;
+
+  /// No description provided for @claimStillWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Not approved yet. Please check again later.'**
+  String get claimStillWaiting;
+
+  /// No description provided for @createNewProfileInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new profile instead'**
+  String get createNewProfileInstead;
+
+  /// No description provided for @claimRequestedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested by {email}'**
+  String claimRequestedBy(String email);
+
+  /// No description provided for @claimRequestedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested on {date}'**
+  String claimRequestedOn(String date);
+
+  /// No description provided for @unknownRequester.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown person'**
+  String get unknownRequester;
 }
 
 class _AppLocalizationsDelegate

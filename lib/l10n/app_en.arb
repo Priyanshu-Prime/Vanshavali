@@ -423,5 +423,45 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "errorParentAlreadySet": "This person already has a different father or mother. Please check before linking.",
+  "matchHasOtherParent": "{name} already has a different parent in the tree, so they cannot be linked here.",
+  "@matchHasOtherParent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "matchIsRegistered": "{name} has their own account. Only they can change their family links.",
+  "@matchIsRegistered": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addAsNewPerson": "Add as new person",
+  "claimWaitingTitle": "Waiting for approval",
+  "claimWaitingBody": "Your request was sent. A relative needs to approve it. You can check again later.",
+  "checkAgain": "Check again",
+  "claimStillWaiting": "Not approved yet. Please check again later.",
+  "createNewProfileInstead": "Create a new profile instead",
+  "claimRequestedBy": "Requested by {email}",
+  "@claimRequestedBy": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "claimRequestedOn": "Requested on {date}",
+  "@claimRequestedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownRequester": "Unknown person"
 }
