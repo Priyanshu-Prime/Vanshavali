@@ -11,6 +11,7 @@ import 'services/supabase_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/error_reporting_service.dart';
+import 'services/gujarat_places_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -36,12 +37,19 @@ void main() async {
     debugPrint('Error initializing LocalStorageService: $e');
   }
   
+  // Place directory: needed to show village names in Gujarati from the first
+  // frame. Parsed in parallel with Supabase init; on failure places simply
+  // display in English (displayName falls back to the stored value).
+  final places = GujaratPlacesService.load().catchError(
+      (Object e) => debugPrint('Error loading GujaratPlacesService: $e'));
+
   // Initialize Supabase
   try {
     await SupabaseService.initialize();
   } catch (e) {
     debugPrint('Error initializing SupabaseService: $e');
   }
+  await places;
 
   runApp(const VanshavaliApp());
 }

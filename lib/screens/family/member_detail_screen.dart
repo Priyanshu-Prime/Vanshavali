@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../services/gujarat_places_service.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -268,7 +269,8 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     _DetailRow(
                       icon: Icons.home_outlined,
                       label: l10n.villageOrigin,
-                      value: member.villageOrigin!,
+                      value: GujaratPlacesService.displayName(
+                          member.villageOrigin!, locale),
                     ),
                   if (member.currentCity != null)
                     _DetailRow(

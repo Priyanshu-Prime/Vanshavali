@@ -26,7 +26,9 @@ class SettingsProvider extends ChangeNotifier {
   /// available in a plain widget test without additional setup. Not used by
   /// any production code path.
   @visibleForTesting
-  SettingsProvider.forTesting();
+  SettingsProvider.forTesting({Locale? locale}) {
+    if (locale != null) _locale = locale;
+  }
 
   /// Test-only seam: notifies listeners with no other side effects, for
   /// simulating an unrelated-provider rebuild in a widget test without
