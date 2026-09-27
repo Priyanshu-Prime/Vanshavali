@@ -109,48 +109,78 @@ class FamilyProvider extends ChangeNotifier {
   /// discussion in docs/claude_handoff for why this must never widen to a
   /// full-table fetch — that's what the explicit "Full Sync" setting is for.
   Future<void> loadEgoNetwork(String memberId) async {
+    // Stale-response guard (same pattern as _searchSeq): overlapping loads
+    // (re-center taps, a pushed FamilyTreeScreen(focusMember), a profile's
+    // own load, post-edit refresh) must not interleave — only the LATEST
+    // call may publish, and network + spouseLinks + center are published
+    // together so they always describe the same member.
+    final int seq = ++_egoSeq;
     _isLoading = true;
     _error = null;
     notifyListeners();
 
+    ({List<FamilyMember> network, List<SpouseLink> links}) result;
+    String? error;
     try {
-      if (await SyncService.isOnline()) {
-        _egoNetwork = await SupabaseService.getEgoCentricNetwork(memberId);
-        final ids = _egoNetwork.map((m) => m.id).toList();
-        _spouseLinks = await SupabaseService.getSpouseLinksFor(ids);
-        // Cache locally AND purge stale rows: within this member's cached ego
-        // neighbourhood, anyone the fresh server result no longer includes has
-        // been deleted server-side (e.g. a removed test profile) and must not
-        // linger in the cache as a phantom sibling/child. Reconciling here is
-        // safe because get_ego_network returns the same neighbourhood the box
-        // computes (parents + spouses + children + siblings).
-        final egoScope = {
-          for (final m in LocalStorageService.getEgoCentricNetwork(memberId))
-            m.id
-        };
-        await LocalStorageService.reconcileFamilyMembers(_egoNetwork,
-            scopeIds: egoScope);
-        await LocalStorageService.saveSpouseLinks(_spouseLinks);
-      } else {
-        _egoNetwork = LocalStorageService.getEgoCentricNetwork(memberId);
-        _spouseLinks = _localSpouseLinksFor(_egoNetwork.map((m) => m.id).toList());
-      }
-
-      _centerMember = _egoNetwork.where((m) => m.id == memberId).firstOrNull;
+      result = await (debugEgoFetcherForTesting ?? _fetchEgoNetwork)(memberId);
     } catch (e) {
       debugPrint('Error in loadEgoNetwork: $e');
       ErrorReportingService.reportCaught(e, StackTrace.current,
           context: 'data.ego_network');
-      _error = e.toString();
-      // Local fallback — stays scoped to this neighborhood, same as above,
-      // not a dump of the entire local cache.
-      _egoNetwork = LocalStorageService.getEgoCentricNetwork(memberId);
-      _spouseLinks = _localSpouseLinksFor(_egoNetwork.map((m) => m.id).toList());
-      _centerMember = _egoNetwork.where((m) => m.id == memberId).firstOrNull;
+      error = e.toString();
+      // Local fallback — stays scoped to this neighborhood, not a dump of
+      // the entire local cache.
+      final network = LocalStorageService.getEgoCentricNetwork(memberId);
+      result = (
+        network: network,
+        links: _localSpouseLinksFor(network.map((m) => m.id).toList()),
+      );
     }
 
+    if (seq != _egoSeq) return; // a newer load owns the state now
+
+    _egoNetwork = result.network;
+    _spouseLinks = result.links;
+    _centerMember = result.network.where((m) => m.id == memberId).firstOrNull;
+    _error = error;
     _isLoading = false;
     notifyListeners();
+  }
+
+  int _egoSeq = 0;
+
+  /// Test seam: replaces the online/offline fetch inside [loadEgoNetwork] so
+  /// its stale-response guard can be driven without Supabase/Hive.
+  @visibleForTesting
+  Future<({List<FamilyMember> network, List<SpouseLink> links})> Function(
+      String memberId)? debugEgoFetcherForTesting;
+
+  Future<({List<FamilyMember> network, List<SpouseLink> links})>
+      _fetchEgoNetwork(String memberId) async {
+    if (await SyncService.isOnline()) {
+      final network = await SupabaseService.getEgoCentricNetwork(memberId);
+      final ids = network.map((m) => m.id).toList();
+      final links = await SupabaseService.getSpouseLinksFor(ids);
+      // Cache locally AND purge stale rows: within this member's cached ego
+      // neighbourhood, anyone the fresh server result no longer includes has
+      // been deleted server-side (e.g. a removed test profile) and must not
+      // linger in the cache as a phantom sibling/child. Reconciling here is
+      // safe because get_ego_network returns the same neighbourhood the box
+      // computes (parents + spouses + children + siblings).
+      final egoScope = {
+        for (final m in LocalStorageService.getEgoCentricNetwork(memberId))
+          m.id
+      };
+      await LocalStorageService.reconcileFamilyMembers(network,
+          scopeIds: egoScope);
+      await LocalStorageService.saveSpouseLinks(links);
+      return (network: network, links: links);
+    }
+    final network = LocalStorageService.getEgoCentricNetwork(memberId);
+    return (
+      network: network,
+      links: _localSpouseLinksFor(network.map((m) => m.id).toList()),
+    );
   }
 
   /// Loads the ENTIRE connected family component (see get_connected_tree,
@@ -395,6 +425,7 @@ class FamilyProvider extends ChangeNotifier {
     _searchDebounce?.cancel();
     _searchSeq++; // invalidate any in-flight response
     _searchResults = [];
+    _isLoading = false; // the invalidated search can no longer clear it
     notifyListeners();
   }
 
