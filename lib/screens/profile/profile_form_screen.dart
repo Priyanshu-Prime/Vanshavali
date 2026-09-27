@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,33 @@ import '../../widgets/duplicate_match_sheet.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
 import '../../widgets/village_picker_field.dart';
 import '../scan/scan_invite_code_screen.dart';
+
+/// First-time profile creation with an optional photo. Storage RLS (migration
+/// 016) only allows writing `<id>/avatar.jpg` once the family_members row
+/// exists (can_edit_family_member is FALSE for a missing row), so the row is
+/// created FIRST and the photo uploaded + attached afterwards. The photo is
+/// optional: its failure never undoes the saved profile.
+@visibleForTesting
+Future<({bool saved, bool photoFailed})> createProfileThenUploadAvatar(
+  AuthProvider auth,
+  FamilyMember member,
+  Uint8List? avatarBytes, {
+  Future<String> Function(String memberId, Uint8List bytes) upload =
+      SupabaseService.uploadAvatar,
+}) async {
+  if (!await auth.createProfile(member)) {
+    return (saved: false, photoFailed: false);
+  }
+  if (avatarBytes == null) return (saved: true, photoFailed: false);
+  try {
+    final url = await upload(member.id, avatarBytes);
+    final created = auth.currentMember ?? member;
+    final ok = await auth.updateProfile(created.copyWith(avatarUrl: url));
+    return (saved: true, photoFailed: !ok);
+  } catch (_) {
+    return (saved: true, photoFailed: true);
+  }
+}
 
 class ProfileFormScreen extends StatefulWidget {
   final FamilyMember? existingMember;
@@ -52,10 +80,13 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   String? _invitePreviewName;
 
   // Member id is fixed up-front (reused for an edit, freshly minted for a new
-  // profile) so an avatar can be uploaded to '<id>/avatar.jpg' BEFORE the row
-  // is saved — the same id then builds the FamilyMember in _saveProfile.
+  // profile). On edit the avatar uploads immediately to '<id>/avatar.jpg'; on
+  // creation the picked bytes are held in [_pendingAvatarBytes] and uploaded
+  // only after the row exists (see createProfileThenUploadAvatar).
   late final String _memberId;
   String? _pendingAvatarUrl;
+  Uint8List? _pendingAvatarBytes;
+  bool get _hasPhoto => _pendingAvatarUrl != null || _pendingAvatarBytes != null;
   bool _isUploadingPhoto = false;
 
   @override
@@ -201,13 +232,16 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                 _pickAndUpload(ImageSource.gallery);
               },
             ),
-            if (_pendingAvatarUrl != null)
+            if (_hasPhoto)
               ListTile(
                 leading: const Icon(Icons.delete_outline),
                 title: Text(l10n.removePhoto),
                 onTap: () {
                   Navigator.pop(sheetCtx);
-                  setState(() => _pendingAvatarUrl = null);
+                  setState(() {
+                    _pendingAvatarUrl = null;
+                    _pendingAvatarBytes = null;
+                  });
                 },
               ),
           ],
@@ -234,16 +268,24 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
       return;
     }
 
+    if (widget.isCreatingProfile) {
+      // No row yet, so storage RLS would reject the upload — hold the bytes
+      // and upload after createProfile succeeds.
+      setState(() => _pendingAvatarBytes = bytes);
+      return;
+    }
+
     setState(() => _isUploadingPhoto = true);
     try {
       final url = await SupabaseService.uploadAvatar(_memberId, bytes);
       if (!mounted) return;
       setState(() => _pendingAvatarUrl = url);
     } catch (_) {
-      // Photo is optional: keep any prior avatar and let the rest of the
-      // profile still save — surface a non-fatal message only.
+      // Photo is optional: keep any prior avatar; nothing is saved yet at
+      // this point, so just ask them to retry.
       if (mounted) {
-        showAppSnackBar(context, context.l10n.photoUploadFailed, isError: true);
+        showAppSnackBar(context, context.l10n.photoUploadFailedRetry,
+            isError: true);
       }
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
@@ -330,11 +372,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
           final match = choice.selected!.member;
           if (match.isClaimed) {
             // Already a real account (likely themselves on another device) —
-            // can't claim it; flag for review rather than duplicate.
+            // can't claim it, and nothing is flagged: say so plainly.
             setState(() => _isLoading = false);
             showAppSnackBar(
               context,
-              context.l10n.duplicateProfileFlaggedForReview,
+              context.l10n.duplicateAlreadyClaimed,
             );
             return;
           }
@@ -407,6 +449,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     );
 
     bool success;
+    var photoFailed = false;
 
     // Determine if we are editing our own profile or someone else's
     final isOwnProfile =
@@ -415,7 +458,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
             widget.existingMember!.id == authProvider.currentMember?.id);
 
     if (widget.isCreatingProfile) {
-      success = await authProvider.createProfile(member);
+      final result = await createProfileThenUploadAvatar(
+          authProvider, member, _pendingAvatarBytes);
+      success = result.saved;
+      photoFailed = result.photoFailed;
     } else if (isOwnProfile) {
       success = await authProvider.updateProfile(member);
     } else {
@@ -429,7 +475,13 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      showAppSnackBar(context, context.l10n.profileCompleted);
+      showAppSnackBar(
+        context,
+        photoFailed
+            ? context.l10n.photoUploadFailed // true now: the row is saved
+            : context.l10n.profileCompleted,
+        isError: photoFailed,
+      );
       // Use addPostFrameCallback to ensure navigation happens after rebuild
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -500,12 +552,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                           radius: 48,
                           backgroundColor:
                               Theme.of(context).colorScheme.primaryContainer,
-                          backgroundImage: _pendingAvatarUrl != null
-                              ? CachedNetworkImageProvider(_pendingAvatarUrl!)
-                              : null,
+                          backgroundImage: _pendingAvatarBytes != null
+                              ? MemoryImage(_pendingAvatarBytes!)
+                              : _pendingAvatarUrl != null
+                                  ? CachedNetworkImageProvider(
+                                      _pendingAvatarUrl!) as ImageProvider
+                                  : null,
                           child: _isUploadingPhoto
                               ? const CircularProgressIndicator()
-                              : (_pendingAvatarUrl == null
+                              : (!_hasPhoto
                                   ? Icon(
                                       Icons.person,
                                       size: 48,
@@ -529,7 +584,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _pendingAvatarUrl == null
+                      !_hasPhoto
                           ? l10n.addPhoto
                           : l10n.changePhoto,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
