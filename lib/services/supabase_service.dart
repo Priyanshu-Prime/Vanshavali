@@ -445,8 +445,13 @@ class SupabaseService {
     bool autoLinkSpouse = true,
   }) async {
     switch (relationType) {
+      // Father/mother also go through set_member_parents (not a direct
+      // UPDATE) so every parent write shares its one-to-one guard: since
+      // migration 018 it refuses to REPLACE an existing different parent
+      // ('vanshavali_parent_already_set') instead of silently re-parenting.
       case RelationType.father:
-        await _updateMemberOrThrow(memberId, {'father_id': relatedMemberId});
+        await client.rpc('set_member_parents',
+            params: {'p_child': memberId, 'p_father': relatedMemberId});
         // Auto-link spouse between father and existing mother (unless step-parent)
         final memberAfterFather = await getFamilyMemberById(memberId);
         if (autoLinkSpouse && memberAfterFather?.motherId != null) {
@@ -454,7 +459,8 @@ class SupabaseService {
         }
         break;
       case RelationType.mother:
-        await _updateMemberOrThrow(memberId, {'mother_id': relatedMemberId});
+        await client.rpc('set_member_parents',
+            params: {'p_child': memberId, 'p_mother': relatedMemberId});
         // Auto-link spouse between mother and existing father (unless step-parent)
         final memberAfterMother = await getFamilyMemberById(memberId);
         if (autoLinkSpouse && memberAfterMother?.fatherId != null) {
@@ -504,30 +510,6 @@ class SupabaseService {
   /// addSpouseLink is idempotent via the unique pair constraint).
   static Future<void> _ensureSpouseLink(String idA, String idB) async {
     await addSpouseLink(idA, idB);
-  }
-
-  /// Updates a family_members row and throws if the write reached ZERO rows.
-  ///
-  /// A Supabase UPDATE filtered out by RLS (no permission to edit this node)
-  /// affects zero rows and returns NO error — so a relation link would look
-  /// like it succeeded while nothing actually changed, and the node silently
-  /// never appears in the tree (this is exactly how the "adding completes but
-  /// the node never shows up" bug manifested). Asking for the updated rows back
-  /// via .select() lets us detect the no-op and surface a real error instead of
-  /// a false "added" toast. The sentinel is mapped to a friendly, localized
-  /// message in friendlyErrorMessage (lib/widgets/common_widgets.dart).
-  static Future<void> _updateMemberOrThrow(
-    String memberId,
-    Map<String, dynamic> updates,
-  ) async {
-    final rows = await client
-        .from('family_members')
-        .update(updates)
-        .eq('id', memberId)
-        .select('id');
-    if ((rows as List).isEmpty) {
-      throw Exception('vanshavali_edit_not_permitted');
-    }
   }
 
   /// Delete a family member.
@@ -746,7 +728,8 @@ class SupabaseService {
   }
 
   /// The approver inbox: pending claim requests the current user is eligible
-  /// to approve, via the `pending_claim_requests` RPC (migration 017).
+  /// to approve (close registered relatives, migration 018), via the
+  /// `pending_claim_requests` RPC.
   static Future<List<ClaimRequest>> pendingClaimRequests() async {
     if (currentUser == null) return [];
     final response = await _t(client.rpc('pending_claim_requests'));
@@ -788,11 +771,15 @@ class ClaimRequest {
   /// The unclaimed placeholder the requester wants to claim.
   final FamilyMember target;
 
+  /// Who is asking (migration 018); null if the account has no email.
+  final String? requesterEmail;
+
   const ClaimRequest({
     required this.requestId,
     required this.createdAt,
     required this.requesterAuthUserId,
     required this.target,
+    this.requesterEmail,
   });
 
   factory ClaimRequest.fromJson(Map<String, dynamic> json) {
@@ -801,6 +788,7 @@ class ClaimRequest {
       createdAt: DateTime.parse(json['created_at'] as String),
       requesterAuthUserId: json['requester'] as String,
       target: FamilyMember.fromJson(json['target'] as Map<String, dynamic>),
+      requesterEmail: json['requester_email'] as String?,
     );
   }
 }

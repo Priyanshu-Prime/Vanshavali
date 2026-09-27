@@ -290,5 +290,45 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "errorParentAlreadySet": "આ વ્યક્તિના પિતા અથવા માતા પહેલેથી અલગ નોંધાયેલા છે. જોડતા પહેલા તપાસો.",
+  "matchHasOtherParent": "{name} ના વૃક્ષમાં પહેલેથી અલગ માતા-પિતા છે, તેથી તેમને અહીં જોડી શકાતા નથી.",
+  "@matchHasOtherParent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "matchIsRegistered": "{name} નું પોતાનું ખાતું છે. ફક્ત તેઓ જ પોતાના કુટુંબ જોડાણ બદલી શકે છે.",
+  "@matchIsRegistered": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addAsNewPerson": "નવી વ્યક્તિ તરીકે ઉમેરો",
+  "claimWaitingTitle": "મંજૂરીની રાહ જોવાઈ રહી છે",
+  "claimWaitingBody": "તમારી વિનંતી મોકલાઈ ગઈ છે. કોઈ સંબંધીએ તેને મંજૂર કરવી પડશે. તમે પછીથી ફરી તપાસી શકો છો.",
+  "checkAgain": "ફરી તપાસો",
+  "claimStillWaiting": "હજી મંજૂર થયું નથી. કૃપા કરીને પછીથી ફરી તપાસો.",
+  "createNewProfileInstead": "તેના બદલે નવી પ્રોફાઇલ બનાવો",
+  "claimRequestedBy": "{email} દ્વારા વિનંતી",
+  "@claimRequestedBy": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "claimRequestedOn": "{date} ના રોજ વિનંતી",
+  "@claimRequestedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownRequester": "અજાણી વ્યક્તિ"
 }

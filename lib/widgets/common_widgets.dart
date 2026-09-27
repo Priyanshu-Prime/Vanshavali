@@ -72,10 +72,18 @@ String friendlyErrorMessage(BuildContext context, Object error) {
   if (isTimeout) return l10n.errorTimeout;
 
   // A relation-link / edit write that RLS filtered out (no permission to edit
-  // this node) — thrown as a sentinel by SupabaseService._updateMemberOrThrow
-  // so it doesn't get swallowed by the generic service-failure bucket below.
-  if (text.contains('vanshavali_edit_not_permitted')) {
+  // this node) — thrown as a sentinel by SupabaseService.deleteFamilyMember,
+  // or set_member_parents' claimed-profile guard (parent links go through that
+  // RPC) — so it doesn't get swallowed by the generic bucket below.
+  if (text.contains('vanshavali_edit_not_permitted') ||
+      text.contains('cannot modify a claimed profile')) {
     return l10n.errorEditNotPermitted;
+  }
+
+  // set_member_parents (migration 018) refuses to replace an existing,
+  // different father/mother instead of silently re-parenting someone.
+  if (text.contains('vanshavali_parent_already_set')) {
+    return l10n.errorParentAlreadySet;
   }
 
   // A retryable fetch failure means the auth request never actually reached

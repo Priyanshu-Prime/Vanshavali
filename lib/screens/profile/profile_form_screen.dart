@@ -59,7 +59,8 @@ class ProfileFormScreen extends StatefulWidget {
   State<ProfileFormScreen> createState() => _ProfileFormScreenState();
 }
 
-class _ProfileFormScreenState extends State<ProfileFormScreen> {
+class _ProfileFormScreenState extends State<ProfileFormScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _firstNameEnController = TextEditingController();
   final _firstNameGuController = TextEditingController();
@@ -89,9 +90,17 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   bool get _hasPhoto => _pendingAvatarUrl != null || _pendingAvatarBytes != null;
   bool _isUploadingPhoto = false;
 
+  // Onboarding claim request sent: this screen is the app root (nothing to
+  // pop back to), so it shows a waiting view until a relative approves.
+  bool _awaitingClaim = false;
+  // "Create a new profile instead" from the waiting view: the next save must
+  // not re-offer the same match.
+  bool _skipDuplicateCheck = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _memberId = widget.existingMember?.id ?? const Uuid().v4();
     if (widget.existingMember != null) {
       _populateFields(widget.existingMember!);
@@ -121,6 +130,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _firstNameEnController.removeListener(_onFirstNameEnChanged);
     _lastNameEnController.removeListener(_onLastNameEnChanged);
     _firstNameDebounce?.cancel();
@@ -135,6 +145,24 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     _occupationController.dispose();
     _inviteCodeController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Coming back to the app (e.g. after phoning the relative who approves)
+    // re-checks quietly, so the user doesn't have to find the button.
+    if (state == AppLifecycleState.resumed && _awaitingClaim) {
+      _checkClaim(quiet: true);
+    }
+  }
+
+  /// Re-reads the profile; an approved claim makes AuthProvider.hasProfile
+  /// true and the app root (main.dart) swaps this screen for the dashboard.
+  Future<void> _checkClaim({bool quiet = false}) async {
+    final auth = context.read<AuthProvider>();
+    await auth.refreshCurrentMember();
+    if (!mounted || auth.hasProfile || quiet) return;
+    showAppSnackBar(context, context.l10n.claimStillWaiting);
   }
 
   /// Opens the QR scanner; on a successful scan fills the invite-code field
@@ -335,7 +363,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     // request) instead of silently creating a second row. Only for a brand-new
     // profile — an edit isn't a new person. Best-effort: a detection failure
     // must never block a legitimate signup. ──
-    if (widget.isCreatingProfile) {
+    if (widget.isCreatingProfile && !_skipDuplicateCheck) {
       List<DuplicateCandidate> candidates;
       try {
         candidates = await SupabaseService.findDuplicateCandidates(
@@ -385,6 +413,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
             if (!mounted) return;
             setState(() => _isLoading = false);
             showAppSnackBar(context, context.l10n.claimRequestSent);
+            if (!Navigator.canPop(context)) {
+              // Onboarding root: popping would leave a blank screen.
+              setState(() => _awaitingClaim = true);
+              return;
+            }
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) Navigator.pop(context, true);
             });
@@ -500,6 +533,27 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
+    if (_awaitingClaim) {
+      return ClaimWaitingView(
+        onCheckAgain: _checkClaim,
+        onCreateNew: () => setState(() {
+          _awaitingClaim = false;
+          _skipDuplicateCheck = true;
+        }),
+        onLogout: () async {
+          final confirmed = await showConfirmDialog(
+            context: context,
+            title: l10n.logout,
+            message: l10n.confirmLogout,
+            isDestructive: true,
+          );
+          if (confirmed && context.mounted) {
+            await context.read<AuthProvider>().signOut();
+          }
+        },
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -858,6 +912,96 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown after an onboarding claim request: the user has no profile until a
+/// relative approves, so instead of a blank screen they get a plain status
+/// and two large actions.
+class ClaimWaitingView extends StatefulWidget {
+  const ClaimWaitingView({
+    super.key,
+    required this.onCheckAgain,
+    required this.onCreateNew,
+    required this.onLogout,
+  });
+
+  final Future<void> Function() onCheckAgain;
+  final VoidCallback onCreateNew;
+  final VoidCallback onLogout;
+
+  @override
+  State<ClaimWaitingView> createState() => _ClaimWaitingViewState();
+}
+
+class _ClaimWaitingViewState extends State<ClaimWaitingView> {
+  bool _checking = false;
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    try {
+      await widget.onCheckAgain();
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.claimWaitingTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: l10n.logout,
+            onPressed: widget.onLogout,
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.hourglass_top, size: 72),
+              const SizedBox(height: 16),
+              Text(
+                l10n.claimWaitingBody,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: _checking ? null : _check,
+                  icon: _checking
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: Text(l10n.checkAgain),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: _checking ? null : widget.onCreateNew,
+                  child: Text(l10n.createNewProfileInstead),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

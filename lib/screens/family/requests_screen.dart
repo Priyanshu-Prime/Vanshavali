@@ -8,7 +8,10 @@ import '../../widgets/common_widgets.dart';
 /// large Approve / Reject action. Reached from the dashboard [RequestsAction]
 /// badge.
 class RequestsScreen extends StatefulWidget {
-  const RequestsScreen({super.key});
+  const RequestsScreen({super.key, this.loader});
+
+  /// Overrides the inbox fetch (tests); defaults to the Supabase RPC.
+  final Future<List<ClaimRequest>> Function()? loader;
 
   @override
   State<RequestsScreen> createState() => _RequestsScreenState();
@@ -26,7 +29,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
   Future<void> _load() async {
     try {
-      final list = await SupabaseService.pendingClaimRequests();
+      final list = await (widget.loader ?? SupabaseService.pendingClaimRequests)();
       if (mounted) setState(() => _requests = list);
     } catch (_) {
       if (mounted) setState(() => _requests = []);
@@ -106,6 +109,20 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                 l10n.claimRequestPrompt,
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
+                              const SizedBox(height: 8),
+                              // Who is asking and when, so the approver can
+                              // recognise (or not) the person before approving.
+                              Text(
+                                l10n.claimRequestedBy(
+                                  req.requesterEmail ?? l10n.unknownRequester,
+                                ),
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                l10n.claimRequestedOn(_formatDate(req.createdAt)),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
@@ -137,6 +154,11 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 ),
     );
   }
+}
+
+String _formatDate(DateTime d) {
+  final l = d.toLocal();
+  return '${l.day.toString().padLeft(2, '0')}/${l.month.toString().padLeft(2, '0')}/${l.year}';
 }
 
 /// Dashboard app-bar action: an inbox icon badged with the pending-request

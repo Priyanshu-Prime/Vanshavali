@@ -177,8 +177,16 @@ class AuthProvider extends ChangeNotifier {
 
   /// Refresh the current member from the database to pick up
   /// relationship changes (father_id, mother_id, spouse_id).
+  ///
+  /// With no profile yet (e.g. a claim request waiting for a relative's
+  /// approval), this re-runs the profile lookup instead, so an approved claim
+  /// is picked up and the app root switches from onboarding to the dashboard.
   Future<void> refreshCurrentMember() async {
-    if (_currentMember == null) return;
+    if (_currentMember == null) {
+      await _loadCurrentMemberProfile();
+      if (_currentMember != null) notifyListeners();
+      return;
+    }
     try {
       if (await SyncService.isOnline()) {
         final fresh = await SupabaseService.getFamilyMemberById(_currentMember!.id);

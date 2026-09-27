@@ -112,6 +112,43 @@ List<FamilyMember> childrenNeedingOtherParent({
   }).toList();
 }
 
+enum LinkBlock { registered, otherParent }
+
+/// Why an EXISTING [match] can't be linked as [relation] ('child'/'sibling')
+/// of [anchor], or null if it can. Child/sibling links write the MATCH's own
+/// father_id/mother_id (set_member_parents), so:
+///  - a match with its own account (not the caller) can't be re-parented;
+///  - a match whose parent slot already holds someone else would be silently
+///    re-parented -- the server refuses that too (migration 018); this just
+///    says so up front. For a sibling, one compatible shared parent is enough
+///    (half-sibling); the server still guards the exact slot chosen later.
+/// Father/mother/spouse links edit the anchor side, never the match: null.
+LinkBlock? linkExistingBlockReason({
+  required String relation,
+  required FamilyMember anchor,
+  required FamilyMember match,
+  String? callerAuthUserId,
+}) {
+  if (relation != 'child' && relation != 'sibling') return null;
+  if (match.isClaimed && match.authUserId != callerAuthUserId) {
+    return LinkBlock.registered;
+  }
+  bool fits(String? mine, String? theirs) =>
+      mine != null && (theirs == null || theirs == mine);
+  if (relation == 'child') {
+    // Same slot choice as SupabaseService.linkFamilyMember(child).
+    final slot = anchor.gender == 'Male' ? match.fatherId : match.motherId;
+    return (slot == null || slot == anchor.id) ? null : LinkBlock.otherParent;
+  }
+  // sibling: an anchor with no parents writes nothing to the match; otherwise
+  // one compatible shared parent is enough.
+  if (anchor.fatherId == null && anchor.motherId == null) return null;
+  return fits(anchor.fatherId, match.fatherId) ||
+          fits(anchor.motherId, match.motherId)
+      ? null
+      : LinkBlock.otherParent;
+}
+
 class AddFamilyMemberScreen extends StatefulWidget {
   final String? preselectedRelation;
 
@@ -470,8 +507,30 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     }
 
     // "Same person" → link the existing row as this relation instead of
-    // creating a duplicate (works for claimed and unclaimed alike; linking a
-    // relation edits the anchor/child side, not the matched person's profile).
+    // creating a duplicate. Father/mother/spouse edit the anchor side, but
+    // child/sibling write the MATCH's own parent slots — so a registered
+    // match, or one that already has a different parent, can't be linked
+    // that way. Say so plainly and offer to add them as a new person instead.
+    final match = choice.selected!.member;
+    final block = linkExistingBlockReason(
+      relation: _selectedRelation!,
+      anchor: anchor,
+      match: match,
+      callerAuthUserId: SupabaseService.currentUser?.id,
+    );
+    if (block != null) {
+      final l10n = context.l10n;
+      final addNew = await showConfirmDialog(
+        context: context,
+        title: match.fullNameEn,
+        message: block == LinkBlock.registered
+            ? l10n.matchIsRegistered(match.fullNameEn)
+            : l10n.matchHasOtherParent(match.fullNameEn),
+        confirmText: l10n.addAsNewPerson,
+      );
+      if (!mounted) return _DupOutcome.cancel;
+      return addNew ? _DupOutcome.createNew : _DupOutcome.cancel;
+    }
     setState(() {
       _linkExisting = true;
       _selectedExistingMember = choice.selected!.member;
@@ -547,6 +606,35 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
       if (outcome == _DupOutcome.cancel) return;
       // linkedExisting → _linkExisting/_selectedExistingMember now set;
       // createNew → continue unchanged.
+    }
+
+    // ── Guard: a hand-picked existing child/sibling must be re-parentable.
+    // Re-fetch the pick first (stale-data rule) — the server refuses the
+    // same cases (migration 018), this just explains it before any write. ──
+    if ((_selectedRelation == 'child' || _selectedRelation == 'sibling') &&
+        _linkExisting &&
+        _selectedExistingMember != null) {
+      FamilyMember pick = _selectedExistingMember!;
+      try {
+        pick = await SupabaseService.getFamilyMemberById(pick.id) ?? pick;
+      } catch (_) {}
+      if (!mounted) return;
+      final block = linkExistingBlockReason(
+        relation: _selectedRelation!,
+        anchor: effectiveMember,
+        match: pick,
+        callerAuthUserId: SupabaseService.currentUser?.id,
+      );
+      if (block != null) {
+        showAppSnackBar(
+          context,
+          block == LinkBlock.registered
+              ? l10n.matchIsRegistered(pick.fullNameEn)
+              : l10n.matchHasOtherParent(pick.fullNameEn),
+          isError: true,
+        );
+        return;
+      }
     }
 
     // ── Guard: linking an EXISTING member as father/mother must not create
