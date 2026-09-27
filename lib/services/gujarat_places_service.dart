@@ -67,9 +67,34 @@ class GujaratPlacesService {
       dlist.add(GjPlace(d['name'] as String, d['code'] as String));
       byDistrict[d['code'] as String] = d;
     }
+    // English stored name -> Gujarati. Districts first so their hand-checked
+    // spelling wins when a taluka/village shares the name (e.g. "Patan").
+    final gu = <String, String>{};
+    void put(Map<String, dynamic> e) {
+      final g = e['gu'] as String?;
+      if (g != null && g.isNotEmpty) gu.putIfAbsent(e['name'] as String, () => g);
+    }
+
+    districts.forEach(put);
+    for (final d in districts) {
+      for (final t in (d['talukas'] as List).cast<Map<String, dynamic>>()) {
+        put(t);
+        (t['villages'] as List).cast<Map<String, dynamic>>().forEach(put);
+      }
+    }
     _districts = dlist;
     _byDistrict = byDistrict;
+    _gu = gu;
   }
+
+  static Map<String, String> _gu = const {};
+
+  /// Display form of a stored place name (village_origin holds the English
+  /// Census name of a district, taluka or village). Gujarati when [locale] is
+  /// 'gu' and the name is in the directory; otherwise [stored] unchanged —
+  /// including before [load] has run, so callers never render blank.
+  static String displayName(String stored, String locale) =>
+      locale == 'gu' ? _gu[stored] ?? stored : stored;
 
   static List<GjPlace> districts() => _districts;
 
@@ -137,14 +162,16 @@ class GujaratPlacesService {
     final exact = <GjPlaceHit>[];
     final prefix = <GjPlaceHit>[];
     final contains = <GjPlaceHit>[];
+    // Matches either the English name or its Gujarati form, whichever ranks
+    // better, so the user can type in either script.
     void add(String name, String code, GjLevel level, String context) {
-      final n = _norm(name);
       final hit = GjPlaceHit(name, code, level, context);
-      if (n == q) {
+      final names = [_norm(name), _norm(_gu[name] ?? '')];
+      if (names.any((n) => n == q)) {
         exact.add(hit);
-      } else if (n.startsWith(q)) {
+      } else if (names.any((n) => n.isNotEmpty && n.startsWith(q))) {
         prefix.add(hit);
-      } else if (n.contains(q)) {
+      } else if (names.any((n) => n.isNotEmpty && n.contains(q))) {
         contains.add(hit);
       }
     }
@@ -164,6 +191,7 @@ class GujaratPlacesService {
     return [...exact, ...prefix, ...contains].take(limit).toList();
   }
 
+  // Keeps Latin letters/digits and the Gujarati block; drops spaces/punctuation.
   static String _norm(String s) =>
-      s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9઀-૿]'), '');
 }
