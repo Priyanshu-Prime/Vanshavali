@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../services/gujarat_places_service.dart';
 
 import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
@@ -227,7 +228,7 @@ class _DirectoryScreenState extends State<DirectoryScreen>
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
-                      label: Text(v),
+                      label: Text(GujaratPlacesService.displayName(v, locale)),
                       selected: _villageFilter == v,
                       onSelected: (_) => setState(() => _villageFilter = v),
                     ),
@@ -334,7 +335,7 @@ class _DirectoryScreenState extends State<DirectoryScreen>
       leading: CircleAvatar(child: Text(m.initial)),
       title: Text(m.getFullName(locale)),
       subtitle: m.villageOrigin != null && m.villageOrigin!.trim().isNotEmpty
-          ? Text(m.villageOrigin!)
+          ? Text(GujaratPlacesService.displayName(m.villageOrigin!, locale))
           : null,
       trailing: isMe
           ? Chip(

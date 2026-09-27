@@ -26,6 +26,7 @@ class VillagePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
     final has = value != null && value!.trim().isNotEmpty;
     return FormField<String>(
       initialValue: value,
@@ -65,7 +66,9 @@ class VillagePickerField extends StatelessWidget {
                 : const Icon(Icons.arrow_drop_down),
           ),
           child: Text(
-            has ? value! : l10n.selectVillage,
+            has
+                ? GujaratPlacesService.displayName(value!, locale)
+                : l10n.selectVillage,
             style: has
                 ? theme.textTheme.bodyLarge
                 : theme.textTheme.bodyLarge
@@ -110,16 +113,36 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
         q.trim().length < 2 ? const [] : GujaratPlacesService.searchPlaces(q));
   }
 
+  String get _locale => Localizations.localeOf(context).languageCode;
+
+  /// Stored (English) place name in the UI language.
+  String _show(String name) => GujaratPlacesService.displayName(name, _locale);
+
+  /// Gujarati title with the English name underneath (the stored value, and a
+  /// tie-breaker for same-sounding places); English UI shows just the name.
+  Widget _placeTitle(String name) {
+    final shown = _show(name);
+    if (shown == name) return Text(name);
+    return Text.rich(TextSpan(text: shown, children: [
+      TextSpan(
+        text: '  $name',
+        style: TextStyle(color: Theme.of(context).colorScheme.outline),
+      ),
+    ]));
+  }
+
   /// Readable parent/level label, e.g. "District", "Taluka · Patan",
-  /// "Sidhpur, Patan".
+  /// "Sidhpur, Patan". Context parents are talukas/districts, whose names
+  /// never contain ", ".
   String _hitSubtitle(GjPlaceHit h, l10n) {
+    final ctx = h.context.split(', ').map(_show).join(', ');
     switch (h.level) {
       case GjLevel.district:
         return l10n.levelDistrict;
       case GjLevel.taluka:
-        return '${l10n.levelTaluka} · ${h.context}';
+        return '${l10n.levelTaluka} · $ctx';
       case GjLevel.village:
-        return h.context;
+        return ctx;
     }
   }
 
@@ -148,7 +171,7 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
                 final h = _searchResults[i];
                 return ListTile(
                   dense: true,
-                  title: Text(h.name),
+                  title: _placeTitle(h.name),
                   subtitle: Text(_hitSubtitle(h, l10n)),
                   onTap: () => Navigator.pop(context, h.name),
                 );
@@ -172,8 +195,8 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
 
     // Header shows the current drill-down / lets the user step back.
     final crumbs = <String>[
-      if (_district != null) _district!.name,
-      if (_taluka != null) _taluka!.name,
+      if (_district != null) _show(_district!.name),
+      if (_taluka != null) _show(_taluka!.name),
     ];
 
     return Padding(
@@ -253,7 +276,7 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
       itemCount: items.length,
       itemBuilder: (_, i) => ListTile(
         dense: true,
-        title: Text(items[i].name),
+        title: _placeTitle(items[i].name),
         trailing: onSelect == null
             ? null
             : TextButton(

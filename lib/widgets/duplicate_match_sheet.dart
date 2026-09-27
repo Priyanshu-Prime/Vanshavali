@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/supabase_service.dart';
+import '../services/gujarat_places_service.dart';
 import 'common_widgets.dart';
 
 /// What the user chose in the duplicate-match sheet. Either "create a new
@@ -65,7 +66,8 @@ Future<DuplicateMatchResult?> showDuplicateMatchSheet({
                     final details = <String>[
                       if (m.villageOrigin != null &&
                           m.villageOrigin!.trim().isNotEmpty)
-                        m.villageOrigin!,
+                        GujaratPlacesService.displayName(m.villageOrigin!,
+                            Localizations.localeOf(ctx).languageCode),
                       if (m.dob != null) l10n.duplicateBornYear(m.dob!.year),
                     ].join(' · ');
                     return Card(

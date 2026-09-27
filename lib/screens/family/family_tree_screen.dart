@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../services/gujarat_places_service.dart';
 import 'package:flutter/services.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:provider/provider.dart';
@@ -1686,7 +1687,8 @@ class _PersonBox extends StatelessWidget {
                   member.villageOrigin!.trim().isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
-                  member.villageOrigin!,
+                  GujaratPlacesService.displayName(
+                      member.villageOrigin!, locale),
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 11,
                     color: theme.colorScheme.outline,
