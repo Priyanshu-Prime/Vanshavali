@@ -151,11 +151,20 @@ class RequestsAction extends StatefulWidget {
 
 class _RequestsActionState extends State<RequestsAction> {
   int _count = 0;
+  // A request can arrive while the app is backgrounded — re-check on resume.
+  late final AppLifecycleListener _lifecycle;
 
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _refresh);
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {

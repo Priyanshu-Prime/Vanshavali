@@ -357,7 +357,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get directoryMyFamily => 'My family';
 
   @override
-  String get directoryAll => 'All';
+  String get directoryAll => 'Everyone';
 
   @override
   String get noMembersYet => 'No members yet';
@@ -886,6 +886,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoTooLarge =>
       'That photo is too large. Please choose a smaller one.';
+
+  @override
+  String get photoUploadFailedRetry =>
+      'Couldn\'t upload the photo. Please try again.';
+
+  @override
+  String get duplicateAlreadyClaimed =>
+      'This person already has their own account, so nothing was saved. If this is you, log in with that account. Otherwise, save again and choose \"No — create new\".';
 
   @override
   String get duplicateSheetTitle => 'Is this the same person?';

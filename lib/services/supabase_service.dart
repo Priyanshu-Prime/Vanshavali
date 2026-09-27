@@ -173,11 +173,11 @@ class SupabaseService {
   /// a replace (the URL is otherwise identical across uploads).
   static Future<String> uploadAvatar(String memberId, Uint8List bytes) async {
     final path = '$memberId/avatar.jpg';
-    await client.storage.from('avatars').uploadBinary(
+    await _t(client.storage.from('avatars').uploadBinary(
           path,
           bytes,
           fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
-        );
+        ));
     final url = client.storage.from('avatars').getPublicUrl(path);
     return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
   }
@@ -730,26 +730,26 @@ class SupabaseService {
   /// Approves a pending claim request (sets the target's auth_user_id to the
   /// requester), via the `approve_claim_request` RPC (migration 017).
   static Future<void> approveClaimRequest(String requestId) async {
-    await client.rpc(
+    await _t(client.rpc(
       'approve_claim_request',
       params: {'request_id': requestId},
-    );
+    ));
   }
 
   /// Rejects (dismisses) a pending claim request, via the
   /// `reject_claim_request` RPC (migration 017).
   static Future<void> rejectClaimRequest(String requestId) async {
-    await client.rpc(
+    await _t(client.rpc(
       'reject_claim_request',
       params: {'request_id': requestId},
-    );
+    ));
   }
 
   /// The approver inbox: pending claim requests the current user is eligible
   /// to approve, via the `pending_claim_requests` RPC (migration 017).
   static Future<List<ClaimRequest>> pendingClaimRequests() async {
     if (currentUser == null) return [];
-    final response = await client.rpc('pending_claim_requests');
+    final response = await _t(client.rpc('pending_claim_requests'));
     if (response == null) return [];
     return (response as List)
         .map((row) => ClaimRequest.fromJson(row as Map<String, dynamic>))

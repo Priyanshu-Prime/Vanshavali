@@ -356,7 +356,7 @@ class AppLocalizationsGu extends AppLocalizations {
   String get directoryMyFamily => 'મારો પરિવાર';
 
   @override
-  String get directoryAll => 'બધા';
+  String get directoryAll => 'બધા સભ્યો';
 
   @override
   String get noMembersYet => 'હજી કોઈ સભ્ય નથી';
@@ -885,6 +885,14 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get photoTooLarge =>
       'આ ફોટો ઘણો મોટો છે. કૃપા કરીને નાનો ફોટો પસંદ કરો.';
+
+  @override
+  String get photoUploadFailedRetry =>
+      'ફોટો અપલોડ કરી શકાયો નથી. કૃપા કરીને ફરી પ્રયાસ કરો.';
+
+  @override
+  String get duplicateAlreadyClaimed =>
+      'આ વ્યક્તિનું પોતાનું ખાતું પહેલેથી છે, તેથી કંઈ સાચવાયું નથી. જો આ તમે જ છો, તો તે ખાતાથી લૉગિન કરો. નહિંતર, ફરી સાચવો અને \"ના — નવી બનાવો\" પસંદ કરો.';
 
   @override
   String get duplicateSheetTitle => 'શું આ એ જ વ્યક્તિ છે?';
