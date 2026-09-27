@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const _DashboardTab(),
                 const FamilyTreeScreen(),
-                const DirectoryScreen(),
+                DirectoryScreen(isVisible: _currentIndex == 2),
                 const SettingsScreen(),
               ],
             ),

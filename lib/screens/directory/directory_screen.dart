@@ -19,7 +19,17 @@ import '../family/member_detail_screen.dart';
 ///    server-side search. RLS (migration 006) already allows this SELECT, so no
 ///    new migration is needed.
 class DirectoryScreen extends StatefulWidget {
-  const DirectoryScreen({super.key});
+  /// Whether this is the tab currently shown in the home IndexedStack. The
+  /// screen is mounted at app start (possibly offline); becoming visible
+  /// retries an "All" load that failed then.
+  final bool isVisible;
+
+  const DirectoryScreen({super.key, this.isVisible = true});
+
+  /// Test-only seam replacing the online check + getMembersPage fetch.
+  @visibleForTesting
+  static Future<List<FamilyMember>> Function(int limit, int offset)?
+      debugFetchPage;
 
   @override
   State<DirectoryScreen> createState() => _DirectoryScreenState();
@@ -53,6 +63,12 @@ class _DirectoryScreenState extends State<DirectoryScreen>
   }
 
   @override
+  void didUpdateWidget(DirectoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible && !oldWidget.isVisible && _allFailed) _refreshAll();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();
@@ -83,14 +99,19 @@ class _DirectoryScreenState extends State<DirectoryScreen>
     if (_allLoading || !_allHasMore) return;
     setState(() => _allLoading = true);
     try {
-      if (!await SyncService.isOnline()) {
+      final fetch = DirectoryScreen.debugFetchPage;
+      if (fetch == null && !await SyncService.isOnline()) {
         _fallbackAllToCache();
         return;
       }
-      final page = await SupabaseService.getMembersPage(
-          limit: _allPageSize, offset: _allOffset);
+      final page = fetch != null
+          ? await fetch(_allPageSize, _allOffset)
+          : await SupabaseService.getMembersPage(
+              limit: _allPageSize, offset: _allOffset);
       if (!mounted) return;
       setState(() {
+        // First page (initial load or refresh) replaces any cached fallback.
+        if (_allOffset == 0) _all.clear();
         _all.addAll(page);
         _allOffset += page.length;
         _allHasMore = page.length == _allPageSize;
@@ -118,6 +139,28 @@ class _DirectoryScreenState extends State<DirectoryScreen>
       _allLoading = false;
     });
   }
+
+  /// Pull-to-refresh / retry for "All": restart pagination from the top. The
+  /// current list stays on screen until the first fresh page replaces it.
+  Future<void> _refreshAll() async {
+    if (_allLoading) return; // don't reset the offset under an in-flight page
+    _allOffset = 0;
+    _allHasMore = true;
+    return _loadNextAllPage();
+  }
+
+  /// Makes a non-scrollable state (loading/empty) pullable too — otherwise a
+  /// user who opened the app offline and sees "No members yet" can't retry.
+  Widget _pullable(Future<void> Function() onRefresh, Widget child) =>
+      RefreshIndicator(
+        onRefresh: onRefresh,
+        child: LayoutBuilder(
+          builder: (context, c) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [SizedBox(height: c.maxHeight, child: child)],
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +249,10 @@ class _DirectoryScreenState extends State<DirectoryScreen>
     }).toList()
       ..sort((a, b) => a.getFullName(locale).compareTo(b.getFullName(locale)));
 
+    Future<void> refreshFamily() async {
+      if (me != null) await fp.loadFullTree(me.id);
+    }
+
     return Column(
       children: [
         if (villages.isNotEmpty)
@@ -250,16 +297,22 @@ class _DirectoryScreenState extends State<DirectoryScreen>
           child: fp.isLoadingFullTree && people.isEmpty
               ? AppWidgets.loading(message: l10n.loading)
               : filtered.isEmpty
-                  ? AppWidgets.empty(
-                      message: (q.isNotEmpty || _villageFilter != null)
-                          ? l10n.noResultsFound
-                          : l10n.noMembersYet,
-                      icon: Icons.people_outline,
-                    )
-                  : ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, i) =>
-                          _memberTile(filtered[i], me, locale),
+                  ? _pullable(
+                      refreshFamily,
+                      AppWidgets.empty(
+                        message: (q.isNotEmpty || _villageFilter != null)
+                            ? l10n.noResultsFound
+                            : l10n.noMembersYet,
+                        icon: Icons.people_outline,
+                      ))
+                  : RefreshIndicator(
+                      onRefresh: refreshFamily,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, i) =>
+                            _memberTile(filtered[i], me, locale),
+                      ),
                     ),
         ),
       ],
@@ -291,8 +344,10 @@ class _DirectoryScreenState extends State<DirectoryScreen>
 
     if (_all.isEmpty) {
       if (_allLoading) return AppWidgets.loading(message: l10n.loading);
-      return AppWidgets.empty(
-          message: l10n.noMembersYet, icon: Icons.people_outline);
+      return _pullable(
+          _refreshAll,
+          AppWidgets.empty(
+              message: l10n.noMembersYet, icon: Icons.people_outline));
     }
 
     return Column(
@@ -309,18 +364,22 @@ class _DirectoryScreenState extends State<DirectoryScreen>
             ),
           ),
         Expanded(
-          child: ListView.builder(
-            controller: _allScroll,
-            itemCount: _all.length + (_allHasMore ? 1 : 0),
-            itemBuilder: (context, i) {
-              if (i >= _all.length) {
-                return const Padding(
-                  padding: EdgeInsets.all(AppSpacing.md),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              return _memberTile(_all[i], me, locale);
-            },
+          child: RefreshIndicator(
+            onRefresh: _refreshAll,
+            child: ListView.builder(
+              controller: _allScroll,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: _all.length + (_allHasMore ? 1 : 0),
+              itemBuilder: (context, i) {
+                if (i >= _all.length) {
+                  return const Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return _memberTile(_all[i], me, locale);
+              },
+            ),
           ),
         ),
       ],
