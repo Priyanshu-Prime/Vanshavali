@@ -728,7 +728,8 @@ class SupabaseService {
   }
 
   /// The approver inbox: pending claim requests the current user is eligible
-  /// to approve, via the `pending_claim_requests` RPC (migration 017).
+  /// to approve (close registered relatives, migration 018), via the
+  /// `pending_claim_requests` RPC.
   static Future<List<ClaimRequest>> pendingClaimRequests() async {
     if (currentUser == null) return [];
     final response = await client.rpc('pending_claim_requests');
@@ -770,11 +771,15 @@ class ClaimRequest {
   /// The unclaimed placeholder the requester wants to claim.
   final FamilyMember target;
 
+  /// Who is asking (migration 018); null if the account has no email.
+  final String? requesterEmail;
+
   const ClaimRequest({
     required this.requestId,
     required this.createdAt,
     required this.requesterAuthUserId,
     required this.target,
+    this.requesterEmail,
   });
 
   factory ClaimRequest.fromJson(Map<String, dynamic> json) {
@@ -783,6 +788,7 @@ class ClaimRequest {
       createdAt: DateTime.parse(json['created_at'] as String),
       requesterAuthUserId: json['requester'] as String,
       target: FamilyMember.fromJson(json['target'] as Map<String, dynamic>),
+      requesterEmail: json['requester_email'] as String?,
     );
   }
 }

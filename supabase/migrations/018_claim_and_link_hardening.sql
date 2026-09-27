@@ -372,4 +372,36 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.reject_claim_request(UUID) TO authenticated;
 
+-- ============================================================
+-- Part 4 -- pending_claim_requests: approver-filtered + requester_email
+-- ============================================================
+-- Return type changes (new column), so DROP first; CREATE OR REPLACE can't.
+-- The email is shown only to an eligible approver of that specific request,
+-- so they can recognise (or not) the person asking. created_at = request time.
+DROP FUNCTION IF EXISTS public.pending_claim_requests();
+CREATE FUNCTION public.pending_claim_requests()
+RETURNS TABLE (
+  request_id UUID, created_at TIMESTAMPTZ, requester UUID, target JSONB,
+  requester_email TEXT
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT mr.id, mr.created_at, mr.requested_by_auth_user_id, to_jsonb(fm.*),
+         u.email::TEXT
+  FROM public.merge_requests mr
+  JOIN public.family_members fm ON fm.id = mr.target_profile_id
+  LEFT JOIN auth.users u ON u.id = mr.requested_by_auth_user_id
+  WHERE mr.kind = 'claim_request'
+    AND mr.status = 'pending'
+    AND mr.requested_by_auth_user_id <> auth.uid()
+    AND public.is_claim_approver(mr.target_profile_id)
+  ORDER BY mr.created_at DESC;
+$$;
+
+REVOKE ALL ON FUNCTION public.pending_claim_requests() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.pending_claim_requests() TO authenticated;
+
 COMMIT;
