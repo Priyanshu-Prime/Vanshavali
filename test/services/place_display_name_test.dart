@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vanshavali/services/gujarat_places_service.dart';
 
@@ -46,5 +48,17 @@ void main() {
       expect(hit.name, 'Anavada');
       expect(hit.level, GjLevel.village);
     });
+  });
+
+  test('bundled asset loads with Gujarati district names',
+      () {
+    GujaratPlacesService.loadFromJson(
+        File('assets/data/gujarat_places.json').readAsStringSync());
+    expect(GujaratPlacesService.districts(), hasLength(26));
+    for (final d in GujaratPlacesService.districts()) {
+      expect(GujaratPlacesService.displayName(d.name, 'gu'), isNot(d.name));
+    }
+    expect(GujaratPlacesService.displayName('Ahmadabad', 'gu'), 'અમદાવાદ');
+    expect(GujaratPlacesService.displayName('Rajkot', 'gu'), 'રાજકોટ');
   });
 }
