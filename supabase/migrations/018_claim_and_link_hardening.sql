@@ -13,7 +13,11 @@
 --          (village, dob, or a parent name) is required. Signature and return
 --          shape unchanged. search_path now includes `extensions` so
 --          similarity() resolves wherever pg_trgm is installed.
---  Part 3  (see below) claim approver rule.
+--  Part 3  is_claim_approver(): claim requests can only be seen/approved/
+--          rejected by registered close relatives of the placeholder, not by
+--          any member (017 reused 012's "anyone with a profile" rule).
+--  Part 4  pending_claim_requests() also returns requester_email so the
+--          approver can see WHO is asking.
 
 BEGIN;
 
@@ -175,5 +179,197 @@ $$;
 GRANT EXECUTE ON FUNCTION public.find_duplicate_candidates(
   TEXT, TEXT, TEXT, TEXT, TEXT, DATE, TEXT, TEXT, TEXT, UUID, INT
 ) TO authenticated;
+
+-- ============================================================
+-- Part 3 -- is_claim_approver: only close, registered relatives approve
+-- ============================================================
+-- 017 gated approval on can_edit_family_member (012), which is TRUE for ANY
+-- member with a profile when the target is unclaimed -- i.e. any villager
+-- could hand anyone's placeholder to a stranger. Approval now needs kinship:
+--   ring 1: parents, children, siblings (share a parent), spouses.
+--   ring 2 (only if nobody in ring 1 is registered): grandparents,
+--           grandchildren, aunts/uncles.
+--   ring 3 (only if nobody in rings 1-2 is registered): whoever created the
+--           placeholder (activity_log INSERT, 010) -- so a claim on a remote
+--           placeholder is never stuck with no possible approver.
+-- Target must still be unclaimed. Requester != caller is enforced by callers.
+-- Every lookup is keyed on the target's own ids (indexed), never a village scan.
+CREATE OR REPLACE FUNCTION public.is_claim_approver(p_target UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  WITH me AS (
+    SELECT id FROM public.family_members WHERE auth_user_id = auth.uid()
+  ),
+  t AS (
+    SELECT * FROM public.family_members
+    WHERE id = p_target AND auth_user_id IS NULL
+  ),
+  ring1 AS (
+    SELECT fm.id, fm.auth_user_id
+    FROM t JOIN public.family_members fm
+      ON fm.id <> t.id
+     AND (fm.id = t.father_id OR fm.id = t.mother_id
+          OR fm.father_id = t.id OR fm.mother_id = t.id
+          OR (t.father_id IS NOT NULL AND fm.father_id = t.father_id)
+          OR (t.mother_id IS NOT NULL AND fm.mother_id = t.mother_id))
+    UNION
+    SELECT fm.id, fm.auth_user_id
+    FROM t
+    JOIN public.spouse_relationships sr ON t.id IN (sr.member_id, sr.spouse_id)
+    JOIN public.family_members fm
+      ON fm.id = CASE WHEN sr.member_id = t.id THEN sr.spouse_id ELSE sr.member_id END
+  ),
+  ring2 AS (
+    -- grandparents
+    SELECT gp.id, gp.auth_user_id
+    FROM t
+    JOIN public.family_members p ON p.id = t.father_id OR p.id = t.mother_id
+    JOIN public.family_members gp ON gp.id = p.father_id OR gp.id = p.mother_id
+    UNION
+    -- grandchildren
+    SELECT gc.id, gc.auth_user_id
+    FROM t
+    JOIN public.family_members c ON c.father_id = t.id OR c.mother_id = t.id
+    JOIN public.family_members gc ON gc.father_id = c.id OR gc.mother_id = c.id
+    UNION
+    -- aunts/uncles (siblings of a parent)
+    SELECT au.id, au.auth_user_id
+    FROM t
+    JOIN public.family_members p ON p.id = t.father_id OR p.id = t.mother_id
+    JOIN public.family_members au
+      ON au.id <> p.id
+     AND ((p.father_id IS NOT NULL AND au.father_id = p.father_id)
+          OR (p.mother_id IS NOT NULL AND au.mother_id = p.mother_id))
+  )
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM t) OR NOT EXISTS (SELECT 1 FROM me) THEN FALSE
+    WHEN EXISTS (SELECT 1 FROM ring1 WHERE auth_user_id IS NOT NULL)
+      THEN EXISTS (SELECT 1 FROM ring1 JOIN me ON me.id = ring1.id)
+    WHEN EXISTS (SELECT 1 FROM ring2 WHERE auth_user_id IS NOT NULL)
+      THEN EXISTS (SELECT 1 FROM ring2 JOIN me ON me.id = ring2.id)
+    ELSE EXISTS (
+      SELECT 1 FROM public.activity_log al
+      WHERE al.table_name = 'family_members' AND al.row_id = p_target
+        AND al.action = 'INSERT' AND al.actor_auth_user_id = auth.uid()
+    )
+  END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_claim_approver(UUID) TO authenticated;
+
+DROP POLICY IF EXISTS "Approvers can read claim requests" ON public.merge_requests;
+CREATE POLICY "Approvers can read claim requests"
+  ON public.merge_requests
+  FOR SELECT
+  TO authenticated
+  USING (
+    kind = 'claim_request'
+    AND requested_by_auth_user_id <> auth.uid()
+    AND public.is_claim_approver(target_profile_id)
+  );
+
+-- approve/reject: identical to 017 except the gate is is_claim_approver.
+CREATE OR REPLACE FUNCTION public.approve_claim_request(request_id UUID)
+RETURNS public.family_members
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  uid    UUID := auth.uid();
+  req    public.merge_requests;
+  result public.family_members;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO req FROM public.merge_requests
+  WHERE id = request_id AND kind = 'claim_request' AND status = 'pending'
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Claim request not found or already resolved';
+  END IF;
+
+  IF req.requested_by_auth_user_id = uid THEN
+    RAISE EXCEPTION 'You cannot approve your own claim request';
+  END IF;
+
+  IF NOT public.is_claim_approver(req.target_profile_id) THEN
+    RAISE EXCEPTION 'You are not allowed to approve this claim';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.family_members
+    WHERE id = req.target_profile_id AND auth_user_id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Target profile is no longer claimable';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.family_members WHERE auth_user_id = req.requested_by_auth_user_id
+  ) THEN
+    RAISE EXCEPTION 'Requester already has a profile';
+  END IF;
+
+  UPDATE public.family_members
+  SET auth_user_id = req.requested_by_auth_user_id
+  WHERE id = req.target_profile_id AND auth_user_id IS NULL
+  RETURNING * INTO result;
+
+  UPDATE public.merge_requests
+  SET status = 'resolved', resolved_at = now()
+  WHERE id = request_id;
+
+  RETURN result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.approve_claim_request(UUID) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.reject_claim_request(request_id UUID)
+RETURNS public.merge_requests
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  uid    UUID := auth.uid();
+  req    public.merge_requests;
+  result public.merge_requests;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO req FROM public.merge_requests
+  WHERE id = request_id AND kind = 'claim_request' AND status = 'pending'
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Claim request not found or already resolved';
+  END IF;
+
+  IF req.requested_by_auth_user_id = uid THEN
+    RAISE EXCEPTION 'You cannot reject your own claim request';
+  END IF;
+
+  IF NOT public.is_claim_approver(req.target_profile_id) THEN
+    RAISE EXCEPTION 'You are not allowed to reject this claim';
+  END IF;
+
+  UPDATE public.merge_requests
+  SET status = 'dismissed', resolved_at = now()
+  WHERE id = request_id
+  RETURNING * INTO result;
+
+  RETURN result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.reject_claim_request(UUID) TO authenticated;
 
 COMMIT;
