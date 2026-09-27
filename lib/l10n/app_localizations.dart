@@ -773,7 +773,7 @@ abstract class AppLocalizations {
   /// No description provided for @directoryAll.
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'Everyone'**
   String get directoryAll;
 
   /// No description provided for @noMembersYet.
@@ -1693,6 +1693,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That photo is too large. Please choose a smaller one.'**
   String get photoTooLarge;
+
+  /// No description provided for @photoUploadFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload the photo. Please try again.'**
+  String get photoUploadFailedRetry;
+
+  /// No description provided for @duplicateAlreadyClaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'This person already has their own account, so nothing was saved. If this is you, log in with that account. Otherwise, save again and choose \"No — create new\".'**
+  String get duplicateAlreadyClaimed;
 
   /// No description provided for @duplicateSheetTitle.
   ///

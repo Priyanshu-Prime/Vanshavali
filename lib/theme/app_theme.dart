@@ -60,6 +60,20 @@ class AppTheme {
         color: Colors.white,
       ),
     ),
+    // The only TabBar (Directory) sits in AppBar.bottom on the dark-green bar.
+    // Material 3 defaults (selected = colorScheme.primary, unselected =
+    // onSurface) are green-on-green / near-black-on-green there — the tabs
+    // were effectively invisible. White on green reads clearly.
+    tabBarTheme: TabBarThemeData(
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white70,
+      indicatorColor: Colors.white,
+      indicatorSize: TabBarIndicatorSize.tab,
+      dividerColor: Colors.transparent,
+      labelStyle: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w700),
+      unselectedLabelStyle:
+          GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w500),
+    ),
     textTheme: TextTheme(
       displayLarge: GoogleFonts.poppins(
         fontSize: 32,
@@ -256,6 +270,17 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: darkText,
       ),
+    ),
+    // Same idea on the dark AppBar (darkSurface): light label, light indicator.
+    tabBarTheme: TabBarThemeData(
+      labelColor: darkText,
+      unselectedLabelColor: darkTextSecondary,
+      indicatorColor: darkText,
+      indicatorSize: TabBarIndicatorSize.tab,
+      dividerColor: Colors.transparent,
+      labelStyle: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w700),
+      unselectedLabelStyle:
+          GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w500),
     ),
     textTheme: TextTheme(
       displayLarge: GoogleFonts.poppins(
