@@ -55,6 +55,15 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     });
   }
 
+  /// Pushes [screen], then re-centers the shared ego network back on THIS
+  /// profile. Relatives' profiles, "View family tree" and the edit form all
+  /// load a different member into the shared FamilyProvider; without this,
+  /// popping back here would list that other member's relatives.
+  Future<void> _openAndRecenter(Widget screen) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    if (mounted) await context.read<FamilyProvider>().loadEgoNetwork(member.id);
+  }
+
   Future<void> _resolveCanEdit() async {
     final me = context.read<AuthProvider>().currentMember;
     // Own profile is always editable, and works offline (no round-trip).
@@ -103,17 +112,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             IconButton(
               icon: const Icon(Icons.edit),
               tooltip: l10n.editProfile,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProfileFormScreen(
+              onPressed: () => _openAndRecenter(ProfileFormScreen(
                       existingMember: member,
                       isCreatingProfile: false,
-                    ),
-                  ),
-                );
-              },
+                    )),
             ),
           if (!member.isClaimed)
             IconButton(
@@ -217,12 +219,8 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FamilyTreeScreen(focusMember: member),
-                  ),
-                ),
+                onPressed: () =>
+                    _openAndRecenter(FamilyTreeScreen(focusMember: member)),
                 icon: const Icon(Icons.account_tree),
                 label: Text(l10n.viewFamilyTree),
                 style: FilledButton.styleFrom(
@@ -628,12 +626,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             relation: l10n.father,
             member: father,
             locale: locale,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => MemberDetailScreen(member: father),
-              ),
-            ),
+            onTap: () => _openAndRecenter(MemberDetailScreen(member: father)),
           ),
         if (father == null && canAddRelations)
           _AddRelationTile(
@@ -648,12 +641,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             relation: l10n.mother,
             member: mother,
             locale: locale,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => MemberDetailScreen(member: mother),
-              ),
-            ),
+            onTap: () => _openAndRecenter(MemberDetailScreen(member: mother)),
           ),
         if (mother == null && canAddRelations)
           _AddRelationTile(
@@ -674,12 +662,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               relation: '',
               member: s,
               locale: locale,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailScreen(member: s),
-                ),
-              ),
+              onTap: () => _openAndRecenter(MemberDetailScreen(member: s)),
               onRemove: canAddRelations
                   ? () => _confirmRemoveSpouse(context, member, s)
                   : null,
@@ -707,12 +690,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               relation: '',
               member: child,
               locale: locale,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailScreen(member: child),
-                ),
-              ),
+              onTap: () => _openAndRecenter(MemberDetailScreen(member: child)),
             ),
           ),
         ],
@@ -735,12 +713,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               relation: '',
               member: sibling,
               locale: locale,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailScreen(member: sibling),
-                ),
-              ),
+              onTap: () => _openAndRecenter(MemberDetailScreen(member: sibling)),
             ),
           ),
         ],

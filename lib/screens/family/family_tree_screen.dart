@@ -368,6 +368,34 @@ int pedigreeGeneration(int n) => n.bitLength - 1;
 /// (e.g. index 5 is slot 1 of generation 2's 4 slots: 4,5,6,7 -> 0,1,2,3).
 int pedigreeSlot(int n) => n - (1 << pedigreeGeneration(n));
 
+typedef _TreeData = ({
+  Graph graph,
+  Map<String, TreeNodeContent> contents,
+  String initialNodeId,
+});
+
+/// Returns [next], but keeps [prev]'s Graph object when both graphs have the
+/// same nodes and edges (by key, in order). The GraphView host is keyed by
+/// graph identity, so a refetch that changed no structure (e.g. returning
+/// from a profile, or a name/DOB edit) keeps the host mounted — no viewport
+/// jump — while [next]'s fresh contents still feed the node builder. Reusing
+/// the SAME Graph under a mounted GraphView is safe (it re-runs layout on the
+/// same Node objects); only swapping in a DIFFERENT Graph is not.
+_TreeData _keepGraphIfSameShape(_TreeData? prev, _TreeData next) {
+  if (prev == null) return next;
+  String shape(Graph g) => [
+        for (final n in g.nodes) n.key?.value,
+        '|',
+        for (final e in g.edges) '${e.source.key?.value}>${e.destination.key?.value}',
+      ].join(',');
+  if (shape(prev.graph) != shape(next.graph)) return next;
+  return (
+    graph: prev.graph,
+    contents: next.contents,
+    initialNodeId: next.initialNodeId,
+  );
+}
+
 class FamilyTreeScreen extends StatefulWidget {
   /// When set, the tree opens centered on this member (ego-centric default
   /// view) instead of the logged-in user's full tree. Used by "View family
@@ -450,6 +478,13 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     String initialNodeId,
   })? _cachedTreeData;
 
+  // Same identity cache for the full-tree view (see _buildFullTreeView).
+  List<FamilyMember>? _cachedFullMembers;
+  List<SpouseLink>? _cachedFullSpouseLinks;
+  String? _cachedFullFocusId;
+  String? _cachedFullRootId;
+  _TreeData? _cachedFullData;
+
   ({
     Graph graph,
     Map<String, TreeNodeContent> contents,
@@ -462,7 +497,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         _cachedShowSiblings == _showSiblings) {
       return _cachedTreeData!;
     }
-    final data = _buildTreeData(provider, focus);
+    final data = _keepGraphIfSameShape(_cachedTreeData, _buildTreeData(provider, focus));
     _cachedEgoNetwork = provider.egoNetwork;
     _cachedSpouseLinks = provider.spouseLinks;
     _cachedFocusId = focus.id;
@@ -516,11 +551,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   /// the tree.
   Future<void> _openMemberDetail(
       BuildContext context, FamilyMember member, FamilyProvider provider) async {
+    // Captured BEFORE the push: the profile screen (and anything it opens —
+    // relatives' profiles, "View family tree") re-centers the SHARED
+    // provider on other members, so on return re-center where we were.
+    final returnToId = provider.centerMember?.id ?? member.id;
     await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
     );
-    if (mounted) await _refreshTreeViews(provider, fallbackId: member.id);
+    if (mounted) await _refreshTreeViews(provider, centerId: returnToId);
   }
 
   /// Reliably refreshes whatever view is showing after a mutation (add/edit/
@@ -532,8 +571,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   /// path (FamilyProvider.createFamilyMember / linkFamilyMember), so the
   /// reload surfaces it even if an immediate server read races replication.
   Future<void> _refreshTreeViews(FamilyProvider provider,
-      {required String fallbackId}) async {
-    final centerId = provider.centerMember?.id ?? fallbackId;
+      {required String centerId}) async {
     await provider.loadEgoNetwork(centerId);
     if (!mounted) return;
     // Force the once-per-root full-tree guard to reload, then drive it now so
@@ -847,7 +885,12 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         configuration, _FamilyTreeEdgeRenderer(configuration));
 
     return _GraphViewHost(
-      key: ValueKey('tree_${focus.id}_$_showSiblings'),
+      // Remount whenever the (identity-cached) graph changes. graphview's Node
+      // equality is by key, so handing a NEW Graph to a still-mounted
+      // GraphView leaves its render children on the OLD Node objects (stale
+      // positions) while edges are drawn from the new ones — misplaced
+      // lines. A fresh host = fresh render object laid out from this graph.
+      key: ObjectKey(data.graph),
       graph: data.graph,
       algorithm: algorithm,
       initialNodeId: data.initialNodeId,
@@ -925,12 +968,29 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       );
     }
 
-    final data = buildFullTreeData(
-      members: members,
-      spouseLinks: provider.fullTreeSpouseLinks,
-      focusId: me.id,
-      rootPersonId: _fullTreeRootId,
-    );
+    // Identity-cached like the ego view: rebuilt only when the loaded data or
+    // the root actually changes, so incidental rebuilds reuse the same Graph
+    // (and the host below, keyed by it, stays mounted).
+    if (_cachedFullData == null ||
+        !identical(members, _cachedFullMembers) ||
+        !identical(provider.fullTreeSpouseLinks, _cachedFullSpouseLinks) ||
+        _cachedFullFocusId != me.id ||
+        _cachedFullRootId != _fullTreeRootId) {
+      _cachedFullData = _keepGraphIfSameShape(
+        _cachedFullData,
+        buildFullTreeData(
+          members: members,
+          spouseLinks: provider.fullTreeSpouseLinks,
+          focusId: me.id,
+          rootPersonId: _fullTreeRootId,
+        ),
+      );
+      _cachedFullMembers = members;
+      _cachedFullSpouseLinks = provider.fullTreeSpouseLinks;
+      _cachedFullFocusId = me.id;
+      _cachedFullRootId = _fullTreeRootId;
+    }
+    final data = _cachedFullData!;
 
     // A single-node component can't be laid out by the graph algorithm (same
     // GlobalKey assertion the ego view hit) — render the lone unit directly.
@@ -963,7 +1023,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         configuration, _FamilyTreeEdgeRenderer(configuration));
 
     final host = _GraphViewHost(
-      key: ValueKey('fulltree_${me.id}_${_fullTreeRootId}_${members.length}'),
+      key: ObjectKey(data.graph), // remount on a new graph — see ego view
       graph: data.graph,
       algorithm: algorithm,
       initialNodeId: data.initialNodeId,
@@ -1197,11 +1257,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               title: Text(l10n.viewProfile),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => MemberDetailScreen(member: member)),
-                );
+                _openMemberDetail(context, member, provider);
               },
             ),
             ListTile(
@@ -1259,6 +1315,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       BuildContext context, FamilyMember member, FamilyProvider provider) async {
     final authProvider = context.read<AuthProvider>();
     final isOwnProfile = member.id == authProvider.currentMember?.id;
+    final returnToId = provider.centerMember?.id ?? member.id;
 
     final result = await Navigator.push<bool>(
       context,
@@ -1274,7 +1331,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     // without leaving the screen — regardless of which view is active or
     // whether the member was added outside the center's ego neighbourhood.
     if (result == true && mounted) {
-      await _refreshTreeViews(provider, fallbackId: member.id);
+      await _refreshTreeViews(provider, centerId: returnToId);
     }
   }
 
