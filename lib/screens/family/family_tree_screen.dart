@@ -40,13 +40,18 @@ const double _kMaxZoom = 2.5;
 
 /// Sorts members eldest → youngest (unknown DOB sorts last), matching the
 /// reading order genealogical charts conventionally use for siblings/children.
+/// Ties (same or missing DOB — common in this tree) break by createdAt then id,
+/// so the order never depends on the server's row order and can't reshuffle
+/// between loads.
 List<FamilyMember> _sortedByDob(List<FamilyMember> members) {
   final sorted = [...members];
   sorted.sort((a, b) {
-    if (a.dob == null && b.dob == null) return 0;
-    if (a.dob == null) return 1;
-    if (b.dob == null) return -1;
-    return a.dob!.compareTo(b.dob!);
+    final byDob = a.dob == null
+        ? (b.dob == null ? 0 : 1)
+        : (b.dob == null ? -1 : a.dob!.compareTo(b.dob!));
+    if (byDob != 0) return byDob;
+    final byCreated = a.createdAt.compareTo(b.createdAt);
+    return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
   });
   return sorted;
 }
