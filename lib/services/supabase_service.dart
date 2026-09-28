@@ -286,10 +286,11 @@ class SupabaseService {
   }
 
   /// Fetches one page of the whole-database member list, ordered stably by
-  /// last name then id (so [range] windows don't overlap or skip rows across
-  /// pages). Backs the Directory "All" tab's infinite scroll. RLS (migration
-  /// 006) already lets any authenticated user SELECT every row, so this needs
-  /// no new policy. Keep [limit] under Supabase's max_rows cap.
+  /// last name, first name, then id — all A→Z (so [range] windows don't
+  /// overlap or skip rows across pages). Backs the Directory "Everyone" tab's
+  /// infinite scroll. RLS (migration 006) already lets any authenticated user
+  /// SELECT every row, so this needs no new policy. Keep [limit] under
+  /// Supabase's max_rows cap.
   static Future<List<FamilyMember>> getMembersPage({
     int limit = 50,
     int offset = 0,
@@ -297,8 +298,10 @@ class SupabaseService {
     final response = await _t(client
         .from('family_members')
         .select()
-        .order('last_name_en')
-        .order('id')
+        // postgrest-dart's order() defaults to DESCENDING — spell out A→Z.
+        .order('last_name_en', ascending: true)
+        .order('first_name_en', ascending: true)
+        .order('id', ascending: true)
         .range(offset, offset + limit - 1));
 
     return (response as List)
