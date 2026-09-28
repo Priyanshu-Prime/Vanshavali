@@ -78,11 +78,13 @@ class _DirectoryScreenState extends State<DirectoryScreen>
   }
 
   void _ensureLoaded(FamilyProvider fp, String? myId) {
-    if (myId == null || fp.isLoadingFullTree || _loadedForId == myId) return;
+    // Keyed on dataVersion too, so an add/edit made elsewhere reloads the list.
+    final key = '$myId@${fp.dataVersion}';
+    if (myId == null || fp.isLoadingFullTree || _loadedForId == key) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         fp.loadFullTree(myId);
-        setState(() => _loadedForId = myId);
+        setState(() => _loadedForId = key);
       }
     });
   }

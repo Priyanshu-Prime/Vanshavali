@@ -420,9 +420,14 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   _ViewMode _viewMode = _ViewMode.fullTree;
   bool _showSiblings = false;
 
-  // Which root the full-tree view has kicked off a load for, so loadFullTree
-  // fires once per component rather than every rebuild.
+  // Which root (at which FamilyProvider.dataVersion) the full-tree view has
+  // kicked off a load for, so loadFullTree fires once per component+data
+  // change rather than every rebuild — and DOES refire after an add/edit made
+  // on another screen. See _fullTreeLoadKey.
   String? _fullTreeLoadedForRoot;
+
+  String _fullTreeLoadKey(String rootId, FamilyProvider provider) =>
+      '$rootId@${provider.dataVersion}';
 
   // The lineage the full-tree view is currently rooted on (a person whose
   // family branch we're exploring). Null = your own line. Changing it re-roots
@@ -585,7 +590,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     final me = context.read<AuthProvider>().currentMember ?? provider.centerMember;
     final rootId = me?.id ?? centerId;
     await provider.loadFullTree(rootId);
-    if (mounted) setState(() => _fullTreeLoadedForRoot = rootId);
+    if (mounted) {
+      setState(() => _fullTreeLoadedForRoot = _fullTreeLoadKey(rootId, provider));
+    }
   }
 
   /// The controller actually driving the currently-visible view — null if
@@ -712,6 +719,9 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                 familyProvider
                     .loadEgoNetwork(familyProvider.centerMember!.id);
               }
+              // Refresh must refetch the full tree too (it only reloaded the
+              // Nearby data before, so the default view never updated).
+              setState(() => _fullTreeLoadedForRoot = null);
             },
           ),
         ],
@@ -949,11 +959,12 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
 
     // Fire the full-component load once per root (guarded so it doesn't refire
     // every rebuild — same pattern as the pedigree fit).
-    if (!provider.isLoadingFullTree && _fullTreeLoadedForRoot != me.id) {
+    final loadKey = _fullTreeLoadKey(me.id, provider);
+    if (!provider.isLoadingFullTree && _fullTreeLoadedForRoot != loadKey) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         provider.loadFullTree(me.id);
-        setState(() => _fullTreeLoadedForRoot = me.id);
+        setState(() => _fullTreeLoadedForRoot = loadKey);
       });
     }
 

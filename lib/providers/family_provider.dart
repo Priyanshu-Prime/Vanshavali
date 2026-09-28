@@ -22,6 +22,13 @@ class FamilyProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Bumped after every successful add/edit/link/delete. The full-tree view
+  // loads once per root; it keys that guard on this too, so a change made
+  // anywhere (e.g. "Add Family Member" on Home) reloads the full tree instead
+  // of leaving it stale until restart.
+  int _dataVersion = 0;
+  int get dataVersion => _dataVersion;
+
   // Search debounce + stale-response guard. Rapid typing schedules at most one
   // request (debounce collapses the burst) and only the latest query's result is
   // applied (the seq guard drops any older in-flight response). Mirrors the
@@ -488,6 +495,7 @@ class FamilyProvider extends ChangeNotifier {
         await loadEgoNetwork(_centerMember!.id);
       }
 
+      _dataVersion++;
       _isLoading = false;
       notifyListeners();
       return newMember;
@@ -525,6 +533,7 @@ class FamilyProvider extends ChangeNotifier {
         await loadEgoNetwork(_centerMember!.id);
       }
 
+      _dataVersion++;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -631,6 +640,7 @@ class FamilyProvider extends ChangeNotifier {
         await loadEgoNetwork(_centerMember!.id);
       }
 
+      _dataVersion++;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -664,6 +674,7 @@ class FamilyProvider extends ChangeNotifier {
         await loadEgoNetwork(_centerMember!.id);
       }
 
+      _dataVersion++;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -698,6 +709,7 @@ class FamilyProvider extends ChangeNotifier {
         await loadEgoNetwork(_centerMember!.id);
       }
 
+      _dataVersion++;
       _isLoading = false;
       notifyListeners();
       return true;
