@@ -181,6 +181,12 @@ class AppLocalizationsGu extends AppLocalizations {
   String get siblings => 'ભાઈ-બહેન';
 
   @override
+  String get relationChildSingular => 'બાળક';
+
+  @override
+  String get relationSiblingSingular => 'ભાઈ/બહેન';
+
+  @override
   String get addFather => 'પિતા ઉમેરો';
 
   @override

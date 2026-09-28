@@ -183,6 +183,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get siblings => 'Siblings';
 
   @override
+  String get relationChildSingular => 'child';
+
+  @override
+  String get relationSiblingSingular => 'sibling';
+
+  @override
   String get addFather => 'Add Father';
 
   @override

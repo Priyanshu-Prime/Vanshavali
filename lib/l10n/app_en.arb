@@ -65,6 +65,8 @@
   "spouses": "Spouses",
   "children": "Children",
   "siblings": "Siblings",
+  "relationChildSingular": "child",
+  "relationSiblingSingular": "sibling",
   "addFather": "Add Father",
   "addMother": "Add Mother",
   "addSpouse": "Add Spouse",

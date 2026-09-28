@@ -690,7 +690,13 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
         ? _selectedExistingMember!.fullNameEn
         : '${_firstNameEnController.text.trim()} ${_lastNameEnController.text.trim()}';
 
-    final relationLabel = _getRelationLabel(_selectedRelation!, l10n);
+    // Singular in the sentence ("Add X as your child?"), unlike the plural
+    // chip labels ("Children") that _getRelationLabel returns.
+    final relationLabel = switch (_selectedRelation!) {
+      'child' => l10n.relationChildSingular,
+      'sibling' => l10n.relationSiblingSingular,
+      final r => _getRelationLabel(r, l10n),
+    };
     final confirmMessage = _isTargetMode
         ? l10n.confirmAddMemberTarget(
             nameToShow,

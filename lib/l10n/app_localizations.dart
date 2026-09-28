@@ -434,6 +434,18 @@ abstract class AppLocalizations {
   /// **'Siblings'**
   String get siblings;
 
+  /// No description provided for @relationChildSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'child'**
+  String get relationChildSingular;
+
+  /// No description provided for @relationSiblingSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'sibling'**
+  String get relationSiblingSingular;
+
   /// No description provided for @addFather.
   ///
   /// In en, this message translates to:
