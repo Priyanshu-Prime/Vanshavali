@@ -129,6 +129,12 @@ try {
       'Rameshselfcheck', 'Selfcheckpatel', p_gender => 'Male', p_village => $1)`, [a]);
   ok((await dup(null)).length === 0, 'name + gender only -> no candidate');
   ok((await dup('Selfcheckvillage')).some((r) => r.n === 'Rameshselfcheck'), 'name + gender + village -> candidate');
+  // A sibling (same surname/village/gender, different first name) is never the
+  // "same person" -- seen on-device: new child "Mira" was matched to "Kavya".
+  const byFirst = (first) => q(`SELECT member->>'first_name_en' AS n FROM public.find_duplicate_candidates(
+      $1, 'Selfcheckpatel', p_gender => 'Male', p_village => 'Selfcheckvillage')`, [first]);
+  ok(!(await byFirst('Dineshselfcheck')).some((r) => r.n === 'Rameshselfcheck'), 'different first name (sibling) -> no candidate');
+  ok((await byFirst('Rameshselfchek')).some((r) => r.n === 'Rameshselfcheck'), 'first-name typo variant -> candidate');
 } finally {
   await c.query('ROLLBACK');
   await c.end();

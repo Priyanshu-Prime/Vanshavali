@@ -83,6 +83,8 @@ GRANT EXECUTE ON FUNCTION public.set_member_parents(UUID, UUID, UUID) TO authent
 --   village_score > 0 (exact or partial village match)
 --   dob_score > 0     (same dob or within +-1yr)
 --   father_score >= 0.5 OR mother_score >= 0.5 (parent name matches)
+-- AND the first name itself must be similar (first_score >= 0.3), so a
+-- sibling sharing surname/parents/village is never offered as a duplicate,
 -- so "Ramesh Patel, Male" alone never surfaces someone else's profile.
 CREATE OR REPLACE FUNCTION public.find_duplicate_candidates(
   p_first_name_en TEXT,
@@ -119,6 +121,16 @@ AS $$
              THEN similarity(lower(coalesce(fm.first_name_gu, '') || ' ' || coalesce(fm.last_name_gu, '')), t.name_gu)
              ELSE 0 END
       )::REAL AS name_score,
+      -- First name on its own: the full-name score is inflated by a shared
+      -- surname, so a SIBLING (same surname, parents, village) would score as
+      -- the "same person" -- seen on-device: adding child "Mira Patel" offered
+      -- her sister "Kavya Patel". The person's own name must match.
+      GREATEST(
+        similarity(lower(fm.first_name_en), lower(coalesce(p_first_name_en, ''))),
+        CASE WHEN p_first_name_gu IS NOT NULL AND fm.first_name_gu IS NOT NULL
+             THEN similarity(lower(fm.first_name_gu), lower(p_first_name_gu))
+             ELSE 0 END
+      )::REAL AS first_score,
       CASE WHEN p_father_name IS NULL OR fa.id IS NULL THEN 0
            ELSE GREATEST(
              similarity(lower(fa.first_name_en || ' ' || fa.last_name_en), lower(p_father_name)),
@@ -156,7 +168,7 @@ AS $$
       s.id,
       (0.40 * s.name_score + 0.20 * s.father_score + 0.15 * s.mother_score
         + 0.10 * s.village_score + 0.10 * s.dob_score + 0.05 * s.gender_score)::REAL AS score,
-      s.name_score, s.father_score, s.mother_score,
+      s.name_score, s.first_score, s.father_score, s.mother_score,
       s.village_score, s.dob_score, s.gender_score
     FROM scored s
   )
@@ -170,6 +182,7 @@ AS $$
   FROM totalled tt
   JOIN public.family_members fm ON fm.id = tt.id
   WHERE tt.score >= 0.45
+    AND tt.first_score >= 0.3
     AND (tt.village_score > 0 OR tt.dob_score > 0
          OR tt.father_score >= 0.5 OR tt.mother_score >= 0.5)
   ORDER BY tt.score DESC
