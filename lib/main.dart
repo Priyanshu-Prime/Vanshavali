@@ -260,6 +260,16 @@ class _AppNavigatorState extends State<AppNavigator> {
     final authProvider = context.watch<AuthProvider>();
     _maybeShowMergeConflictDialog(authProvider);
 
+    // A sign-in/sign-up in progress from the login screen: keep LoginScreen
+    // mounted (it shows its own button spinner). Swapping in the full-screen
+    // spinner below unmounted it, so a wrong password came back as a fresh
+    // login screen — typed email gone, error snackbar never shown (on-device).
+    if (authProvider.status == AuthStatus.loading &&
+        authProvider.user == null &&
+        !_showOnboarding) {
+      return const LoginScreen();
+    }
+
     // Show loading while checking auth state
     if (authProvider.status == AuthStatus.initial ||
         authProvider.status == AuthStatus.loading) {
