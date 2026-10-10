@@ -382,11 +382,19 @@ class _DashboardTab extends StatelessWidget {
 
   // Filled cards open the person (owner feedback: tapping a filled Father
   // card opened "Add Family Member", and sibling cards did nothing).
-  void _openMember(BuildContext context, FamilyMember m) {
-    Navigator.push(
+  Future<void> _openMember(BuildContext context, FamilyMember m) async {
+    final family = context.read<FamilyProvider>();
+    final myId = context.read<AuthProvider>().currentMember?.id;
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => MemberDetailScreen(member: m)),
     );
+    // The profile screen re-centers the shared ego network on that person;
+    // re-sync to me or the Dashboard shows their family under my name
+    // (seen on-device). Same reason as the tab-switch re-sync above.
+    if (myId != null && family.centerMember?.id != myId) {
+      family.loadEgoNetwork(myId);
+    }
   }
 
   void _addFamilyMember(BuildContext context, String? relation) {
