@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -94,6 +95,14 @@ class _VanshavaliAppState extends State<VanshavaliApp> {
               GlobalCupertinoLocalizations.delegate,
             ],
             
+            // Screens without an AppBar (login, sign-up, onboarding) got the
+            // platform default white status-bar icons on our near-white
+            // background — invisible. AppBars still apply their own style.
+            builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+              value: AppTheme.bodyOverlayStyle(Theme.of(context).brightness),
+              child: child!,
+            ),
+
             home: const AppNavigator(),
           );
         },
