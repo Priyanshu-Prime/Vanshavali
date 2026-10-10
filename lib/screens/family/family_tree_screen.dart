@@ -808,7 +808,16 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   Widget _buildViewModeBar(BuildContext context) {
     final l10n = context.l10n;
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      // Full width: shrink-wrapped, the bar left odd background-coloured
+      // strips at both screen edges.
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1079,18 +1088,18 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         ? provider.fullTree.where((m) => m.id == _fullTreeRootId).firstOrNull
         : null;
     if (rooted == null) return host;
-    return Stack(
+    // Banner ABOVE the canvas, not floating over it: as an overlay it sat on
+    // top of the first row's connector lines.
+    return Column(
       children: [
-        Positioned.fill(child: host),
-        Positioned(
-          top: 8,
-          left: 8,
-          right: 8,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
           child: _LineageBanner(
             name: rooted.getFullName(locale),
             onBack: () => setState(() => _fullTreeRootId = null),
           ),
         ),
+        Expanded(child: host),
       ],
     );
   }

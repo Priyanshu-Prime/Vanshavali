@@ -560,12 +560,6 @@ abstract class AppLocalizations {
   /// **'Dark Mode'**
   String get darkMode;
 
-  /// No description provided for @lightMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Light Mode'**
-  String get lightMode;
-
   /// No description provided for @offlineMode.
   ///
   /// In en, this message translates to:

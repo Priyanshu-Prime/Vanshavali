@@ -114,6 +114,26 @@ List<FamilyMember> childrenNeedingOtherParent({
 
 enum LinkBlock { registered, otherParent }
 
+/// Gender to pre-select on the Add Family Member form for [relation]:
+/// father/mother are fixed; a spouse defaults to the opposite of
+/// [memberGender] (still editable). Null = no default (child/sibling must be
+/// a deliberate pick).
+String? defaultGenderForRelation(String? relation, String? memberGender) {
+  switch (relation) {
+    case 'father':
+      return 'Male';
+    case 'mother':
+      return 'Female';
+    case 'spouse':
+      return memberGender == 'Male'
+          ? 'Female'
+          : memberGender == 'Female'
+              ? 'Male'
+              : null;
+  }
+  return null;
+}
+
 /// Why an EXISTING [match] can't be linked as [relation] ('child'/'sibling')
 /// of [anchor], or null if it can. Child/sibling links write the MATCH's own
 /// father_id/mother_id (set_member_parents), so:
@@ -225,12 +245,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     super.initState();
     _selectedRelation = widget.preselectedRelation;
 
-    // Auto-set gender based on relation
-    if (_selectedRelation == 'father') {
-      _selectedGender = 'Male';
-    } else if (_selectedRelation == 'mother') {
-      _selectedGender = 'Female';
-    }
+    _selectedGender = _defaultGenderFor(_selectedRelation);
 
     // Pre-fill last name only for same-surname relations (father, child, sibling)
     // Do NOT pre-fill for spouse or mother (different maiden/family name)
@@ -422,6 +437,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     }
   }
 
+  String? _defaultGenderFor(String? relation) =>
+      defaultGenderForRelation(relation, _effectiveMember?.gender);
+
   /// Returns true if the given relation should have the same surname
   /// as the effective member (paternal surname inheritance).
   bool _shouldPrefillSurname(String? relation) {
@@ -432,12 +450,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   void _onRelationChanged(String? value) {
     setState(() {
       _selectedRelation = value;
-      // Auto-set gender based on relation
-      if (value == 'father') {
-        _selectedGender = 'Male';
-      } else if (value == 'mother') {
-        _selectedGender = 'Female';
-      }
+      // Reset to the relation's default (null for child/sibling, so the
+      // required gender is a deliberate pick, never a leftover).
+      _selectedGender = _defaultGenderFor(value);
 
       // Clear or restore surname based on relation type
       final member = _effectiveMember;
@@ -1322,11 +1337,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                         children: _currentSpouses
                             .map(
                               (s) => Chip(
-                                avatar: CircleAvatar(
-                                  child: Text(
-                                    s.initial,
-                                  ),
-                                ),
+                                avatar: MemberAvatar(member: s),
                                 label: Text(s.fullNameEn),
                               ),
                             )
@@ -1351,19 +1362,20 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                       setState(() => _linkExisting = value);
                     }
                   },
-                  child: Row(
+                  // Stacked, not side by side: two half-width tiles wrapped
+                  // "Link Existing Member" onto three lines (worse in
+                  // Gujarati).
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: RadioListTile<bool>(
-                          title: Text(l10n.createNew),
-                          value: false,
-                        ),
+                      RadioListTile<bool>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.createNew),
+                        value: false,
                       ),
-                      Expanded(
-                        child: RadioListTile<bool>(
-                          title: Text(l10n.linkExisting),
-                          value: true,
-                        ),
+                      RadioListTile<bool>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.linkExisting),
+                        value: true,
                       ),
                     ],
                   ),
@@ -1442,6 +1454,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                     controller: _firstNameEnController,
                     decoration: InputDecoration(
                       labelText: '${l10n.firstName} *',
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     textCapitalization: TextCapitalization.words,
                     validator: (value) =>
@@ -1452,6 +1465,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                     controller: _firstNameGuController,
                     decoration: InputDecoration(
                       labelText: l10n.firstNameGujarati,
+                      prefixIcon: const Icon(Icons.person_outline),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.edit, size: 20),
                         tooltip: l10n.editGujaratiSpelling,
@@ -1473,6 +1487,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                     controller: _lastNameEnController,
                     decoration: InputDecoration(
                       labelText: '${l10n.lastName} *',
+                      prefixIcon: const Icon(Icons.family_restroom),
                     ),
                     textCapitalization: TextCapitalization.words,
                     validator: (value) =>
@@ -1483,6 +1498,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                     controller: _lastNameGuController,
                     decoration: InputDecoration(
                       labelText: l10n.lastNameGujarati,
+                      prefixIcon: const Icon(Icons.family_restroom),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.edit, size: 20),
                         tooltip: l10n.editGujaratiSpelling,
@@ -1501,8 +1517,14 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
+                    // Re-init when the relation changes so the relation's
+                    // default gender (e.g. spouse = opposite) shows up.
+                    key: ValueKey('gender-$_selectedRelation'),
                     initialValue: _selectedGender,
-                    decoration: InputDecoration(labelText: l10n.gender),
+                    decoration: InputDecoration(
+                      labelText: l10n.gender,
+                      prefixIcon: const Icon(Icons.wc),
+                    ),
                     items: [
                       DropdownMenuItem(value: 'Male', child: Text(l10n.male)),
                       DropdownMenuItem(
@@ -1771,15 +1793,7 @@ class _OtherParentPickerState extends State<_OtherParentPicker> {
                 (spouse) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Text(
-                        spouse.initial,
-                        style: TextStyle(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
+                    leading: MemberAvatar(member: spouse),
                     title: Text(spouse.fullNameEn),
                     subtitle: Text(
                       spouse.isClaimed ? l10n.verified : l10n.unclaimed,

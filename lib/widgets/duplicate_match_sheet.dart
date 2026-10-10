@@ -73,16 +73,9 @@ Future<DuplicateMatchResult?> showDuplicateMatchSheet({
                     return Card(
                       margin: EdgeInsets.zero,
                       child: ListTile(
-                        // Genealogical symbols: box = male, circle = female.
-                        leading: Icon(
-                          m.gender == 'Male'
-                              ? Icons.square_outlined
-                              : m.gender == 'Female'
-                                  ? Icons.circle_outlined
-                                  : Icons.person_outline,
-                          size: 32,
-                          color: theme.colorScheme.primary,
-                        ),
+                        // A photo/initial avatar, not the old square/circle
+                        // outline icons: those read as unticked checkboxes.
+                        leading: MemberAvatar(member: m),
                         title: Text(m.fullNameEn),
                         subtitle: Text(
                           [

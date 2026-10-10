@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../models/family_member.dart';
 import '../l10n/app_localizations.dart';
 import '../services/translation_service.dart';
 import '../theme/app_spacing.dart';
@@ -53,7 +55,8 @@ String friendlyErrorMessage(BuildContext context, Object error) {
 
   // Supabase's own message when confirmations are required and the user
   // tries to sign in before clicking the link — thrown from signInWithPassword.
-  if (text.contains('email not confirmed') || text.contains('email_not_confirmed')) {
+  if (text.contains('email not confirmed') ||
+      text.contains('email_not_confirmed')) {
     return l10n.errorEmailNotConfirmed;
   }
 
@@ -248,6 +251,39 @@ class AppWidgets {
   }
 }
 
+/// A person's round avatar: their photo when they have one, otherwise their
+/// initial. The ONE avatar style for the whole app — Home, Directory,
+/// profile header and relation rows each used a different colour (solid
+/// green, light green, amber, theme default) and only some showed photos.
+class MemberAvatar extends StatelessWidget {
+  final FamilyMember? member;
+  final double radius;
+
+  const MemberAvatar({super.key, required this.member, this.radius = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final url = member?.avatarUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primaryContainer,
+      // foregroundImage paints over the initial, so the initial shows while
+      // the photo loads and stays if it fails.
+      foregroundImage: url != null ? CachedNetworkImageProvider(url) : null,
+      onForegroundImageError: url != null ? (_, _) {} : null,
+      child: Text(
+        member?.initial ?? '?',
+        style: TextStyle(
+          color: scheme.onPrimaryContainer,
+          fontSize: radius * 0.8,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 /// A card with a title and a padded, top-aligned column of content —
 /// the common "Card > Padding > Column(title, ...content)" section pattern
 /// repeated across settings, profile, and add-family-member screens.
@@ -269,17 +305,22 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      child: Padding(
-        padding: padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: titleSpacing),
-            ...children,
-          ],
+    // Always full width: inside a start-aligned Column a Card shrink-wraps,
+    // so a short section ("Additional Details") rendered as a narrow stub.
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        color: color,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              SizedBox(height: titleSpacing),
+              ...children,
+            ],
+          ),
         ),
       ),
     );

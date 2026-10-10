@@ -292,8 +292,8 @@ class _DirectoryScreenState extends State<DirectoryScreen>
             ),
           ),
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xs),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -399,7 +399,7 @@ class _DirectoryScreenState extends State<DirectoryScreen>
     final l10n = context.l10n;
     final isMe = m.id == me?.id;
     return ListTile(
-      leading: CircleAvatar(child: Text(m.initial)),
+      leading: MemberAvatar(member: m),
       title: Text(m.getFullName(locale)),
       subtitle: m.villageOrigin != null && m.villageOrigin!.trim().isNotEmpty
           ? Text(GujaratPlacesService.displayName(m.villageOrigin!, locale))

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -176,24 +175,7 @@ class _DashboardTab extends StatelessWidget {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 36,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          backgroundImage: member?.avatarUrl != null
-                              ? CachedNetworkImageProvider(member!.avatarUrl!)
-                              : null,
-                          child: member?.avatarUrl != null
-                              ? null
-                              : Text(
-                                  member?.initial ?? '?',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(color: Colors.white),
-                                ),
-                        ),
+                        MemberAvatar(member: member, radius: 36),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
@@ -290,17 +272,17 @@ class _DashboardTab extends StatelessWidget {
               // Family Overview
               Text(
                 l10n.myFamily,
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
 
               // Quick Family Cards
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
                 childAspectRatio: 1.3,
                 children: [
                   _FamilyCard(
@@ -348,9 +330,9 @@ class _DashboardTab extends StatelessWidget {
                   l10n.siblings,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 SizedBox(
-                  height: 100,
+                  height: 128,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: familyProvider.siblings.length,
@@ -445,13 +427,16 @@ class _FamilyCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 32,
-                color: hasMember
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline,
-              ),
+              if (member != null)
+                MemberAvatar(member: member as FamilyMember, radius: 20)
+              else
+                Icon(
+                  icon,
+                  size: 32,
+                  color: hasMember
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
               const SizedBox(height: 8),
               Text(label, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppSpacing.xs),
@@ -499,16 +484,7 @@ class _SiblingChip extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Text(
-                  member.initial,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
+              MemberAvatar(member: member, radius: 24),
               const SizedBox(height: 8),
               Text(
                 member.getFullName(locale),

@@ -266,9 +266,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              l10n.enterInviteCode,
-                              style: Theme.of(context).textTheme.titleSmall,
+                            Expanded(
+                              child: Text(
+                                l10n.enterInviteCode,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
                             ),
                           ],
                         ),
@@ -282,8 +284,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           textCapitalization: TextCapitalization.characters,
                           textInputAction: TextInputAction.done,
                           maxLength: 6,
+                          // The "0/6" counter was noise; the hint already says 6 characters.
+                          buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                           onChanged: _lookupInviteCode,
                         ),
+                        const SizedBox(height: AppSpacing.sm),
                         // Optional QR shortcut — manual typing above always works.
                         OutlinedButton.icon(
                           onPressed: _scanInviteCode,

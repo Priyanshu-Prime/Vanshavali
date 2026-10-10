@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../services/gujarat_places_service.dart';
 import 'package:flutter/services.dart';
@@ -154,24 +153,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 48,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      backgroundImage: member.avatarUrl != null
-                          ? CachedNetworkImageProvider(member.avatarUrl!)
-                          : null,
-                      // Initial stays as the fallback child — shown until/unless
-                      // an avatar image is present and loads over it.
-                      child: member.avatarUrl != null
-                          ? null
-                          : Text(
-                              member.initial,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .displaySmall
-                                  ?.copyWith(color: Colors.white),
-                            ),
-                    ),
+                    MemberAvatar(member: member, radius: 48),
                     const SizedBox(width: 20),
                     Expanded(
                       child: Column(
@@ -230,9 +212,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     _openAndRecenter(FamilyTreeScreen(focusMember: member)),
                 icon: const Icon(Icons.account_tree),
                 label: Text(l10n.viewFamilyTree),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -882,23 +861,7 @@ class _FamilyRelationTile extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
-                backgroundImage: member.avatarUrl != null
-                    ? CachedNetworkImageProvider(member.avatarUrl!)
-                    : null,
-                child: member.avatarUrl != null
-                    ? null
-                    : Text(
-                        member.initial,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
-                        ),
-                      ),
-              ),
+              MemberAvatar(member: member),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -972,12 +935,15 @@ class _AddRelationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      // Full width: content-sized buttons stacked into a ragged column of
+      // different widths (Add Father / Add Mother / Add Spouse ...).
       child: OutlinedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 18),
         label: Text(label),
         style: OutlinedButton.styleFrom(
           alignment: Alignment.centerLeft,
+          minimumSize: const Size.fromHeight(AppSpacing.minTapTarget + 4),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           side: BorderSide(
             color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
