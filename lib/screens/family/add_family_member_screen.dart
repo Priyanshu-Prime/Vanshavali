@@ -167,6 +167,7 @@ class AddFamilyMemberScreen extends StatefulWidget {
 
 class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   final _formKey = GlobalKey<FormState>();
+  AutovalidateMode _autovalidate = AutovalidateMode.disabled;
   final _firstNameEnController = TextEditingController();
   final _firstNameGuController = TextEditingController();
   final _lastNameEnController = TextEditingController();
@@ -288,12 +289,14 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (_villageController.text.isNotEmpty && !_villageAutoFilled) return;
     final family = context.read<FamilyProvider>();
     String? village;
+    FamilyMember? childsFather;
     if (_selectedRelation == 'father' || _selectedRelation == 'sibling') {
       village = member.villageOrigin;
     } else if (_selectedRelation == 'child') {
       if (member.gender == 'Female') {
         final husbands = await family.getSpousesOf(member.id);
-        if (husbands.length == 1) village = husbands.first.villageOrigin;
+        if (husbands.length == 1) childsFather = husbands.first;
+        village = childsFather?.villageOrigin;
       } else {
         village = member.villageOrigin;
       }
@@ -302,6 +305,13 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     setState(() {
       _villageController.text = village ?? '';
       _villageAutoFilled = village != null && village.isNotEmpty;
+      // A woman's child carries her husband's surname, not hers (the
+      // initState prefill used hers). Only replace that untouched prefill.
+      if (childsFather != null &&
+          _lastNameEnController.text == member.lastNameEn) {
+        _lastNameEnController.text = childsFather.lastNameEn;
+        _lastNameGuController.text = childsFather.lastNameGu ?? '';
+      }
     });
   }
 
@@ -575,7 +585,13 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (_submitting) return;
     _submitting = true;
     try {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Same as the profile form: the failing field may be off-screen, so
+      // say so, and re-check live so red errors clear once fixed.
+      setState(() => _autovalidate = AutovalidateMode.onUserInteraction);
+      showAppSnackBar(context, context.l10n.formHasErrors, isError: true);
+      return;
+    }
     final l10n = context.l10n;
     if (_selectedRelation == null) {
       showAppSnackBar(context, l10n.pleaseSelectRelationship, isError: true);
@@ -1227,6 +1243,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
         ),
       ),
       body: Form(
+        autovalidateMode: _autovalidate,
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),

@@ -38,7 +38,13 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
   // false; resolved in initState.
   bool _canEdit = false;
 
-  FamilyMember get member => widget.member;
+  // Prefer the provider's fresh copy: this screen reloads the ego network on
+  // this member after every edit, but widget.member is the pre-edit snapshot
+  // (seen on-device: a saved occupation didn't show until reopening).
+  FamilyMember get member {
+    final fresh = context.read<FamilyProvider>().centerMember;
+    return fresh?.id == widget.member.id ? fresh! : widget.member;
+  }
 
   @override
   void initState() {
