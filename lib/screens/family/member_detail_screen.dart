@@ -878,12 +878,17 @@ class _FamilyRelationTile extends StatelessWidget {
                 backgroundColor: Theme.of(
                   context,
                 ).colorScheme.secondaryContainer,
-                child: Text(
-                  member.initial,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ),
+                backgroundImage: member.avatarUrl != null
+                    ? CachedNetworkImageProvider(member.avatarUrl!)
+                    : null,
+                child: member.avatarUrl != null
+                    ? null
+                    : Text(
+                        member.initial,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(

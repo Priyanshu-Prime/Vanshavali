@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -178,11 +179,18 @@ class _DashboardTab extends StatelessWidget {
                           backgroundColor: Theme.of(
                             context,
                           ).colorScheme.primary,
-                          child: Text(
-                            member?.initial ?? '?',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(color: Colors.white),
-                          ),
+                          backgroundImage: member?.avatarUrl != null
+                              ? CachedNetworkImageProvider(member!.avatarUrl!)
+                              : null,
+                          child: member?.avatarUrl != null
+                              ? null
+                              : Text(
+                                  member?.initial ?? '?',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(color: Colors.white),
+                                ),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(

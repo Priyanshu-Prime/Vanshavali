@@ -271,6 +271,38 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (_selectedRelation == 'spouse') {
       _loadCurrentSpouses();
     }
+    _prefillVillage();
+  }
+
+  // Village follows the father's line (owner rule, 2026-10-10): a woman keeps
+  // her father's village (maika) even after marriage. So a father or sibling
+  // shares the member's village, and a child takes its father's — the member's
+  // own if he's the father, else her husband's (only when there's exactly one).
+  // Mother/spouse come from another family's line, so they start blank.
+  bool _villageAutoFilled = false;
+
+  Future<void> _prefillVillage() async {
+    final member = _effectiveMember;
+    if (member == null) return;
+    // Never overwrite a village the user picked themselves.
+    if (_villageController.text.isNotEmpty && !_villageAutoFilled) return;
+    final family = context.read<FamilyProvider>();
+    String? village;
+    if (_selectedRelation == 'father' || _selectedRelation == 'sibling') {
+      village = member.villageOrigin;
+    } else if (_selectedRelation == 'child') {
+      if (member.gender == 'Female') {
+        final husbands = await family.getSpousesOf(member.id);
+        if (husbands.length == 1) village = husbands.first.villageOrigin;
+      } else {
+        village = member.villageOrigin;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _villageController.text = village ?? '';
+      _villageAutoFilled = village != null && village.isNotEmpty;
+    });
   }
 
   /// Loads the effective member's current spouse(s) so the UI can show them
@@ -419,6 +451,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     if (value == 'spouse') {
       _loadCurrentSpouses();
     }
+    _prefillVillage();
   }
 
   RelationType _getRelationType() {
@@ -1519,8 +1552,13 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                 children: [
                   VillagePickerField(
                     value: _villageController.text,
-                    onChanged: (v) =>
-                        setState(() => _villageController.text = v ?? ''),
+                    helperText: _selectedGender == 'Female'
+                        ? l10n.villageHintFemale
+                        : null,
+                    onChanged: (v) => setState(() {
+                      _villageController.text = v ?? '';
+                      _villageAutoFilled = false; // user's own choice wins
+                    }),
                     validator: (value) =>
                         value == null || value.trim().isEmpty
                         ? l10n.villageRequired

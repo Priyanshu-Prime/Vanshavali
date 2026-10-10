@@ -28,6 +28,28 @@ Future<String> _map(WidgetTester tester, Object error) async {
 }
 
 void main() {
+  // Both seen on prod 2026-10-10 (exact strings from error_logs): they fell
+  // through to "something went wrong on our end".
+  testWidgets('email send rate limit (429) maps to "wait a few minutes"',
+      (tester) async {
+    final msg = await _map(
+      tester,
+      'AuthApiException(message: For security purposes, you can only request '
+      'this after 0 seconds., statusCode: 429, code: over_email_send_rate_limit)',
+    );
+    expect(msg.toLowerCase(), contains('wait a few minutes'));
+  });
+
+  testWidgets('invalid login credentials maps to the wrong-password hint',
+      (tester) async {
+    final msg = await _map(
+      tester,
+      'AuthApiException(message: Invalid login credentials, statusCode: 400, '
+      'code: invalid_credentials)',
+    );
+    expect(msg, contains('Forgot Password?'));
+  });
+
   testWidgets('GoTrue "User already registered" maps to the log-in hint, '
       'not the generic error', (tester) async {
     final msg = await _map(

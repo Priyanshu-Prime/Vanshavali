@@ -994,4 +994,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get formHasErrors => 'Please fill the fields marked in red';
+
+  @override
+  String get cropPhoto => 'Crop photo';
+
+  @override
+  String get errorWrongPassword =>
+      'Email or password is not correct. If you forgot your password, tap \"Forgot Password?\".';
+
+  @override
+  String get errorTooManyEmails =>
+      'Too many emails were sent just now. Please wait a few minutes and try again.';
+
+  @override
+  String get villageHintFemale =>
+      'For a woman, choose her father\'s village (maika), not her in-laws\' village.';
 }

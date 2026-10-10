@@ -1663,10 +1663,12 @@ class _NodeAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (member.avatarUrl == null) return _fallback();
     return ClipOval(
+      // Photos larger than the 36px symbol: older users need to recognise
+      // the face (owner feedback on +18). 56 still fits the 152px node.
       child: CachedNetworkImage(
         imageUrl: member.avatarUrl!,
-        width: 36,
-        height: 36,
+        width: 56,
+        height: 56,
         fit: BoxFit.cover,
         placeholder: (_, _) => _fallback(),
         errorWidget: (_, _, _) => _fallback(),

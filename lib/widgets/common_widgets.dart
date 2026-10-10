@@ -97,6 +97,18 @@ String friendlyErrorMessage(BuildContext context, Object error) {
     return l10n.errorNoInternet;
   }
 
+  // Supabase's mailer is rate-limited project-wide (seen on prod: a password
+  // reset bounced with 429). Tell the user to wait, not "our end failed".
+  if (text.contains('over_email_send_rate_limit') ||
+      text.contains('email rate limit') ||
+      text.contains('statuscode: 429')) {
+    return l10n.errorTooManyEmails;
+  }
+  if (text.contains('invalid_credentials') ||
+      text.contains('invalid login credentials')) {
+    return l10n.errorWrongPassword;
+  }
+
   final isServiceFailure =
       text.contains('postgrestexception') ||
       text.contains('authexception') ||

@@ -1873,6 +1873,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please fill the fields marked in red'**
   String get formHasErrors;
+
+  /// No description provided for @cropPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop photo'**
+  String get cropPhoto;
+
+  /// No description provided for @errorWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password is not correct. If you forgot your password, tap \"Forgot Password?\".'**
+  String get errorWrongPassword;
+
+  /// No description provided for @errorTooManyEmails.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many emails were sent just now. Please wait a few minutes and try again.'**
+  String get errorTooManyEmails;
+
+  /// No description provided for @villageHintFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'For a woman, choose her father\'s village (maika), not her in-laws\' village.'**
+  String get villageHintFemale;
 }
 
 class _AppLocalizationsDelegate

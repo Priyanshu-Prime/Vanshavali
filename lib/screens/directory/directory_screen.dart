@@ -250,7 +250,11 @@ class _DirectoryScreenState extends State<DirectoryScreen>
       return m.getFullName('en').toLowerCase().contains(q) ||
           m.getFullName('gu').toLowerCase().contains(q);
     }).toList()
-      ..sort((a, b) => a.getFullName(locale).compareTo(b.getFullName(locale)));
+      // Same order as the Everyone tab (server: last_name_en, first_name_en),
+      // so families group together on both tabs.
+      ..sort((a, b) => '${a.lastNameEn} ${a.firstNameEn}'
+          .toLowerCase()
+          .compareTo('${b.lastNameEn} ${b.firstNameEn}'.toLowerCase()));
 
     Future<void> refreshFamily() async {
       if (me != null) await fp.loadFullTree(me.id);
@@ -259,11 +263,13 @@ class _DirectoryScreenState extends State<DirectoryScreen>
     return Column(
       children: [
         if (villages.isNotEmpty)
-          SizedBox(
-            height: 44,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          // Sized by the chips themselves: a fixed 44px row squashed the
+          // theme's 48dp+ chips and pushed their labels to the bottom edge.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            child: Row(
               children: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
