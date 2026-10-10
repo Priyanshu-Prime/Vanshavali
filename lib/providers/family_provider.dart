@@ -29,6 +29,15 @@ class FamilyProvider extends ChangeNotifier {
   int _dataVersion = 0;
   int get dataVersion => _dataVersion;
 
+  /// A member was saved outside this provider (own profile via AuthProvider,
+  /// e.g. the photo attached after first-time create). Invalidate the cached
+  /// tree so it refetches instead of showing the pre-save copy.
+  void memberChangedElsewhere() {
+    _dataVersion++;
+    notifyListeners();
+    if (_centerMember != null) loadEgoNetwork(_centerMember!.id);
+  }
+
   // Search debounce + stale-response guard. Rapid typing schedules at most one
   // request (debounce collapses the burst) and only the latest query's result is
   // applied (the seq guard drops any older in-flight response). Mirrors the

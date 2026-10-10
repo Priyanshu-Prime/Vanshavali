@@ -991,4 +991,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknownRequester => 'Unknown person';
+
+  @override
+  String get formHasErrors => 'Please fill the fields marked in red';
 }

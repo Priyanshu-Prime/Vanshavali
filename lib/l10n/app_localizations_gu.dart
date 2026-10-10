@@ -991,4 +991,7 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get unknownRequester => 'અજાણી વ્યક્તિ';
+
+  @override
+  String get formHasErrors => 'કૃપા કરીને લાલ રંગમાં દર્શાવેલી વિગતો ભરો';
 }

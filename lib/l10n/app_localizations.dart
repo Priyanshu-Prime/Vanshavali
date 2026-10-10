@@ -1867,6 +1867,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown person'**
   String get unknownRequester;
+
+  /// Shown when Save is tapped but some required fields are empty/invalid (they may be scrolled off-screen).
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill the fields marked in red'**
+  String get formHasErrors;
 }
 
 class _AppLocalizationsDelegate

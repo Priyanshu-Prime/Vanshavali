@@ -467,5 +467,7 @@
       }
     }
   },
-  "unknownRequester": "Unknown person"
+  "unknownRequester": "Unknown person",
+  "formHasErrors": "Please fill the fields marked in red",
+  "@formHasErrors": {"description": "Shown when Save is tapped but some required fields are empty/invalid (they may be scrolled off-screen)."}
 }

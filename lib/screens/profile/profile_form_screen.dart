@@ -62,6 +62,7 @@ class ProfileFormScreen extends StatefulWidget {
 class _ProfileFormScreenState extends State<ProfileFormScreen>
     with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
+  AutovalidateMode _autovalidate = AutovalidateMode.disabled;
   final _firstNameEnController = TextEditingController();
   final _firstNameGuController = TextEditingController();
   final _lastNameEnController = TextEditingController();
@@ -321,7 +322,14 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // The failing field may be scrolled off-screen, which made Save look
+      // dead on-device. Say so, and re-check fields live from now on so red
+      // errors clear as soon as they're fixed.
+      setState(() => _autovalidate = AutovalidateMode.onUserInteraction);
+      showAppSnackBar(context, context.l10n.formHasErrors, isError: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -507,6 +515,12 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
 
     setState(() => _isLoading = false);
 
+    // Own-profile saves bypass FamilyProvider, so its tree cache would keep
+    // the old copy (seen on-device: new photo missing until manual refresh).
+    if (success && isOwnProfile) {
+      context.read<FamilyProvider>().memberChangedElsewhere();
+    }
+
     if (success) {
       showAppSnackBar(
         context,
@@ -590,6 +604,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: _autovalidate,
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [

@@ -332,5 +332,6 @@
       }
     }
   },
-  "unknownRequester": "અજાણી વ્યક્તિ"
+  "unknownRequester": "અજાણી વ્યક્તિ",
+  "formHasErrors": "કૃપા કરીને લાલ રંગમાં દર્શાવેલી વિગતો ભરો"
 }
