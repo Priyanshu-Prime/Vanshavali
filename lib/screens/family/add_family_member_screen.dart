@@ -1322,11 +1322,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                         children: _currentSpouses
                             .map(
                               (s) => Chip(
-                                avatar: CircleAvatar(
-                                  child: Text(
-                                    s.initial,
-                                  ),
-                                ),
+                                avatar: MemberAvatar(member: s),
                                 label: Text(s.fullNameEn),
                               ),
                             )
@@ -1771,15 +1767,7 @@ class _OtherParentPickerState extends State<_OtherParentPicker> {
                 (spouse) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Text(
-                        spouse.initial,
-                        style: TextStyle(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
+                    leading: MemberAvatar(member: spouse),
                     title: Text(spouse.fullNameEn),
                     subtitle: Text(
                       spouse.isClaimed ? l10n.verified : l10n.unclaimed,
