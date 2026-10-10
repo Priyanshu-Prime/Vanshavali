@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/supabase_service.dart';
+import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 
 /// Approver inbox for match-found claim requests (migration 017). Lists
@@ -90,7 +91,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: requests.length,
                     itemBuilder: (_, i) {
                       final req = requests[i];
@@ -100,9 +101,22 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                req.target.fullNameEn,
-                                style: Theme.of(context).textTheme.titleMedium,
+                              // The profile being claimed leads; the
+                              // requester detail sits below it (it was the
+                              // boldest line on the card before).
+                              Row(
+                                children: [
+                                  MemberAvatar(member: req.target),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      req.target.fullNameEn,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -116,14 +130,14 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                 l10n.claimRequestedBy(
                                   req.requesterEmail ?? l10n.unknownRequester,
                                 ),
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 l10n.claimRequestedOn(_formatDate(req.createdAt)),
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.md),
                               Row(
                                 children: [
                                   Expanded(

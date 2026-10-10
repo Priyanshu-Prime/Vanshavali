@@ -13,6 +13,7 @@ import '../../providers/family_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/duplicate_match_sheet.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
@@ -310,7 +311,6 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
       maxHeight: 1600,
     );
     if (picked == null || !mounted) return;
-    final theme = Theme.of(context);
     final cropTitle = context.l10n.cropPhoto;
     final cropped = await ImageCropper().cropImage(
       sourcePath: picked.path,
@@ -322,10 +322,17 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: cropTitle,
-          toolbarColor: theme.colorScheme.primary,
+          // Brand green + black canvas in BOTH themes: the dark theme's
+          // lighter primary gave the crop screen a different, washed-out
+          // green toolbar and a tinted canvas.
+          toolbarColor: AppTheme.primaryColor,
           toolbarWidgetColor: Colors.white,
           statusBarLight: false,
-          activeControlsWidgetColor: theme.colorScheme.primary,
+          backgroundColor: Colors.black,
+          dimmedLayerColor: Colors.black54,
+          cropFrameColor: Colors.white,
+          cropGridColor: Colors.white70,
+          activeControlsWidgetColor: AppTheme.primaryColor,
           lockAspectRatio: true,
           initAspectRatio: CropAspectRatioPreset.square,
         ),
@@ -729,9 +736,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
                             size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            l10n.enterInviteCode,
-                            style: Theme.of(context).textTheme.titleSmall,
+                          Expanded(
+                            child: Text(
+                              l10n.enterInviteCode,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
                         ],
                       ),
@@ -745,8 +754,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
                         textCapitalization: TextCapitalization.characters,
                         textInputAction: TextInputAction.done,
                         maxLength: 6,
+                        // The "0/6" counter was noise; the hint already says 6 characters.
+                        buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                         onChanged: _lookupInviteCode,
                       ),
+                      const SizedBox(height: AppSpacing.sm),
                       // Optional QR shortcut — manual typing above always works.
                       OutlinedButton.icon(
                         onPressed: _scanInviteCode,
@@ -1036,7 +1048,11 @@ class _ClaimWaitingViewState extends State<ClaimWaitingView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.hourglass_top, size: 72),
+              Icon(
+                Icons.hourglass_top,
+                size: 72,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
               Text(
                 l10n.claimWaitingBody,
