@@ -6,11 +6,14 @@ and links to it. Tags: **[repo]** = committed to git (portable, in the public re
 notes; present in the working tree on this machine) · **[branch:x]** = lives on branch `x`,
 not yet on `main`.
 
-Released state at last update: **v0.1.0-alpha.2+17** (main) — see the handoff for current status.
+Released state at last update: **v0.1.0-alpha.2+18** (main) — see the handoff for current status.
 
 ---
 
 ## 🚀 Start here (current state · last thing done · what to improve next)
+- **[repo] [`RELEASE_v18_VERIFICATION.md`](RELEASE_v18_VERIFICATION.md)** — the `+18` on-device
+  verification record (2026-10-10): what was tested on a real phone, the 6 bugs found/fixed,
+  018 server checks, and open UX notes awaiting owner sign-off.
 - **[local] [`claude_handoff/README.md`](claude_handoff/README.md)** — the canonical
   session-to-session brief. Read this first: current state, last thing shipped, next steps.
 - **[repo] [`autonomous-sprint/PROGRESS.md`](autonomous-sprint/PROGRESS.md)** — the detailed
