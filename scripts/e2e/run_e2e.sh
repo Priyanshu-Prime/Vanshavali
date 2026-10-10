@@ -60,15 +60,27 @@ EMU_URL="${EMU_URL/localhost/10.0.2.2}"
 echo "    Host API:     ${API_URL}"
 echo "    Emulator API: ${EMU_URL}"
 
-echo "==> Selecting a running Android emulator..."
-# Match the emulator serial regardless of JSON spacing (flutter emits
-# `"id": "emulator-5554"`). `|| true` keeps `set -e`/pipefail from aborting the
-# script on a no-match; the emptiness check below reports it properly instead.
-DEVICE="$(flutter devices --machine 2>/dev/null \
-  | grep -oE 'emulator-[0-9]+' | head -1 || true)"
-if [[ -z "${DEVICE}" ]]; then
-  echo "!! No running emulator found. Start one with scripts/e2e/start_emulator.sh" >&2
-  exit 1
+if [[ -n "${E2E_DEVICE:-}" ]]; then
+  # Physical phone over USB (saves the emulator's ~2.5GB RAM). It can't reach
+  # the host via 10.0.2.2, so forward the API port and use the phone's localhost.
+  DEVICE="${E2E_DEVICE}"
+  command -v adb >/dev/null || PATH="${PATH}:${LOCALAPPDATA:-}/Android/Sdk/platform-tools"
+  API_PORT="${API_URL##*:}"
+  adb -s "${DEVICE}" reverse "tcp:${API_PORT}" "tcp:${API_PORT}"
+  EMU_URL="http://127.0.0.1:${API_PORT}"
+  echo "    Physical device API: ${EMU_URL} (adb reverse)"
+else
+  echo "==> Selecting a running Android emulator..."
+  # Match the emulator serial regardless of JSON spacing (flutter emits
+  # `"id": "emulator-5554"`). `|| true` keeps `set -e`/pipefail from aborting the
+  # script on a no-match; the emptiness check below reports it properly instead.
+  DEVICE="$(flutter devices --machine 2>/dev/null \
+    | grep -oE 'emulator-[0-9]+' | head -1 || true)"
+  if [[ -z "${DEVICE}" ]]; then
+    echo "!! No running emulator found. Start one with scripts/e2e/start_emulator.sh" >&2
+    echo "   (or plug in a phone and set E2E_DEVICE=<serial from 'adb devices'>)" >&2
+    exit 1
+  fi
 fi
 echo "    Using device: ${DEVICE}"
 
