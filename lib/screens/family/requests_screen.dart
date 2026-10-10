@@ -202,12 +202,18 @@ class _RequestsActionState extends State<RequestsAction> {
   Widget build(BuildContext context) {
     if (_count == 0) return const SizedBox.shrink();
     final l10n = context.l10n;
-    return IconButton(
-      tooltip: l10n.requestsTitle,
+    // Labelled, not icon-only: owner feedback that a bare icon is easy to
+    // miss for a low-tech audience.
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor ??
+            Theme.of(context).colorScheme.onPrimary,
+      ),
       icon: Badge(
         label: Text('$_count'),
         child: const Icon(Icons.how_to_reg),
       ),
+      label: Text(l10n.requestsTitle),
       onPressed: () async {
         await Navigator.push(
           context,

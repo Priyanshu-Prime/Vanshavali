@@ -288,7 +288,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               ),
             const SizedBox(height: AppSpacing.md),
 
-            if (member.deepDetails.isNotEmpty)
+            // Only the shown keys count: deep_details also holds internal flags
+            // (has_password), which rendered an empty card (owner-approved).
+            if ((member.deepDetails['education'] ?? '').toString().isNotEmpty ||
+                (member.deepDetails['occupation'] ?? '').toString().isNotEmpty)
               _DetailCard(
                 title: l10n.additionalDetails,
                 children: [
