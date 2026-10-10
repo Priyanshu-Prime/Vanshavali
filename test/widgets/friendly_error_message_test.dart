@@ -28,6 +28,16 @@ Future<String> _map(WidgetTester tester, Object error) async {
 }
 
 void main() {
+  testWidgets('SMTP failure (500 retryable) is not reported as no-internet',
+      (tester) async {
+    final msg = await _map(
+      tester,
+      'AuthRetryableFetchException(message: {"code":"unexpected_failure",'
+      '"message":"Error sending recovery email"}, statusCode: 500)',
+    );
+    expect(msg.toLowerCase(), contains("couldn't send the email"));
+  });
+
   // Both seen on prod 2026-10-10 (exact strings from error_logs): they fell
   // through to "something went wrong on our end".
   testWidgets('email send rate limit (429) maps to "wait a few minutes"',

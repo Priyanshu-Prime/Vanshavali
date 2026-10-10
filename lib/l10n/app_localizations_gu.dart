@@ -1009,4 +1009,8 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get villageHintFemale =>
       'સ્ત્રી માટે તેનું પિયર (પિતાનું ગામ) પસંદ કરો, સાસરાનું ગામ નહીં.';
+
+  @override
+  String get errorEmailSendFailed =>
+      'અત્યારે ઇમેઇલ મોકલી શકાયો નથી. કૃપા કરીને થોડી મિનિટ પછી ફરી પ્રયાસ કરો.';
 }

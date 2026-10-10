@@ -1009,4 +1009,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get villageHintFemale =>
       'For a woman, choose her father\'s village (maika), not her in-laws\' village.';
+
+  @override
+  String get errorEmailSendFailed =>
+      'We couldn\'t send the email right now. Please try again in a few minutes.';
 }

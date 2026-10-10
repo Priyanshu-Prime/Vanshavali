@@ -93,6 +93,15 @@ String friendlyErrorMessage(BuildContext context, Object error) {
   // to check their connection instead of a vague "our end" message. The exact
   // exception is still recorded to error_logs (ErrorReportingService) so it can
   // be diagnosed later without reproducing the flow.
+  // Supabase reached, but its mailer failed (seen on prod with a broken SMTP
+  // setup: 500 "Error sending recovery email"). Not an internet problem.
+  if (text.contains('error sending')) return l10n.errorEmailSendFailed;
+  // A retryable error WITH a 5xx status came back from the server, so the
+  // network is fine — only a status-less one is a real reachability failure.
+  if (text.contains('authretryablefetchexception') &&
+      RegExp(r'statuscode: 5\d\d').hasMatch(text)) {
+    return l10n.errorServiceFailure;
+  }
   if (text.contains('authretryablefetchexception')) {
     return l10n.errorNoInternet;
   }

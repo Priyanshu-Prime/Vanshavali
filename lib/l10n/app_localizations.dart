@@ -1897,6 +1897,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For a woman, choose her father\'s village (maika), not her in-laws\' village.'**
   String get villageHintFemale;
+
+  /// No description provided for @errorEmailSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the email right now. Please try again in a few minutes.'**
+  String get errorEmailSendFailed;
 }
 
 class _AppLocalizationsDelegate
