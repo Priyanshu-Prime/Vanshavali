@@ -292,8 +292,8 @@ class _DirectoryScreenState extends State<DirectoryScreen>
             ),
           ),
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xs),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
