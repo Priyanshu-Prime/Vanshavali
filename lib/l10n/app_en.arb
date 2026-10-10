@@ -86,7 +86,6 @@
   "gujarati": "ગુજરાતી",
   "theme": "Theme",
   "darkMode": "Dark Mode",
-  "lightMode": "Light Mode",
   "offlineMode": "Offline Mode",
   "syncData": "Sync Data",
   "lastSynced": "Last synced: {time}",

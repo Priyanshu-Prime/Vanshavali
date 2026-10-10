@@ -246,9 +246,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get darkMode => 'Dark Mode';
 
   @override
-  String get lightMode => 'Light Mode';
-
-  @override
   String get offlineMode => 'Offline Mode';
 
   @override

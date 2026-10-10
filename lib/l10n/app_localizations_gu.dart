@@ -244,9 +244,6 @@ class AppLocalizationsGu extends AppLocalizations {
   String get darkMode => 'ડાર્ક મોડ';
 
   @override
-  String get lightMode => 'લાઇટ મોડ';
-
-  @override
   String get offlineMode => 'ઑફલાઇન મોડ';
 
   @override

@@ -56,10 +56,9 @@ class SettingsScreen extends StatelessWidget {
             title: l10n.theme,
             children: [
               SwitchListTile(
+                // No subtitle: it only echoed the title ("Dark Mode / Dark
+                // Mode"); the switch itself shows the state.
                 title: Text(l10n.darkMode),
-                subtitle: Text(
-                  settingsProvider.isDarkMode ? l10n.darkMode : l10n.lightMode,
-                ),
                 value: settingsProvider.isDarkMode,
                 onChanged: (value) {
                   settingsProvider.setDarkMode(value);
