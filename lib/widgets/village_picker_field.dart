@@ -248,11 +248,15 @@ class _VillagePickerSheetState extends State<_VillagePickerSheet> {
             onChanged: _onSearch,
           ),
           const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
+          // Flexible: with the keyboard up, the list shrinks to the space left
+          // instead of overflowing the sheet.
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              child: body,
             ),
-            child: body,
           ),
         ],
       ),

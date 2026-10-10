@@ -7,7 +7,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vanshavali/config/app_config.dart';
+import 'package:provider/provider.dart';
 import 'package:vanshavali/main.dart';
+import 'package:vanshavali/providers/family_provider.dart';
 import 'package:vanshavali/services/local_storage_service.dart';
 import 'package:vanshavali/services/supabase_service.dart';
 
@@ -136,6 +140,13 @@ Future<void> signUp(
   // Scroll the submit button above the keyboard/fold before tapping it.
   final submit = find.byType(ElevatedButton);
   expect(submit, findsWidgets, reason: 'signup submit button not found');
+  // Close the keyboard and wait for its insets to finish animating out, or
+  // the button moves between ensureVisible and tap and the tap misses.
+  FocusManager.instance.primaryFocus?.unfocus();
+  for (var i = 0; i < 20 && tester.view.viewInsets.bottom > 0; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  await tester.pumpAndSettle();
   await tester.ensureVisible(submit.last);
   await tester.pumpAndSettle();
   await tester.tap(submit.last);
@@ -146,4 +157,91 @@ Future<void> signUp(
   for (var i = 0; i < 20 && SupabaseService.currentUser == null; i++) {
     await Future<void>.delayed(const Duration(milliseconds: 500));
   }
+}
+
+/// A second Supabase client with its OWN in-memory session, so a test can act
+/// as another user (relative approving a claim, a stranger, seeding) without
+/// touching the app's session. Implicit flow: PKCE would need async storage.
+SupabaseClient isolatedClient() => SupabaseClient(
+      SupabaseConfig.supabaseUrl,
+      SupabaseConfig.supabaseAnonKey,
+      authOptions: const AuthClientOptions(
+        autoRefreshToken: false,
+        authFlowType: AuthFlowType.implicit,
+      ),
+    );
+
+/// Signs [client] up as a fresh password user and returns the auth uid.
+Future<String> apiSignUp(SupabaseClient client, String email,
+    {String password = 'test1234'}) async {
+  // Retry transport errors only: right after install the emulator's network
+  // is occasionally not up yet ("Network is unreachable").
+  AuthResponse? res;
+  for (var attempt = 1; res == null; attempt++) {
+    try {
+      res = await client.auth.signUp(email: email, password: password);
+    } on AuthRetryableFetchException {
+      if (attempt >= 5) rethrow;
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+  }
+  expect(res.session, isNotNull, reason: 'local signup must return a session');
+  return res.user!.id;
+}
+
+/// Picks [value] in the ancestral-village picker via its state-wide search.
+/// Scrolls the (lazy) form until the field is built, opens the sheet, types
+/// the name and taps the first hit (exact matches rank first).
+Future<void> pickVillage(WidgetTester tester, String value) async {
+  final field = find.text('Select village');
+  await tester.scrollUntilVisible(field, 250,
+      scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+  await tester.tap(field);
+  await tester.pumpAndSettle();
+  await enterInField(tester, 'search district', value);
+  await tester.tap(find.text(value).last);
+  await tester.pumpAndSettle();
+}
+
+/// Selects [option] in the form's gender dropdown (scrolling it into view).
+Future<void> pickGender(WidgetTester tester, String option) async {
+  final dropdown = find.byType(DropdownButtonFormField<String>);
+  await tester.scrollUntilVisible(dropdown, 250,
+      scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+  await tester.tap(dropdown.first);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(option).last);
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls the lazy form to its bottom Save button and taps it.
+Future<void> tapFormSave(WidgetTester tester) async {
+  final save = find.byType(ElevatedButton);
+  await tester.scrollUntilVisible(save, 250,
+      scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+  await tester.tap(save.last);
+  await tester.pump(const Duration(seconds: 1));
+}
+
+/// Taps the bottom-navigation tab labelled [label] (not same-text app bars).
+Future<void> tapNavTab(WidgetTester tester, String label) async {
+  await tester.tap(find.descendant(
+      of: find.byType(BottomNavigationBar), matching: find.text(label)));
+  await tester.pump(const Duration(seconds: 1));
+}
+
+/// Waits for in-flight FamilyProvider loads to finish. Call at the end of a
+/// test that lands on Home: tearing the app down mid-load makes the provider
+/// notify after dispose, which fails the test after it already passed.
+Future<void> waitForFamilyIdle(WidgetTester tester) async {
+  final fp = Provider.of<FamilyProvider>(
+      tester.element(find.byType(Scaffold).first),
+      listen: false);
+  for (var i = 0; i < 50 && (fp.isLoading || fp.isLoadingFullTree); i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  await tester.pump(const Duration(milliseconds: 500));
 }

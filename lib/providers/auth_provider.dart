@@ -184,7 +184,13 @@ class AuthProvider extends ChangeNotifier {
   Future<void> refreshCurrentMember() async {
     if (_currentMember == null) {
       await _loadCurrentMemberProfile();
-      if (_currentMember != null) notifyListeners();
+      if (_currentMember != null) {
+        // An approved claim hands over the placeholder's deep_details, which
+        // lack has_password — same self-heal as the claim-by-code paths, or a
+        // user who chose a password at signup is forced onto SetPasswordScreen.
+        await _tagHasPasswordIfNeeded();
+        notifyListeners();
+      }
       return;
     }
     try {
