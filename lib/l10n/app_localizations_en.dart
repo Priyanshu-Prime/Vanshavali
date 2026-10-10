@@ -924,7 +924,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requestsTitle => 'Requests';
 
   @override
-  String get claimRequestPrompt => 'wants to be linked to this profile.';
+  String get claimRequestPrompt => 'Someone says this profile is them.';
 
   @override
   String get approve => 'Approve';

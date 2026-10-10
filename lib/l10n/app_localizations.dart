@@ -1757,7 +1757,7 @@ abstract class AppLocalizations {
   /// No description provided for @claimRequestPrompt.
   ///
   /// In en, this message translates to:
-  /// **'wants to be linked to this profile.'**
+  /// **'Someone says this profile is them.'**
   String get claimRequestPrompt;
 
   /// No description provided for @approve.

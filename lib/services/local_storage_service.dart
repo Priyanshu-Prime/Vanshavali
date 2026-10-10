@@ -307,9 +307,13 @@ class LocalStorageService {
     return _userPrefsBox.get('current_member_id');
   }
 
+  /// Sign-out wipe: account data only. Device preferences (language, theme,
+  /// onboarding seen) survive — clearing them sent a Gujarati user back to
+  /// English onboarding after every logout (seen on-device).
   static Future<void> clearAll() async {
     await _familyMembersBox.clear();
-    await _userPrefsBox.clear();
+    await _userPrefsBox
+        .deleteAll(['last_sync_time', 'current_user_id', 'current_member_id']);
     await _pendingSyncBox.clear();
     await _spouseLinksBox.clear();
   }

@@ -281,7 +281,7 @@
   },
   "claimRequestSent": "વિનંતી મોકલાઈ. કોઈ સંબંધી તેને મંજૂર કરીને તમને આ પ્રોફાઇલ સાથે જોડી શકે છે.",
   "requestsTitle": "વિનંતીઓ",
-  "claimRequestPrompt": "આ પ્રોફાઇલ સાથે જોડાવા માંગે છે.",
+  "claimRequestPrompt": "કોઈ કહે છે કે આ પ્રોફાઇલ તેમની છે.",
   "approve": "મંજૂર કરો",
   "reject": "નકારો",
   "noPendingRequests": "કોઈ બાકી વિનંતી નથી",

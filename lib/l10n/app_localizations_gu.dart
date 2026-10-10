@@ -923,7 +923,7 @@ class AppLocalizationsGu extends AppLocalizations {
   String get requestsTitle => 'વિનંતીઓ';
 
   @override
-  String get claimRequestPrompt => 'આ પ્રોફાઇલ સાથે જોડાવા માંગે છે.';
+  String get claimRequestPrompt => 'કોઈ કહે છે કે આ પ્રોફાઇલ તેમની છે.';
 
   @override
   String get approve => 'મંજૂર કરો';

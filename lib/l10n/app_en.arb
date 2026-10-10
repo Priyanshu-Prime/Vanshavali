@@ -416,7 +416,7 @@
   },
   "claimRequestSent": "Request sent. A relative can approve it to link you to this profile.",
   "requestsTitle": "Requests",
-  "claimRequestPrompt": "wants to be linked to this profile.",
+  "claimRequestPrompt": "Someone says this profile is them.",
   "approve": "Approve",
   "reject": "Reject",
   "noPendingRequests": "No pending requests",

@@ -1708,9 +1708,13 @@ class _PersonBox extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            // Same tint, blended onto an OPAQUE surface: a translucent fill let
+            // the connector lines behind the node strike through the name.
             colors: [
-              color.withValues(alpha: 0.20),
-              color.withValues(alpha: 0.08),
+              Color.alphaBlend(
+                  color.withValues(alpha: 0.20), theme.colorScheme.surface),
+              Color.alphaBlend(
+                  color.withValues(alpha: 0.08), theme.colorScheme.surface),
             ],
           ),
           border: Border.all(
