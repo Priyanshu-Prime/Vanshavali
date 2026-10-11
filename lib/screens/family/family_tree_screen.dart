@@ -1678,6 +1678,7 @@ class _NodeAvatar extends StatelessWidget {
         imageUrl: member.avatarUrl!,
         width: 56,
         height: 56,
+        memCacheWidth: 168, // 3x the 56px circle, not the full 1080px photo
         fit: BoxFit.cover,
         placeholder: (_, _) => _fallback(),
         errorWidget: (_, _, _) => _fallback(),

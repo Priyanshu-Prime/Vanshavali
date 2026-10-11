@@ -270,7 +270,12 @@ class MemberAvatar extends StatelessWidget {
       backgroundColor: scheme.primaryContainer,
       // foregroundImage paints over the initial, so the initial shows while
       // the photo loads and stays if it fails.
-      foregroundImage: url != null ? CachedNetworkImageProvider(url) : null,
+      // Decode at ~3x the circle (sharp on high-DPI screens) instead of the
+      // full 1080px photo: a Directory of avatars stays light on memory.
+      foregroundImage: url != null
+          ? ResizeImage(CachedNetworkImageProvider(url),
+              width: (radius * 6).round(), policy: ResizeImagePolicy.fit)
+          : null,
       onForegroundImageError: url != null ? (_, _) {} : null,
       child: Text(
         member?.initial ?? '?',

@@ -7,6 +7,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../config/app_config.dart';
 import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
@@ -303,21 +304,21 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
   }
 
   Future<void> _pickAndUpload(ImageSource source) async {
-    // Pick generously, then let the user crop/rotate; the cropper does the
-    // final 512px / q70 downscale so the cropped face keeps its detail.
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1600,
-      maxHeight: 1600,
-    );
+    // Hand the cropper the untouched original: passing maxWidth here made the
+    // picker re-encode first, and that second lossy pass stacked with the
+    // crop's. The crop step below is the ONLY compression.
+    final picked = await ImagePicker().pickImage(source: source);
     if (picked == null || !mounted) return;
     final cropTitle = context.l10n.cropPhoto;
     final cropped = await ImageCropper().cropImage(
       sourcePath: picked.path,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      maxWidth: 512,
-      maxHeight: 512,
-      compressQuality: 70,
+      // 512px / q70 showed 8x8 blocking and colour smearing (owner report,
+      // 2026-10-11), worse once upscaled in the full-screen viewer. 1080px /
+      // q90 looks like the original at ~150-400 KB. Bucket cap: 019 (1 MB).
+      maxWidth: kAvatarMaxPx,
+      maxHeight: kAvatarMaxPx,
+      compressQuality: 90,
       compressFormat: ImageCompressFormat.jpg,
       uiSettings: [
         AndroidUiSettings(
@@ -343,9 +344,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
 
     final bytes = await cropped.readAsBytes();
     if (!mounted) return;
-    // 300 KB is the bucket's server-side limit (migration 016) — reject here
-    // with a clear message rather than letting the upload fail opaquely.
-    if (bytes.length > 300 * 1024) {
+    // The bucket's server-side limit (migration 019) — reject here with a
+    // clear message rather than letting the upload fail opaquely.
+    if (bytes.length > kAvatarMaxBytes) {
       showAppSnackBar(context, context.l10n.photoTooLarge, isError: true);
       return;
     }

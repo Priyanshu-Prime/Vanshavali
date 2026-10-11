@@ -31,6 +31,11 @@ class SupabaseConfig {
 }
 
 /// App Configuration
+/// Profile photo limits. Must match the avatars bucket's file_size_limit
+/// (supabase/migrations/019_avatar_size_1mb.sql).
+const int kAvatarMaxPx = 1080;
+const int kAvatarMaxBytes = 1024 * 1024;
+
 class AppConfig {
   static const String appName = 'Vanshavali';
   // Shown in Settings so testers can tell builds apart. Must equal pubspec's
