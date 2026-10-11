@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../services/gujarat_places_service.dart';
 import 'package:flutter/services.dart';
@@ -160,7 +161,11 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                       child: GestureDetector(
                         onTap: member.avatarUrl == null
                             ? null
-                            : () => showFullPhoto(context, member, locale),
+                            : () => showFullPhoto(
+                                  context,
+                                  CachedNetworkImageProvider(member.avatarUrl!),
+                                  member.getFullName(locale),
+                                ),
                         child: MemberAvatar(member: member, radius: 48),
                       ),
                     ),

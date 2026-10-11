@@ -289,12 +289,10 @@ class MemberAvatar extends StatelessWidget {
   }
 }
 
-/// Opens [member]'s photo full-screen on black with pinch-to-zoom (owner
-/// request). No-op without a photo. Stored photos are 512px, so zoom tops out
-/// at 4x before it just gets blurry.
-void showFullPhoto(BuildContext context, FamilyMember member, String locale) {
-  final url = member.avatarUrl;
-  if (url == null) return;
+/// Opens a photo full-screen on black with pinch-to-zoom (owner request):
+/// a saved photo (CachedNetworkImageProvider) or one just picked and not yet
+/// saved (MemoryImage). Photos are stored at up to 1080px.
+void showFullPhoto(BuildContext context, ImageProvider image, String title) {
   Navigator.of(context).push(MaterialPageRoute<void>(
     fullscreenDialog: true,
     builder: (_) => Scaffold(
@@ -302,18 +300,19 @@ void showFullPhoto(BuildContext context, FamilyMember member, String locale) {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(member.getFullName(locale)),
+        title: Text(title),
       ),
       body: InteractiveViewer(
         maxScale: 4,
         child: Center(
-          child: CachedNetworkImage(
-            imageUrl: url,
+          child: Image(
+            image: image,
             fit: BoxFit.contain,
             width: double.infinity,
-            placeholder: (_, _) =>
-                const CircularProgressIndicator(color: Colors.white),
-            errorWidget: (_, _, _) => const Icon(Icons.broken_image_outlined,
+            loadingBuilder: (_, child, progress) => progress == null
+                ? child
+                : const CircularProgressIndicator(color: Colors.white),
+            errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined,
                 color: Colors.white54, size: 64),
           ),
         ),

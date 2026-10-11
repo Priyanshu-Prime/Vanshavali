@@ -248,6 +248,24 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // See your current photo full-size (owner request) — the saved one,
+            // or the one just picked on a profile that isn't created yet.
+            if (_hasPhoto)
+              ListTile(
+                leading: const Icon(Icons.zoom_in),
+                title: Text(l10n.viewPhoto),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  showFullPhoto(
+                    context,
+                    _pendingAvatarBytes != null
+                        ? MemoryImage(_pendingAvatarBytes!)
+                        : CachedNetworkImageProvider(_pendingAvatarUrl!)
+                            as ImageProvider,
+                    l10n.viewPhoto,
+                  );
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.photo_camera),
               title: Text(l10n.takePhoto),
