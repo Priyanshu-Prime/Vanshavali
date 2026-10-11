@@ -86,7 +86,6 @@
   "gujarati": "ગુજરાતી",
   "theme": "Theme",
   "darkMode": "Dark Mode",
-  "lightMode": "Light Mode",
   "offlineMode": "Offline Mode",
   "syncData": "Sync Data",
   "lastSynced": "Last synced: {time}",
@@ -469,5 +468,11 @@
   },
   "unknownRequester": "Unknown person",
   "formHasErrors": "Please fill the fields marked in red",
-  "@formHasErrors": {"description": "Shown when Save is tapped but some required fields are empty/invalid (they may be scrolled off-screen)."}
+  "@formHasErrors": {"description": "Shown when Save is tapped but some required fields are empty/invalid (they may be scrolled off-screen)."},
+  "cropPhoto": "Crop photo",
+  "errorWrongPassword": "Email or password is not correct. If you forgot your password, tap \"Forgot Password?\".",
+  "errorTooManyEmails": "Too many emails were sent just now. Please wait a few minutes and try again.",
+  "villageHintFemale": "For a woman, choose her father's village (maika), not her in-laws' village.",
+  "errorEmailSendFailed": "We couldn't send the email right now. Please try again in a few minutes.",
+  "viewPhoto": "View photo"
 }

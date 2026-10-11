@@ -244,9 +244,6 @@ class AppLocalizationsGu extends AppLocalizations {
   String get darkMode => 'ડાર્ક મોડ';
 
   @override
-  String get lightMode => 'લાઇટ મોડ';
-
-  @override
   String get offlineMode => 'ઑફલાઇન મોડ';
 
   @override
@@ -994,4 +991,26 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get formHasErrors => 'કૃપા કરીને લાલ રંગમાં દર્શાવેલી વિગતો ભરો';
+
+  @override
+  String get cropPhoto => 'ફોટો ગોઠવો';
+
+  @override
+  String get errorWrongPassword =>
+      'ઇમેઇલ અથવા પાસવર્ડ ખોટો છે. પાસવર્ડ ભૂલી ગયા હો તો \"પાસવર્ડ ભૂલી ગયા?\" પર ટૅપ કરો.';
+
+  @override
+  String get errorTooManyEmails =>
+      'હમણાં ઘણા ઇમેઇલ મોકલાયા છે. કૃપા કરીને થોડી મિનિટ રાહ જોઈને ફરી પ્રયાસ કરો.';
+
+  @override
+  String get villageHintFemale =>
+      'સ્ત્રી માટે તેનું પિયર (પિતાનું ગામ) પસંદ કરો, સાસરાનું ગામ નહીં.';
+
+  @override
+  String get errorEmailSendFailed =>
+      'અત્યારે ઇમેઇલ મોકલી શકાયો નથી. કૃપા કરીને થોડી મિનિટ પછી ફરી પ્રયાસ કરો.';
+
+  @override
+  String get viewPhoto => 'ફોટો જુઓ';
 }

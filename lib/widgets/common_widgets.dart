@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../models/family_member.dart';
 import '../l10n/app_localizations.dart';
 import '../services/translation_service.dart';
 import '../theme/app_spacing.dart';
@@ -53,7 +55,8 @@ String friendlyErrorMessage(BuildContext context, Object error) {
 
   // Supabase's own message when confirmations are required and the user
   // tries to sign in before clicking the link — thrown from signInWithPassword.
-  if (text.contains('email not confirmed') || text.contains('email_not_confirmed')) {
+  if (text.contains('email not confirmed') ||
+      text.contains('email_not_confirmed')) {
     return l10n.errorEmailNotConfirmed;
   }
 
@@ -93,8 +96,29 @@ String friendlyErrorMessage(BuildContext context, Object error) {
   // to check their connection instead of a vague "our end" message. The exact
   // exception is still recorded to error_logs (ErrorReportingService) so it can
   // be diagnosed later without reproducing the flow.
+  // Supabase reached, but its mailer failed (seen on prod with a broken SMTP
+  // setup: 500 "Error sending recovery email"). Not an internet problem.
+  if (text.contains('error sending')) return l10n.errorEmailSendFailed;
+  // A retryable error WITH a 5xx status came back from the server, so the
+  // network is fine — only a status-less one is a real reachability failure.
+  if (text.contains('authretryablefetchexception') &&
+      RegExp(r'statuscode: 5\d\d').hasMatch(text)) {
+    return l10n.errorServiceFailure;
+  }
   if (text.contains('authretryablefetchexception')) {
     return l10n.errorNoInternet;
+  }
+
+  // Supabase's mailer is rate-limited project-wide (seen on prod: a password
+  // reset bounced with 429). Tell the user to wait, not "our end failed".
+  if (text.contains('over_email_send_rate_limit') ||
+      text.contains('email rate limit') ||
+      text.contains('statuscode: 429')) {
+    return l10n.errorTooManyEmails;
+  }
+  if (text.contains('invalid_credentials') ||
+      text.contains('invalid login credentials')) {
+    return l10n.errorWrongPassword;
   }
 
   final isServiceFailure =
@@ -227,6 +251,72 @@ class AppWidgets {
   }
 }
 
+/// A person's round avatar: their photo when they have one, otherwise their
+/// initial. The ONE avatar style for the whole app — Home, Directory,
+/// profile header and relation rows each used a different colour (solid
+/// green, light green, amber, theme default) and only some showed photos.
+class MemberAvatar extends StatelessWidget {
+  final FamilyMember? member;
+  final double radius;
+
+  const MemberAvatar({super.key, required this.member, this.radius = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final url = member?.avatarUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primaryContainer,
+      // foregroundImage paints over the initial, so the initial shows while
+      // the photo loads and stays if it fails.
+      foregroundImage: url != null ? CachedNetworkImageProvider(url) : null,
+      onForegroundImageError: url != null ? (_, _) {} : null,
+      child: Text(
+        member?.initial ?? '?',
+        style: TextStyle(
+          color: scheme.onPrimaryContainer,
+          fontSize: radius * 0.8,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens [member]'s photo full-screen on black with pinch-to-zoom (owner
+/// request). No-op without a photo. Stored photos are 512px, so zoom tops out
+/// at 4x before it just gets blurry.
+void showFullPhoto(BuildContext context, FamilyMember member, String locale) {
+  final url = member.avatarUrl;
+  if (url == null) return;
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    fullscreenDialog: true,
+    builder: (_) => Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(member.getFullName(locale)),
+      ),
+      body: InteractiveViewer(
+        maxScale: 4,
+        child: Center(
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.contain,
+            width: double.infinity,
+            placeholder: (_, _) =>
+                const CircularProgressIndicator(color: Colors.white),
+            errorWidget: (_, _, _) => const Icon(Icons.broken_image_outlined,
+                color: Colors.white54, size: 64),
+          ),
+        ),
+      ),
+    ),
+  ));
+}
+
 /// A card with a title and a padded, top-aligned column of content —
 /// the common "Card > Padding > Column(title, ...content)" section pattern
 /// repeated across settings, profile, and add-family-member screens.
@@ -248,17 +338,22 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      child: Padding(
-        padding: padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: titleSpacing),
-            ...children,
-          ],
+    // Always full width: inside a start-aligned Column a Card shrink-wraps,
+    // so a short section ("Additional Details") rendered as a narrow stub.
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        color: color,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              SizedBox(height: titleSpacing),
+              ...children,
+            ],
+          ),
         ),
       ),
     );

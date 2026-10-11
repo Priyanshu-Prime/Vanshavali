@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/supabase_service.dart';
+import '../../theme/app_spacing.dart';
 import '../../widgets/common_widgets.dart';
 
 /// Approver inbox for match-found claim requests (migration 017). Lists
@@ -90,7 +91,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: requests.length,
                     itemBuilder: (_, i) {
                       final req = requests[i];
@@ -100,9 +101,22 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                req.target.fullNameEn,
-                                style: Theme.of(context).textTheme.titleMedium,
+                              // The profile being claimed leads; the
+                              // requester detail sits below it (it was the
+                              // boldest line on the card before).
+                              Row(
+                                children: [
+                                  MemberAvatar(member: req.target),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      req.target.fullNameEn,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -116,14 +130,14 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                 l10n.claimRequestedBy(
                                   req.requesterEmail ?? l10n.unknownRequester,
                                 ),
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 l10n.claimRequestedOn(_formatDate(req.createdAt)),
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.md),
                               Row(
                                 children: [
                                   Expanded(
@@ -202,12 +216,18 @@ class _RequestsActionState extends State<RequestsAction> {
   Widget build(BuildContext context) {
     if (_count == 0) return const SizedBox.shrink();
     final l10n = context.l10n;
-    return IconButton(
-      tooltip: l10n.requestsTitle,
+    // Labelled, not icon-only: owner feedback that a bare icon is easy to
+    // miss for a low-tech audience.
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor ??
+            Theme.of(context).colorScheme.onPrimary,
+      ),
       icon: Badge(
         label: Text('$_count'),
         child: const Icon(Icons.how_to_reg),
       ),
+      label: Text(l10n.requestsTitle),
       onPressed: () async {
         await Navigator.push(
           context,

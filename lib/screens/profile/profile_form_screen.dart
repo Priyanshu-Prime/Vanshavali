@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ import '../../providers/family_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../services/transliteration_service.dart';
 import '../../theme/app_spacing.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/duplicate_match_sheet.dart';
 import '../../widgets/gujarati_edit_sheet.dart';
@@ -265,12 +267,23 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
               ListTile(
                 leading: const Icon(Icons.delete_outline),
                 title: Text(l10n.removePhoto),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(sheetCtx);
                   setState(() {
                     _pendingAvatarUrl = null;
                     _pendingAvatarBytes = null;
                   });
+                  // Same as adding: on edit, apply right away, not on Save.
+                  if (widget.isCreatingProfile) return;
+                  try {
+                    await SupabaseService.setAvatarUrl(_memberId, null);
+                    await _photoSavedElsewhere();
+                  } catch (_) {
+                    if (mounted) {
+                      showAppSnackBar(context, context.l10n.photoUploadFailedRetry,
+                          isError: true);
+                    }
+                  }
                 },
               ),
           ],
@@ -279,16 +292,56 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
     );
   }
 
+  /// The photo was written straight to the row: refresh our own cached profile
+  /// (if it's us) and the tree, so every screen shows it without a restart.
+  Future<void> _photoSavedElsewhere() async {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    final family = context.read<FamilyProvider>();
+    if (auth.currentMember?.id == _memberId) await auth.refreshCurrentMember();
+    family.memberChangedElsewhere();
+  }
+
   Future<void> _pickAndUpload(ImageSource source) async {
+    // Pick generously, then let the user crop/rotate; the cropper does the
+    // final 512px / q70 downscale so the cropped face keeps its detail.
     final picked = await ImagePicker().pickImage(
       source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 70,
+      maxWidth: 1600,
+      maxHeight: 1600,
     );
     if (picked == null || !mounted) return;
+    final cropTitle = context.l10n.cropPhoto;
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      maxWidth: 512,
+      maxHeight: 512,
+      compressQuality: 70,
+      compressFormat: ImageCompressFormat.jpg,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: cropTitle,
+          // Brand green + black canvas in BOTH themes: the dark theme's
+          // lighter primary gave the crop screen a different, washed-out
+          // green toolbar and a tinted canvas.
+          toolbarColor: AppTheme.primaryColor,
+          toolbarWidgetColor: Colors.white,
+          statusBarLight: false,
+          backgroundColor: Colors.black,
+          dimmedLayerColor: Colors.black54,
+          cropFrameColor: Colors.white,
+          cropGridColor: Colors.white70,
+          activeControlsWidgetColor: AppTheme.primaryColor,
+          lockAspectRatio: true,
+          initAspectRatio: CropAspectRatioPreset.square,
+        ),
+        IOSUiSettings(title: cropTitle, aspectRatioLockEnabled: true),
+      ],
+    );
+    if (cropped == null || !mounted) return; // cancelled the crop screen
 
-    final bytes = await picked.readAsBytes();
+    final bytes = await cropped.readAsBytes();
     if (!mounted) return;
     // 300 KB is the bucket's server-side limit (migration 016) — reject here
     // with a clear message rather than letting the upload fail opaquely.
@@ -307,8 +360,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
     setState(() => _isUploadingPhoto = true);
     try {
       final url = await SupabaseService.uploadAvatar(_memberId, bytes);
+      await SupabaseService.setAvatarUrl(_memberId, url);
       if (!mounted) return;
       setState(() => _pendingAvatarUrl = url);
+      await _photoSavedElsewhere();
     } catch (_) {
       // Photo is optional: keep any prior avatar; nothing is saved yet at
       // this point, so just ask them to retry.
@@ -681,9 +736,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
                             size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            l10n.enterInviteCode,
-                            style: Theme.of(context).textTheme.titleSmall,
+                          Expanded(
+                            child: Text(
+                              l10n.enterInviteCode,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
                         ],
                       ),
@@ -697,8 +754,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
                         textCapitalization: TextCapitalization.characters,
                         textInputAction: TextInputAction.done,
                         maxLength: 6,
+                        // The "0/6" counter was noise; the hint already says 6 characters.
+                        buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                         onChanged: _lookupInviteCode,
                       ),
+                      const SizedBox(height: AppSpacing.sm),
                       // Optional QR shortcut — manual typing above always works.
                       OutlinedButton.icon(
                         onPressed: _scanInviteCode,
@@ -869,6 +929,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen>
               children: [
                 VillagePickerField(
                   value: _villageController.text,
+                  helperText: _selectedGender == 'Female'
+                      ? l10n.villageHintFemale
+                      : null,
                   onChanged: (v) =>
                       setState(() => _villageController.text = v ?? ''),
                   validator: (value) =>
@@ -985,7 +1048,11 @@ class _ClaimWaitingViewState extends State<ClaimWaitingView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.hourglass_top, size: 72),
+              Icon(
+                Icons.hourglass_top,
+                size: 72,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
               Text(
                 l10n.claimWaitingBody,

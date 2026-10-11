@@ -89,12 +89,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _init() async {
+    // Read the stored session BEFORE announcing "loading": AppNavigator keeps
+    // LoginScreen up for a loading state with no user, so a returning user
+    // must already be visible here or they'd see a one-frame login flash.
+    _user = SupabaseService.currentUser;
     _status = AuthStatus.loading;
     notifyListeners();
 
-    // Check current session
-    _user = SupabaseService.currentUser;
-    
     if (_user != null) {
       await _loadCurrentMemberProfile();
       _status = AuthStatus.authenticated;

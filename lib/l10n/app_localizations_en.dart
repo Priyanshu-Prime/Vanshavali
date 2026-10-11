@@ -246,9 +246,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get darkMode => 'Dark Mode';
 
   @override
-  String get lightMode => 'Light Mode';
-
-  @override
   String get offlineMode => 'Offline Mode';
 
   @override
@@ -994,4 +991,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get formHasErrors => 'Please fill the fields marked in red';
+
+  @override
+  String get cropPhoto => 'Crop photo';
+
+  @override
+  String get errorWrongPassword =>
+      'Email or password is not correct. If you forgot your password, tap \"Forgot Password?\".';
+
+  @override
+  String get errorTooManyEmails =>
+      'Too many emails were sent just now. Please wait a few minutes and try again.';
+
+  @override
+  String get villageHintFemale =>
+      'For a woman, choose her father\'s village (maika), not her in-laws\' village.';
+
+  @override
+  String get errorEmailSendFailed =>
+      'We couldn\'t send the email right now. Please try again in a few minutes.';
+
+  @override
+  String get viewPhoto => 'View photo';
 }

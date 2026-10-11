@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -94,6 +95,14 @@ class _VanshavaliAppState extends State<VanshavaliApp> {
               GlobalCupertinoLocalizations.delegate,
             ],
             
+            // Screens without an AppBar (login, sign-up, onboarding) got the
+            // platform default white status-bar icons on our near-white
+            // background — invisible. AppBars still apply their own style.
+            builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+              value: AppTheme.bodyOverlayStyle(Theme.of(context).brightness),
+              child: child!,
+            ),
+
             home: const AppNavigator(),
           );
         },
@@ -259,6 +268,16 @@ class _AppNavigatorState extends State<AppNavigator> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     _maybeShowMergeConflictDialog(authProvider);
+
+    // A sign-in/sign-up in progress from the login screen: keep LoginScreen
+    // mounted (it shows its own button spinner). Swapping in the full-screen
+    // spinner below unmounted it, so a wrong password came back as a fresh
+    // login screen — typed email gone, error snackbar never shown (on-device).
+    if (authProvider.status == AuthStatus.loading &&
+        authProvider.user == null &&
+        !_showOnboarding) {
+      return const LoginScreen();
+    }
 
     // Show loading while checking auth state
     if (authProvider.status == AuthStatus.initial ||

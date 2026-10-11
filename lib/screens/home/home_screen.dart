@@ -8,6 +8,8 @@ import '../../widgets/common_widgets.dart';
 import '../profile/profile_form_screen.dart';
 import '../family/family_tree_screen.dart';
 import '../family/add_family_member_screen.dart';
+import '../family/member_detail_screen.dart';
+import '../../models/family_member.dart';
 import '../settings/settings_screen.dart';
 import '../directory/directory_screen.dart';
 import '../family/requests_screen.dart';
@@ -173,17 +175,7 @@ class _DashboardTab extends StatelessWidget {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 36,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          child: Text(
-                            member?.initial ?? '?',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(color: Colors.white),
-                          ),
-                        ),
+                        MemberAvatar(member: member, radius: 36),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
@@ -245,16 +237,23 @@ class _DashboardTab extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            friendlyErrorMessage(context, familyProvider.error!),
+                            friendlyErrorMessage(
+                              context,
+                              familyProvider.error!,
+                            ),
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
                             ),
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.refresh,
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                           ),
                           tooltip: l10n.retry,
                           onPressed: () {
@@ -273,17 +272,17 @@ class _DashboardTab extends StatelessWidget {
               // Family Overview
               Text(
                 l10n.myFamily,
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
 
               // Quick Family Cards
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
                 childAspectRatio: 1.3,
                 children: [
                   _FamilyCard(
@@ -291,6 +290,7 @@ class _DashboardTab extends StatelessWidget {
                     label: l10n.father,
                     member: familyProvider.father,
                     onAdd: () => _addFamilyMember(context, 'father'),
+                    onOpen: (m) => _openMember(context, m),
                     locale: locale,
                   ),
                   _FamilyCard(
@@ -298,6 +298,7 @@ class _DashboardTab extends StatelessWidget {
                     label: l10n.mother,
                     member: familyProvider.mother,
                     onAdd: () => _addFamilyMember(context, 'mother'),
+                    onOpen: (m) => _openMember(context, m),
                     locale: locale,
                   ),
                   _FamilyCard(
@@ -305,6 +306,7 @@ class _DashboardTab extends StatelessWidget {
                     label: l10n.spouse,
                     member: familyProvider.spouse,
                     onAdd: () => _addFamilyMember(context, 'spouse'),
+                    onOpen: (m) => _openMember(context, m),
                     locale: locale,
                   ),
                   _FamilyCard(
@@ -312,6 +314,10 @@ class _DashboardTab extends StatelessWidget {
                     label: l10n.children,
                     count: familyProvider.children.length,
                     onAdd: () => _addFamilyMember(context, 'child'),
+                    // Children are listed on your own profile page.
+                    onOpenList: member == null
+                        ? null
+                        : () => _openMember(context, member),
                     locale: locale,
                   ),
                 ],
@@ -324,9 +330,9 @@ class _DashboardTab extends StatelessWidget {
                   l10n.siblings,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 SizedBox(
-                  height: 100,
+                  height: 128,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: familyProvider.siblings.length,
@@ -334,7 +340,11 @@ class _DashboardTab extends StatelessWidget {
                       final sibling = familyProvider.siblings[index];
                       return Padding(
                         padding: const EdgeInsets.only(right: 12),
-                        child: _SiblingChip(member: sibling, locale: locale),
+                        child: _SiblingChip(
+                          member: sibling,
+                          locale: locale,
+                          onTap: () => _openMember(context, sibling),
+                        ),
                       );
                     },
                   ),
@@ -350,6 +360,23 @@ class _DashboardTab extends StatelessWidget {
         label: Text(l10n.addFamilyMember),
       ),
     );
+  }
+
+  // Filled cards open the person (owner feedback: tapping a filled Father
+  // card opened "Add Family Member", and sibling cards did nothing).
+  Future<void> _openMember(BuildContext context, FamilyMember m) async {
+    final family = context.read<FamilyProvider>();
+    final myId = context.read<AuthProvider>().currentMember?.id;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MemberDetailScreen(member: m)),
+    );
+    // The profile screen re-centers the shared ego network on that person;
+    // re-sync to me or the Dashboard shows their family under my name
+    // (seen on-device). Same reason as the tab-switch re-sync above.
+    if (myId != null && family.centerMember?.id != myId) {
+      family.loadEgoNetwork(myId);
+    }
   }
 
   void _addFamilyMember(BuildContext context, String? relation) {
@@ -368,6 +395,8 @@ class _FamilyCard extends StatelessWidget {
   final dynamic member;
   final int? count;
   final VoidCallback onAdd;
+  final void Function(FamilyMember)? onOpen;
+  final VoidCallback? onOpenList;
   final String locale;
 
   const _FamilyCard({
@@ -376,6 +405,8 @@ class _FamilyCard extends StatelessWidget {
     this.member,
     this.count,
     required this.onAdd,
+    this.onOpen,
+    this.onOpenList,
     required this.locale,
   });
 
@@ -385,20 +416,27 @@ class _FamilyCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onAdd,
+        onTap: member != null && onOpen != null
+            ? () => onOpen!(member as FamilyMember)
+            : (count ?? 0) > 0 && onOpenList != null
+            ? onOpenList
+            : onAdd,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 32,
-                color: hasMember
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline,
-              ),
+              if (member != null)
+                MemberAvatar(member: member as FamilyMember, radius: 20)
+              else
+                Icon(
+                  icon,
+                  size: 32,
+                  color: hasMember
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
               const SizedBox(height: 8),
               Text(label, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppSpacing.xs),
@@ -427,36 +465,35 @@ class _FamilyCard extends StatelessWidget {
 class _SiblingChip extends StatelessWidget {
   final dynamic member;
   final String locale;
+  final VoidCallback onTap;
 
-  const _SiblingChip({required this.member, required this.locale});
+  const _SiblingChip({
+    required this.member,
+    required this.locale,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Text(
-                member.initial,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MemberAvatar(member: member, radius: 24),
+              const SizedBox(height: 8),
+              Text(
+                member.getFullName(locale),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              member.getFullName(locale),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

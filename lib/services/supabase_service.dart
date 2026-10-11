@@ -182,6 +182,18 @@ class SupabaseService {
     return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
   }
 
+  /// Attach (or with null, detach) a member's photo without touching any other
+  /// column — so a photo change on Edit Profile sticks even if the user backs
+  /// out without pressing Save (seen on prod: uploaded file, row never linked).
+  static Future<void> setAvatarUrl(String memberId, String? url) async {
+    await _t(client
+        .from('family_members')
+        .update({'avatar_url': url})
+        .eq('id', memberId)
+        .select('id')
+        .single());
+  }
+
   /// Get family member by ID
   static Future<FamilyMember?> getFamilyMemberById(String id) async {
     final response = await _t(client

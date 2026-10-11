@@ -15,11 +15,15 @@ class VillagePickerField extends StatelessWidget {
   /// village blocks submit and shows an inline error. Null keeps it optional.
   final FormFieldValidator<String>? validator;
 
+  /// Guidance under the field (e.g. the maika rule for women).
+  final String? helperText;
+
   const VillagePickerField({
     super.key,
     required this.value,
     required this.onChanged,
     this.validator,
+    this.helperText,
   });
 
   @override
@@ -30,7 +34,9 @@ class VillagePickerField extends StatelessWidget {
     final has = value != null && value!.trim().isNotEmpty;
     return FormField<String>(
       initialValue: value,
-      validator: validator,
+      // Validate the CURRENT value, not the FormField's initial snapshot: the
+      // add-member form prefills the village after the first build.
+      validator: validator == null ? null : (_) => validator!(value),
       builder: (state) => InkWell(
         borderRadius: BorderRadius.circular(4),
         onTap: () async {
@@ -55,6 +61,8 @@ class VillagePickerField extends StatelessWidget {
                 : l10n.villageOrigin,
             prefixIcon: const Icon(Icons.home_outlined),
             errorText: state.errorText,
+            helperText: helperText,
+            helperMaxLines: 3,
             suffixIcon: has
                 ? IconButton(
                     icon: const Icon(Icons.clear),
