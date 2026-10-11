@@ -40,7 +40,7 @@ class AppConfig {
   static const String appName = 'Vanshavali';
   // Shown in Settings so testers can tell builds apart. Must equal pubspec's
   // `version:` — test/utils/app_version_test.dart fails if they drift.
-  static const String appVersion = '0.1.0-alpha.2+19';
+  static const String appVersion = '0.1.0-alpha.2+20';
   
   // Hive box names for local storage
   static const String familyMembersBox = 'family_members';
