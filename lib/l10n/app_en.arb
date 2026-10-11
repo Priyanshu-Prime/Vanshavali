@@ -473,5 +473,6 @@
   "errorWrongPassword": "Email or password is not correct. If you forgot your password, tap \"Forgot Password?\".",
   "errorTooManyEmails": "Too many emails were sent just now. Please wait a few minutes and try again.",
   "villageHintFemale": "For a woman, choose her father's village (maika), not her in-laws' village.",
-  "errorEmailSendFailed": "We couldn't send the email right now. Please try again in a few minutes."
+  "errorEmailSendFailed": "We couldn't send the email right now. Please try again in a few minutes.",
+  "viewPhoto": "View photo"
 }

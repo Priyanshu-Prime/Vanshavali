@@ -1010,4 +1010,7 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get errorEmailSendFailed =>
       'અત્યારે ઇમેઇલ મોકલી શકાયો નથી. કૃપા કરીને થોડી મિનિટ પછી ફરી પ્રયાસ કરો.';
+
+  @override
+  String get viewPhoto => 'ફોટો જુઓ';
 }

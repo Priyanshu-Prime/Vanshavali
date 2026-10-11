@@ -1897,6 +1897,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send the email right now. Please try again in a few minutes.'**
   String get errorEmailSendFailed;
+
+  /// No description provided for @viewPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'View photo'**
+  String get viewPhoto;
 }
 
 class _AppLocalizationsDelegate

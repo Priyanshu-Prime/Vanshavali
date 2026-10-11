@@ -153,7 +153,17 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
-                    MemberAvatar(member: member, radius: 48),
+                    // Tap the photo to see it full-size (owner request).
+                    Semantics(
+                      button: member.avatarUrl != null,
+                      label: member.avatarUrl != null ? l10n.viewPhoto : null,
+                      child: GestureDetector(
+                        onTap: member.avatarUrl == null
+                            ? null
+                            : () => showFullPhoto(context, member, locale),
+                        child: MemberAvatar(member: member, radius: 48),
+                      ),
+                    ),
                     const SizedBox(width: 20),
                     Expanded(
                       child: Column(

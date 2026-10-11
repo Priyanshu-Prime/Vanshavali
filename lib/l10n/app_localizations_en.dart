@@ -1010,4 +1010,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorEmailSendFailed =>
       'We couldn\'t send the email right now. Please try again in a few minutes.';
+
+  @override
+  String get viewPhoto => 'View photo';
 }

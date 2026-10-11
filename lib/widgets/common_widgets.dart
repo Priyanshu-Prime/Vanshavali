@@ -284,6 +284,39 @@ class MemberAvatar extends StatelessWidget {
   }
 }
 
+/// Opens [member]'s photo full-screen on black with pinch-to-zoom (owner
+/// request). No-op without a photo. Stored photos are 512px, so zoom tops out
+/// at 4x before it just gets blurry.
+void showFullPhoto(BuildContext context, FamilyMember member, String locale) {
+  final url = member.avatarUrl;
+  if (url == null) return;
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    fullscreenDialog: true,
+    builder: (_) => Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(member.getFullName(locale)),
+      ),
+      body: InteractiveViewer(
+        maxScale: 4,
+        child: Center(
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.contain,
+            width: double.infinity,
+            placeholder: (_, _) =>
+                const CircularProgressIndicator(color: Colors.white),
+            errorWidget: (_, _, _) => const Icon(Icons.broken_image_outlined,
+                color: Colors.white54, size: 64),
+          ),
+        ),
+      ),
+    ),
+  ));
+}
+
 /// A card with a title and a padded, top-aligned column of content —
 /// the common "Card > Padding > Column(title, ...content)" section pattern
 /// repeated across settings, profile, and add-family-member screens.
